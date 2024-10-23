@@ -1,1 +1,1 @@
-console.log("this is controllers dir")
+export * from './error'

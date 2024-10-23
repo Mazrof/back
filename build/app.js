@@ -22,7 +22,7 @@ const morgan_1 = __importDefault(require("morgan"));
 const utility_1 = require("./utility");
 const controllers_1 = require("./controllers");
 exports.default = (app) => __awaiter(void 0, void 0, void 0, function* () {
-    app.use(express_1.default.static(path_1.default.join(__dirname, '../../public')));
+    app.use(express_1.default.static(path_1.default.join(__dirname, '../public')));
     //Implement CORS
     app.use((0, cors_1.default)());
     app.options('*', (0, cors_1.default)());
