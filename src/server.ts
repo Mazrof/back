@@ -19,7 +19,7 @@ const startServer= ()=>{
             origin: '*',
         },
     });
-    chat(io);
+    chat(io)
     // TODO: connect to db
     // await connectToDB();
     App(app);

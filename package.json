@@ -9,7 +9,8 @@
     "start": "node build/server.js",
     "start-dev": "concurrently npm:start:*",
     "migrate-db": "npx prisma migrate dev --name second",
-    "prisma-studio": "npx prisma studio"
+    "prisma-studio": "npx prisma studio",
+    "kill-port-3000": "lsof -ti :3000 | xargs kill -9 || true"
   },
   "dependencies": {
     "@prisma/client": "^5.21.1",

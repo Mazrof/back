@@ -52,5 +52,20 @@ socket.on('answer', (answer) => {
 socket.on('ice-candidate', (candidate) => {
     peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
 });
+function getRandomInt(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
-
+const sendNewMessage1 = () => {
+    const message = {content:'hello',sender:'abdo',recieverId:1}
+    socket.emit('create-message', message);
+}
+const sendNewMessage2 = () => {
+    const message = {content:'hello',sender:'abdo',recieverId:2};
+    socket.emit('create-message', message);
+}
+socket.on('new-message', (message) => {
+    console.log(message);
+})
