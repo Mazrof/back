@@ -10,6 +10,7 @@ const dotenv_1 = require("dotenv");
 const socket_io_1 = require("socket.io");
 const app_1 = __importDefault(require("./app"));
 const http_1 = __importDefault(require("http"));
+const chat_1 = __importDefault(require("./sockets/chat"));
 const PORT = 3000;
 process.on('uncaughtException', (err) => {
     console.log("ERROR 🔥: ", err);
@@ -18,7 +19,11 @@ process.on('uncaughtException', (err) => {
 const startServer = () => {
     const app = (0, express_1.default)();
     let server = http_1.default.createServer(app);
-    const io = new socket_io_1.Server(server);
+    const io = new socket_io_1.Server(server, { cors: {
+            origin: '*',
+        },
+    });
+    (0, chat_1.default)(io);
     // TODO: connect to db
     // await connectToDB();
     (0, app_1.default)(app);

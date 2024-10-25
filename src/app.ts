@@ -10,7 +10,7 @@ import {AppError} from "./utility";
 import {globalErrorHandler} from "./controllers";
 
 export default async (app:Application)=>{
-    app.use(express.static(path.join(__dirname,'../../public')));
+    app.use(express.static(path.join(__dirname,'../public')));
     //Implement CORS
     app.use(cors());
     app.options('*',cors());

@@ -4,6 +4,7 @@ config();
 import {Server} from "socket.io";
 import App from "./app";
 import http from "http";
+import chat from "./sockets/chat"
 const PORT=3000;
 
 process.on('uncaughtException',(err:Error)=>{
@@ -14,8 +15,11 @@ process.on('uncaughtException',(err:Error)=>{
 const startServer= ()=>{
     const app= express();
     let server = http.createServer(app);
-    const io = new Server(server);
-
+    const io = new Server(server,{ cors: {
+            origin: '*',
+        },
+    });
+    chat(io);
     // TODO: connect to db
     // await connectToDB();
     App(app);

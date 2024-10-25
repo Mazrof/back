@@ -6,7 +6,8 @@
   "scripts": {
     "start:build": "tsc -w",
     "start:run": "nodemon build/server.js",
-    "start": "concurrently npm:start:*",
+    "start": "node build/server.js",
+    "start-dev": "concurrently npm:start:*",
     "migrate-db": "npx prisma migrate dev --name second",
     "prisma-studio": "npx prisma studio"
   },
