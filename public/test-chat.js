@@ -52,20 +52,31 @@ socket.on('answer', (answer) => {
 socket.on('ice-candidate', (candidate) => {
     peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
 });
-function getRandomInt(min, max) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+
+// ====================================
+//         SECTION 2: Messaging
+// ====================================
+
 
 const sendNewMessage1 = () => {
     const message = {content:'hello',sender:'abdo',recieverId:1}
-    socket.emit('create-message', message);
+    const fileInput = document.getElementById('fileInput');
+    const file = fileInput.files[0];
+    console.log(file);
+    if(file)
+        socket.emit('create-message', {...message,file,filename:file.name,filetype:file.type})
+    else
+        socket.emit('create-message', {...message})
+
 }
 const sendNewMessage2 = () => {
-    const message = {content:'hello',sender:'abdo',recieverId:2};
+    const message = {content:'hello',sender:'abdo',recieverId:2}
     socket.emit('create-message', message);
 }
 socket.on('new-message', (message) => {
     console.log(message);
 })
+
+function displayFileURL(url) {
+    document.getElementById('fileLink').href = url;
+}

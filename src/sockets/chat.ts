@@ -1,19 +1,53 @@
 import {Server, Socket} from "socket.io";
-import {randomInt} from "node:crypto";
+import { initializeApp } from 'firebase/app';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
 interface Message {
     recieverId: string;
     content: string;
+    file:File;
+    filename:string;
+    fileType:string
 }
-function getRandomInt(min:number, max:number):number {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+
+const firebaseConfig = {
+    apiKey: process.env.FIREBASE_APIKEY,
+    authDomain:process.env.FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    storageBucket:process.env.FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.FIREBASE_APP_ID,
+    measurementId: process.env.FIREBASE_MEASUREMENT_ID,
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const storage = getStorage(app);
+
+async function uploadFile(fileData: { file:File,filename:string,fileType:string }):Promise<string> {
+    //TODO: UNCOMMENT THIS
+    // const fileType = file.type.split('/')[0];
+
+    let folderPath = 'uploads/';
+
+    // Organize by file type
+    if (fileData.fileType === 'image') {
+        folderPath += 'images/';
+    } else if (fileData.fileType === 'video') {
+        folderPath += 'videos/';
+    } else {
+        folderPath += 'documents/';
+    }
+    const storageRef = ref(storage, `${folderPath}${fileData.filename}`);
+    await uploadBytes(storageRef, fileData.file)
+    return await getDownloadURL(storageRef);
 }
+
 class Chat {
-    private f: boolean;
+    // private f: boolean;
     constructor(private io: Server) {
         this.setUpListeners();
-        this.f = false;
+        // this.f = false;
     }
     setUpListeners() {
         this.io.on("connection", (socket: Socket) => {
@@ -30,8 +64,8 @@ class Chat {
             //     socket.join('2');
             //     console.log("bi")
             // }
-            socket.on('create-message',(message:Message)=> {
-                this.handleNewMessage(socket, message);
+            socket.on('create-message',async(message:Message)=> {
+                await this.handleNewMessage(socket, message);
             } )
             socket.on('edit-message',(message:Message)=> {
                 this.handleEditMessage(socket, message);
@@ -42,14 +76,21 @@ class Chat {
 
         })
     }
-    handleNewMessage(socket:Socket,message:Message) {
+    async handleNewMessage(socket:Socket,message:Message) {
         //TODO:Save message in the db
         console.log(message)
-        this.io.to(message.recieverId.toString()).emit('new-message', message)
+        let url = undefined;
+        if(message.file != undefined){
+            url = await uploadFile(message);
+            console.log(url);
+        }
+        this.io.to(message.recieverId.toString()).emit('new-message', {...message,url,file:undefined})
+        //TODO: DELETE THIS;
+        this.io.emit('new-message', {...message,url,file:undefined})
     }
     handleEditMessage(socket:Socket,message:Message) {
         //TODO: edit in db
-        this.io.to(message.recieverId.toString()).emit('edited-message', message)
+        this.io.to(message.recieverId.toString()).emit('edited-message', message);
     }
     handleDeleteMessage(socket:Socket,message:Message) {
         //TODO: delete from in db
