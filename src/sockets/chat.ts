@@ -31,6 +31,7 @@ async function uploadFile(fileData: { file:File,filename:string,fileType:string 
     let folderPath = 'uploads/';
 
     // Organize by file type
+    console.log(fileData);
     if (fileData.fileType === 'image') {
         folderPath += 'images/';
     } else if (fileData.fileType === 'video') {
@@ -39,6 +40,7 @@ async function uploadFile(fileData: { file:File,filename:string,fileType:string 
         folderPath += 'documents/';
     }
     const storageRef = ref(storage, `${folderPath}${fileData.filename}`);
+    console.log(fileData.file.name);
     await uploadBytes(storageRef, fileData.file)
     return await getDownloadURL(storageRef);
 }
@@ -64,7 +66,8 @@ class Chat {
             //     socket.join('2');
             //     console.log("bi")
             // }
-            socket.on('create-message',async(message:Message)=> {
+            socket.on('message:create',async(message:Message)=> {
+                console.log('create message',message)
                 await this.handleNewMessage(socket, message);
             } )
             socket.on('edit-message',(message:Message)=> {
@@ -78,6 +81,7 @@ class Chat {
     }
     async handleNewMessage(socket:Socket,message:Message) {
         //TODO:Save message in the db
+        //add createdAt,updatedAt,add url, derived at ,read at
         console.log(message)
         let url = undefined;
         if(message.file != undefined){

@@ -22,6 +22,7 @@ const startServer = () => {
     const io = new socket_io_1.Server(server, { cors: {
             origin: '*',
         },
+        maxHttpBufferSize: 10e6
     });
     (0, chat_1.default)(io);
     // TODO: connect to db

@@ -22,8 +22,8 @@ export default async (app:Application)=>{
     app.use('/api',limiter);
     app.use(compression())  //for text send in responses
     app.use(cookieParser());
-    app.use(express.json({limit:'10kb'}));// 10 kilo byte as max for denial attacks
-    app.use(express.urlencoded({extended:true,limit:'10kb'}));// for sending requests from forms
+    app.use(express.json({limit:'100mb'}));// 10 kilo byte as max for denial attacks
+    app.use(express.urlencoded({extended:true,limit:'100mb'}));// for sending requests from forms
 
     if(process.env.NODE_ENV==="development"){
         app.use(morgan("dev"));

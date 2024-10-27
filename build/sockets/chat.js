@@ -9,18 +9,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-// Import the functions you need from the SDKs you need
 const app_1 = require("firebase/app");
 const storage_1 = require("firebase/storage");
-// Your web app's Firebase configuration
 const firebaseConfig = {
-    apiKey: "AIzaSyDMfMq-VLTXH7TxgOrOvHy5BKm5XUICWxg",
-    authDomain: "mazrof-fca98.firebaseapp.com",
-    projectId: "mazrof-fca98",
-    storageBucket: "mazrof-fca98.appspot.com",
-    messagingSenderId: "241101833503",
-    appId: "1:241101833503:web:d16acd43ec1b22dded1c2a",
-    measurementId: "G-PMG3VSFGXC"
+    apiKey: process.env.FIREBASE_APIKEY,
+    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.FIREBASE_APP_ID,
+    measurementId: process.env.FIREBASE_MEASUREMENT_ID,
 };
 // Initialize Firebase
 const app = (0, app_1.initializeApp)(firebaseConfig);
@@ -31,6 +29,7 @@ function uploadFile(fileData) {
         // const fileType = file.type.split('/')[0];
         let folderPath = 'uploads/';
         // Organize by file type
+        console.log(fileData);
         if (fileData.fileType === 'image') {
             folderPath += 'images/';
         }
@@ -41,15 +40,11 @@ function uploadFile(fileData) {
             folderPath += 'documents/';
         }
         const storageRef = (0, storage_1.ref)(storage, `${folderPath}${fileData.filename}`);
+        console.log(fileData.file.name);
         yield (0, storage_1.uploadBytes)(storageRef, fileData.file);
         return yield (0, storage_1.getDownloadURL)(storageRef);
     });
 }
-// .then((url) => {
-//     fileUrl =  url;
-// }).catch((error) => {
-//     console.error('Error retrieving file URL:', error);
-// });
 class Chat {
     // private f: boolean;
     constructor(io) {
@@ -71,7 +66,8 @@ class Chat {
             //     socket.join('2');
             //     console.log("bi")
             // }
-            socket.on('create-message', (message) => __awaiter(this, void 0, void 0, function* () {
+            socket.on('message:create', (message) => __awaiter(this, void 0, void 0, function* () {
+                console.log('create message', message);
                 yield this.handleNewMessage(socket, message);
             }));
             socket.on('edit-message', (message) => {
@@ -85,6 +81,7 @@ class Chat {
     handleNewMessage(socket, message) {
         return __awaiter(this, void 0, void 0, function* () {
             //TODO:Save message in the db
+            //add createdAt,updatedAt,add url, derived at ,read at
             console.log(message);
             let url = undefined;
             if (message.file != undefined) {

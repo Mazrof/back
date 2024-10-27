@@ -34,8 +34,8 @@ exports.default = (app) => __awaiter(void 0, void 0, void 0, function* () {
     app.use('/api', limiter);
     app.use((0, compression_1.default)()); //for text send in responses
     app.use((0, cookie_parser_1.default)());
-    app.use(express_1.default.json({ limit: '10kb' })); // 10 kilo byte as max for denial attacks
-    app.use(express_1.default.urlencoded({ extended: true, limit: '10kb' })); // for sending requests from forms
+    app.use(express_1.default.json({ limit: '100mb' })); // 10 kilo byte as max for denial attacks
+    app.use(express_1.default.urlencoded({ extended: true, limit: '100mb' })); // for sending requests from forms
     if (process.env.NODE_ENV === "development") {
         app.use((0, morgan_1.default)("dev"));
     }

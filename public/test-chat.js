@@ -58,25 +58,56 @@ socket.on('ice-candidate', (candidate) => {
 // ====================================
 
 
+
 const sendNewMessage1 = () => {
-    const message = {content:'hello',sender:'abdo',recieverId:1}
     const fileInput = document.getElementById('fileInput');
     const file = fileInput.files[0];
+    // const message = {
+    //     file,
+    //     filename: file.filename,
+    //     fileType: file.type,
+    //     status: 'pinned',// or "drafted" or null
+    //     expireAt:Date.now() + 2 * 60 * 60 * 1000,// 2hours (Date or null)
+    //     isAnnouncement:false,// for group announcement
+    //     isForward:false,
+    //     content:"hello world 😁",
+    //     recieverId:'123',
+    //     recieverType:"user",// may be group or channel
+    //     replyForId:'12',// or null (the message id to which this message reply for)
+    //     senderId:'123',
+    // }
+    const message = {content:"hello everybody", recieverId:'123'}
     console.log(file);
     if(file)
-        socket.emit('create-message', {...message,file,filename:file.name,filetype:file.type})
+        socket.emit('message:create', {...message,file,filename:file.name,filetype:file.type})
     else
-        socket.emit('create-message', {...message})
+        socket.emit('message:create', {...message})
 
 }
 const sendNewMessage2 = () => {
-    const message = {content:'hello',sender:'abdo',recieverId:2}
+    const message = {content:'hello 😁',sender:'abdo',recieverId:2}
     socket.emit('create-message', message);
 }
 socket.on('new-message', (message) => {
+    //add createdAt,updatedAt,add url, derived at ,read at
+    // const message = {
+    //     status: 'pinned',// or "drafted" or null
+    //     expireAt:Date.now() + 2 * 60 * 60 * 1000,// 2hours (Date or null)
+    //     isAnnouncement:false,// for group announcement
+    //     isForward:false,
+    //     content:"hello world 😁",
+    //     recieverId:'123',
+    //     recieverType:"user",// may be group or channel
+    //     replyForId:'12',// or null (the message id to which this message reply for)
+    //     senderId:'123',
+    //     createdAt,
+    //     updatedAt,
+    //     mediaUrl, can be null
+    //     mediaType, can be null
+    //     messageType:'call' or 'chat'
+    //     callStartsAt,
+    //     callEndsAt,
+    //     callStatus:'missed' or 'active' or 'ended'
+    // }
     console.log(message);
 })
-
-function displayFileURL(url) {
-    document.getElementById('fileLink').href = url;
-}
