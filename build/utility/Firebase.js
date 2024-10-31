@@ -26,7 +26,7 @@ const app = (0, app_1.initializeApp)(firebaseConfig);
 const storage = (0, storage_1.getStorage)(app);
 const uploadFileToFirebase = (messageContent) => __awaiter(void 0, void 0, void 0, function* () {
     const randomName = `file_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-    const stringBlob = new Blob([messageContent], { type: "text/plain" });
+    const stringBlob = new Blob([messageContent], { type: 'text/plain' });
     const storageRef = (0, storage_1.ref)(storage, `uploads/${randomName}.txt`);
     yield (0, storage_1.uploadBytes)(storageRef, stringBlob);
     return yield (0, storage_1.getDownloadURL)(storageRef);

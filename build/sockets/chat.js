@@ -17,7 +17,7 @@ class Chat {
         this.onlineUsers = [];
     }
     setUpListeners() {
-        this.io.on("connection", (socket) => {
+        this.io.on('connection', (socket) => {
             console.log('User connected');
             //TODO: socket.join(AllhisPersonalChats.id); store them if needed
             //TODO: socket.join(hisGroups.id); store them if needed
@@ -59,7 +59,6 @@ class Chat {
             if (message.content != undefined && message.content.length > 100) {
                 message.url = yield (0, utility_1.uploadFileToFirebase)(message.content);
                 message.content = undefined; // to avoid saving it in db
-                console.log(url);
             }
             //TODO: using context id to know the targeted users
             //TODO:Save message in the db
@@ -85,13 +84,15 @@ class Chat {
     }
     handleMessageInfo(socket, message) {
         //
-        this.io.to(message.contextId.toString()).emit('message:update-info', message);
+        this.io
+            .to(message.contextId.toString())
+            .emit('message:update-info', message);
     }
     isOnline(userId) {
         return this.getUserSocket(userId) !== undefined;
     }
     getUserSocket(userId) {
-        const userSocket = this.onlineUsers.find(userSocket => userId in userSocket);
+        const userSocket = this.onlineUsers.find((userSocket) => userId in userSocket);
         if (userSocket)
             return userSocket[userId];
         return undefined;
