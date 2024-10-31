@@ -9,97 +9,92 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const app_1 = require("firebase/app");
-const storage_1 = require("firebase/storage");
-const firebaseConfig = {
-    apiKey: process.env.FIREBASE_APIKEY,
-    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.FIREBASE_APP_ID,
-    measurementId: process.env.FIREBASE_MEASUREMENT_ID,
-};
-// Initialize Firebase
-const app = (0, app_1.initializeApp)(firebaseConfig);
-const storage = (0, storage_1.getStorage)(app);
-function uploadFile(fileData) {
-    return __awaiter(this, void 0, void 0, function* () {
-        //TODO: UNCOMMENT THIS
-        // const fileType = file.type.split('/')[0];
-        let folderPath = 'uploads/';
-        // Organize by file type
-        console.log(fileData);
-        if (fileData.fileType === 'image') {
-            folderPath += 'images/';
-        }
-        else if (fileData.fileType === 'video') {
-            folderPath += 'videos/';
-        }
-        else {
-            folderPath += 'documents/';
-        }
-        const storageRef = (0, storage_1.ref)(storage, `${folderPath}${fileData.filename}`);
-        console.log(fileData.file.name);
-        yield (0, storage_1.uploadBytes)(storageRef, fileData.file);
-        return yield (0, storage_1.getDownloadURL)(storageRef);
-    });
-}
+const utility_1 = require("../utility");
 class Chat {
-    // private f: boolean;
     constructor(io) {
         this.io = io;
         this.setUpListeners();
-        // this.f = false;
+        this.onlineUsers = [];
     }
     setUpListeners() {
         this.io.on("connection", (socket) => {
             console.log('User connected');
-            //TODO: socket.join(user.id); store them if needed
+            //TODO: socket.join(AllhisPersonalChats.id); store them if needed
             //TODO: socket.join(hisGroups.id); store them if needed
             //TODO: socket.join(hisChannels.id); store them if needed
-            // if(!this.f){
-            //     socket.join('1');
-            //     this.f = true;
-            //     console.log("hi")
-            // }else{
-            //     socket.join('2');
-            //     console.log("bi")
-            // }
-            socket.on('message:create', (message) => __awaiter(this, void 0, void 0, function* () {
+            //TODO: push to the online user array [userId,socket]
+            //TODO: update all message to him to be deliveredAt this moment may be in the my-chats route
+            // this.onlineUsers.push({123:socket})
+            // console.log(this.isOnline(123))
+            // console.log(this.getUserSocket(123))
+            socket.on('message:sent', (message) => __awaiter(this, void 0, void 0, function* () {
                 console.log('create message', message);
                 yield this.handleNewMessage(socket, message);
             }));
-            socket.on('edit-message', (message) => {
+            socket.on('message:edited', (message) => {
                 this.handleEditMessage(socket, message);
             });
-            socket.on('delete-message', (message) => {
+            socket.on('message:deleted', (message) => {
                 this.handleDeleteMessage(socket, message);
+            });
+            socket.on('message:get-info', (message) => {
+                this.handleMessageInfo(socket, message);
+            });
+            socket.on('context:opened', (data) => {
+                // data.contextId,
+                //TODO: update user seen_at date for messsages of this context for the user who make the request
+                //query: message join userDelivery on messageID where conext = contextId and recieverUser = requestedUser
+                // 1-get all messages that are unseen in this context
+                // 2-update seen_at from message delviey table when id  in (array from the previous step)
+                // tell other people about that update
+                // this.io.to(message.contextId.toString()).emit('message:update-info',message)
             });
         });
     }
     handleNewMessage(socket, message) {
         return __awaiter(this, void 0, void 0, function* () {
-            //TODO:Save message in the db
-            //add createdAt,updatedAt,add url, derived at ,read at
+            //add createdAt,updatedAt,add url, (derived at ,read at) ==> TABLE
             console.log(message);
             let url = undefined;
-            if (message.file != undefined) {
-                url = yield uploadFile(message);
+            if (message.content != undefined && message.content.length > 100) {
+                message.url = yield (0, utility_1.uploadFileToFirebase)(message.content);
+                message.content = undefined; // to avoid saving it in db
                 console.log(url);
             }
-            this.io.to(message.recieverId.toString()).emit('new-message', Object.assign(Object.assign({}, message), { url, file: undefined }));
+            //TODO: using context id to know the targeted users
+            //TODO:Save message in the db
+            //TODO:send the messages returned from db
+            //TODO:if the message has expire duration use set time out then call the even handler for delete message
+            //      settimeout(()=>{this.handledeleteMessage()}),duration)
+            this.io.to(message.contextId.toString()).emit('message:receive', message);
             //TODO: DELETE THIS;
-            this.io.emit('new-message', Object.assign(Object.assign({}, message), { url, file: undefined }));
+            this.io.emit('message:receive', message);
         });
     }
     handleEditMessage(socket, message) {
         //TODO: edit in db
-        this.io.to(message.recieverId.toString()).emit('edited-message', message);
+        this.io.to(message.contextId.toString()).emit('message:edited', message);
     }
     handleDeleteMessage(socket, message) {
-        //TODO: delete from in db
-        this.io.to(message.recieverId.toString()).emit('deleted-message', message);
+        //TODO: mark this message as deleted, make content null,
+        //TODO: delete from firebase
+        //TODO: determine who can delete and post files in firebase
+        //TODO:this.io.to(message.contextId.toString()).emit('message:edited', message)
+        (0, utility_1.deleteFileFromFirebase)('http://example.com/uploads/fileurl');
+        this.io.to(message.contextId.toString()).emit('message:deleted', message);
+    }
+    handleMessageInfo(socket, message) {
+        //
+        this.io.to(message.contextId.toString()).emit('message:update-info', message);
+    }
+    isOnline(userId) {
+        return this.getUserSocket(userId) !== undefined;
+    }
+    getUserSocket(userId) {
+        const userSocket = this.onlineUsers.find(userSocket => userId in userSocket);
+        if (userSocket)
+            return userSocket[userId];
+        return undefined;
     }
 }
 exports.default = (io) => {
