@@ -1,20 +1,19 @@
-import globals from "globals";
-import pluginJs from "@eslint/js";
-import tseslint from "@typescript-eslint/eslint-plugin"; // Typescript plugin
-import tsParser from "@typescript-eslint/parser"; // Parser for TypeScript
-import prettierConfig from "eslint-config-prettier"; // Prettier conflict management
-
+import globals from 'globals';
+import pluginJs from '@eslint/js';
+import tseslint from '@typescript-eslint/eslint-plugin'; // Typescript plugin
+import tsParser from '@typescript-eslint/parser'; // Parser for TypeScript
+import prettierConfig from 'eslint-config-prettier'; // Prettier conflict management
 export default [
   {
-    files: ["**/*.{js,mjs,cjs,ts,tsx}"],
+    files: ['**/*.{js,mjs,cjs,ts,tsx}'],
     languageOptions: {
       parser: tsParser,
       globals: globals.browser,
-      ecmaVersion: "latest", // Use the latest ECMAScript features
-      sourceType: "module",  // Enable ES6 modules
+      ecmaVersion: 'latest', // Use the latest ECMAScript features
+      sourceType: 'module', // Enable ES6 modules
     },
     plugins: {
-      "@typescript-eslint": tseslint,
+      '@typescript-eslint': tseslint,
       prettier: prettierConfig, // Integrate Prettier
     },
     rules: {
@@ -25,11 +24,11 @@ export default [
       ...prettierConfig.rules,
 
       // Custom Rules
-      "no-unused-vars": "warn", // Warn about unused variables
-      "consistent-return": "error", // Enforce consistent return types
-      "eqeqeq": ["error", "always"], // Require strict equality checks
-      "no-console": "warn", // Warn on console usage (useful for production code)
-      "handle-callback-err": "error", // Ensure error handling in callbacks
+      'no-unused-vars': 'warn', // Warn about unused variables
+      'consistent-return': 'error', // Enforce consistent return types
+      eqeqeq: ['error', 'always'], // Require strict equality checks
+      'no-console': 'warn', // Warn on console usage (useful for production code)
+      'handle-callback-err': 'error', // Ensure error handling in callbacks
     },
   },
 ];

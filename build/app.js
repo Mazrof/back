@@ -29,22 +29,22 @@ exports.default = (app) => __awaiter(void 0, void 0, void 0, function* () {
     const limiter = (0, express_rate_limit_1.default)({
         max: 100,
         windowMs: 60 * 60 * 1000,
-        message: 'Too many requests from this IP,please try in an hour'
+        message: 'Too many requests from this IP,please try in an hour',
     });
     app.use('/api', limiter);
     app.use((0, compression_1.default)()); //for text send in responses
     app.use((0, cookie_parser_1.default)());
     app.use(express_1.default.json({ limit: '100mb' })); // 10 kilo byte as max for denial attacks
     app.use(express_1.default.urlencoded({ extended: true, limit: '100mb' })); // for sending requests from forms
-    if (process.env.NODE_ENV === "development") {
-        app.use((0, morgan_1.default)("dev"));
+    if (process.env.NODE_ENV === 'development') {
+        app.use((0, morgan_1.default)('dev'));
     }
     // TODO: Add your routes here
     app.get('/', (req, res) => {
-        console.log("hello world");
-        res.status(200).json({ msg: "hello world,MAZROF COMMUNITY" });
+        console.log('hello world');
+        res.status(200).json({ msg: 'hello world,MAZROF COMMUNITY' });
     });
-    app.all("*", (req, res, next) => {
+    app.all('*', (req, res, next) => {
         const err = new utility_1.AppError(`Can't find ${req.originalUrl} on this server`, 404);
         next(err);
     });

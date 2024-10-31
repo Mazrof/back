@@ -5,6 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.server = void 0;
 const express_1 = __importDefault(require("express"));
+const client_1 = require("@prisma/client");
+const prisma = new client_1.PrismaClient();
 const dotenv_1 = require("dotenv");
 (0, dotenv_1.config)();
 const socket_io_1 = require("socket.io");
@@ -13,16 +15,17 @@ const http_1 = __importDefault(require("http"));
 const chat_1 = __importDefault(require("./sockets/chat"));
 const PORT = 3000;
 process.on('uncaughtException', (err) => {
-    console.log("ERROR 🔥: ", err);
+    console.log('ERROR 🔥: ', err);
     process.exit(1);
 });
 const startServer = () => {
     const app = (0, express_1.default)();
     let server = http_1.default.createServer(app);
-    const io = new socket_io_1.Server(server, { cors: {
+    const io = new socket_io_1.Server(server, {
+        cors: {
             origin: '*',
         },
-        maxHttpBufferSize: 10e6
+        maxHttpBufferSize: 10e6,
     });
     (0, chat_1.default)(io);
     // TODO: connect to db
@@ -35,9 +38,9 @@ const startServer = () => {
 };
 exports.server = startServer();
 process.on('unhandledRejection', (err) => {
-    console.log("ERROR 🔥: ", err.name, err.message);
-    console.log("Shutting down ...");
-    // process.exit(1);//will abort all running reqeusts
+    console.log('ERROR 🔥: ', err.name, err.message);
+    console.log('Shutting down ...');
+    // process.exit(1);//will abort all running requests
     exports.server.close(() => {
         process.exit(1);
     });
