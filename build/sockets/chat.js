@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const utility_1 = require("../utility");
+const services_1 = require("../services");
 class Chat {
     constructor(io) {
         this.io = io;
@@ -55,24 +56,30 @@ class Chat {
         return __awaiter(this, void 0, void 0, function* () {
             //add createdAt,updatedAt,add url, (derived at ,read at) ==> TABLE
             console.log(message);
-            let url = undefined;
-            if (message.content != undefined && message.content.length > 100) {
+            if (message.content && message.content.length > 100) {
                 message.url = yield (0, utility_1.uploadFileToFirebase)(message.content);
-                message.content = undefined; // to avoid saving it in db
+                message.content = null; // to avoid saving it in db
             }
-            //TODO: using context id to know the targeted users
+            //TODO: using paritcipinet id to know the targeted users
             //TODO:Save message in the db
+            message.createdAt = new Date();
+            message.updatedAt = new Date();
+            const createdMessage = yield (0, services_1.createMessage)(message);
             //TODO:send the messages returned from db
             //TODO:if the message has expire duration use set time out then call the even handler for delete message
             //      settimeout(()=>{this.handledeleteMessage()}),duration)
-            this.io.to(message.contextId.toString()).emit('message:receive', message);
+            this.io
+                .to(message.participantId.toString())
+                .emit('message:receive', message);
             //TODO: DELETE THIS;
             this.io.emit('message:receive', message);
         });
     }
     handleEditMessage(socket, message) {
         //TODO: edit in db
-        this.io.to(message.contextId.toString()).emit('message:edited', message);
+        this.io
+            .to(message.participant_id.toString())
+            .emit('message:edited', message);
     }
     handleDeleteMessage(socket, message) {
         //TODO: mark this message as deleted, make content null,
@@ -80,12 +87,14 @@ class Chat {
         //TODO: determine who can delete and post files in firebase
         //TODO:this.io.to(message.contextId.toString()).emit('message:edited', message)
         (0, utility_1.deleteFileFromFirebase)('http://example.com/uploads/fileurl');
-        this.io.to(message.contextId.toString()).emit('message:deleted', message);
+        this.io
+            .to(message.participant_id.toString())
+            .emit('message:deleted', message);
     }
     handleMessageInfo(socket, message) {
         //
         this.io
-            .to(message.contextId.toString())
+            .to(message.participant_id.toString())
             .emit('message:update-info', message);
     }
     isOnline(userId) {

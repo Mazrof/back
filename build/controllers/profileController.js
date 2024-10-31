@@ -12,7 +12,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const utility_1 = require("../utility");
 const utility_2 = require("../utility");
 const client_1 = require("../prisma/client");
-// Get all profiles
+const isValidPhoneNumber = (phoneNumber) => {
+    const phoneRegex = /^(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
+    return phoneRegex.test(phoneNumber);
+};
+const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+};
 exports.getAllProfiles = (0, utility_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const users = yield client_1.prisma.users.findMany(); // Fetch all users from the database
     res.status(200).json({
@@ -32,6 +39,12 @@ exports.getProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(voi
     if (!users) {
         return next(new utility_2.AppError('No profile found with that ID', 404)); // Handle not found error
     }
+    if (req.body.phone && !isValidPhoneNumber(req.body.phone)) {
+        return next(new utility_2.AppError('Invalid phone number', 400));
+    }
+    if (req.body.email && !isValidEmail(req.body.email)) {
+        return next(new utility_2.AppError('Invalid email format.', 400));
+    }
     res.status(200).json({
         status: 'success',
         data: {
@@ -39,32 +52,37 @@ exports.getProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(voi
         },
     });
 }));
-// Add a new profile
 exports.addProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const newuser = yield client_1.prisma.users.create({
-        data: req.body, // Create a new users with data from the request body
+    const newUser = yield client_1.prisma.users.create({
+        data: req.body,
     });
     res.status(201).json({
         status: 'success',
         data: {
-            users: newuser,
+            'updated user': newUser,
         },
     });
 }));
-// Update a profile by ID
 exports.updateProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id } = req.params; // Get users ID from URL parameters
-    const updatedusers = yield client_1.prisma.users.update({
-        where: { id: parseInt(id, 10) }, // Update the users by ID
+    const { id } = req.params;
+    console.log('id', id);
+    const updatedUser = yield client_1.prisma.users.update({
+        where: { id: parseInt(id, 10) },
         data: req.body,
     });
-    if (!updatedusers) {
+    if (!updatedUser) {
         return next(new utility_2.AppError('No profile found with that ID', 404)); // Handle not found error
+    }
+    if (req.body.phone && !isValidPhoneNumber(req.body.phone)) {
+        return next(new utility_2.AppError('Invalid phone number', 400));
+    }
+    if (req.body.email && !isValidEmail(req.body.email)) {
+        return next(new utility_2.AppError('Invalid email format.', 400));
     }
     res.status(200).json({
         status: 'success',
         data: {
-            users: updatedusers,
+            users: updatedUser,
         },
     });
 }));

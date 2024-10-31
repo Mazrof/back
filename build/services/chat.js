@@ -9,11 +9,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createUser = void 0;
+exports.createMessage = void 0;
 const client_1 = require("../prisma/client");
-const createUser = (data) => __awaiter(void 0, void 0, void 0, function* () {
+const createMessage = (data) => __awaiter(void 0, void 0, void 0, function* () {
     return client_1.prisma.messages.create({
         data,
     });
 });
-exports.createUser = createUser;
+exports.createMessage = createMessage;

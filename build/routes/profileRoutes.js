@@ -8,8 +8,8 @@ const profileController = require('./../controllers/profileController');
 const router = express_1.default.Router();
 // TODO: add user authentication
 router.post('/', profileController.addProfile);
-router.patch('/:userId', profileController.getProfile);
-router.get('/:userId', profileController.updateProfile);
+router.patch('/:id', profileController.updateProfile);
+router.get('/:id', profileController.getProfile);
 // TODO: add admin authentication
 router.get('/', profileController.getAllProfiles);
 // Export the router
