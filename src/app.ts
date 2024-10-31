@@ -6,8 +6,10 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 import profileRouter from './routes/profileRoutes';
+import storiesRouter from './routes/storiesRoutes';
 import { AppError } from './utility';
 import { globalErrorHandler } from './controllers';
+import StoriesRoutes from './routes/storiesRoutes';
 
 export default async (app: Application) => {
   app.use(express.static(path.join(__dirname, '../public')));
@@ -30,6 +32,7 @@ export default async (app: Application) => {
   }
   // TODO: Add your routes here
   app.use('/api/v1/profile', profileRouter);
+  app.use('/api/v1/stories', storiesRouter);
   app.get('/', (req: Request, res: Response) => {
     console.log('hello world');
     res.status(200).json({ msg: 'hello world,MAZROF COMMUNITY' });
