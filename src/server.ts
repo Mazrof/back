@@ -1,15 +1,15 @@
-import express from "express";
-import { config } from "dotenv";
+import express from 'express';
+import { config } from 'dotenv';
 
 config();
-import { Server } from "socket.io";
-import App from "./app";
-import http from "http";
+import { Server } from 'socket.io';
+import App from './app';
+import http from 'http';
 
-const PORT = 3000;
+const PORT = 8000;
 
-process.on("uncaughtException", (err: Error) => {
-  console.log("ERROR 🔥: ", err);
+process.on('uncaughtException', (err: Error) => {
+  console.log('ERROR 🔥: ', err);
   process.exit(1);
 });
 
@@ -22,16 +22,16 @@ const startServer = () => {
   // await connectToDB();
   App(app);
   server.listen(PORT, () => {
-    console.log(`Server run on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
   });
   return server;
 };
 
 export const server = startServer();
 
-process.on("unhandledRejection", (err: Error) => {
-  console.log("ERROR 🔥: ", err.name, err.message);
-  console.log("Shutting down ...");
+process.on('unhandledRejection', (err: Error) => {
+  console.log('ERROR 🔥: ', err.name, err.message);
+  console.log('Shutting down ...');
   // process.exit(1);//will abort all running reqeusts
   server.close(() => {
     process.exit(1);
