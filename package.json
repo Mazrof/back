@@ -6,9 +6,10 @@
   "scripts": {
     "start:build": "tsc -w",
     "start:run": "nodemon build/server.js",
-    "start": "concurrently npm:start:*",
+    "start-dev": "concurrently npm:start:*",
     "migrate-db": "npx prisma migrate dev --name second",
-    "prisma-studio": "npx prisma studio"
+    "prisma-studio": "npx prisma studio",
+    "kill-port-3000": "lsof -ti :3000 | xargs kill -9 || true"
   },
   "dependencies": {
     "@prisma/client": "^5.21.1",
@@ -19,6 +20,8 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "express-rate-limit": "^7.3.1",
+    "firebase": "^11.0.1",
+    "firebase-tools": "^13.23.0",
     "helmet": "^7.1.0",
     "hpp": "^0.2.3",
     "morgan": "~1.9.1",
