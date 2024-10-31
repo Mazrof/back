@@ -1,9 +1,9 @@
-import { prisma, Schemas } from '../prisma/client';
+import { prisma } from '../prisma/client';
 
-const createUser = async (data: Schemas.messagesCreateInput) => {
+const createMessage = async (data: ) => {
   return prisma.messages.create({
     data,
   });
 };
 
-export { createUser };
+export { createMessage };
