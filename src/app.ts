@@ -5,7 +5,7 @@ import cors from 'cors';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
-
+import profileRouter from './routes/profileRoutes';
 import { AppError } from './utility';
 import { globalErrorHandler } from './controllers';
 
@@ -29,6 +29,7 @@ export default async (app: Application) => {
     app.use(morgan('dev'));
   }
   // TODO: Add your routes here
+  app.use('/api/v1/profile', profileRouter);
   app.get('/', (req: Request, res: Response) => {
     console.log('hello world');
     res.status(200).json({ msg: 'hello world,MAZROF COMMUNITY' });

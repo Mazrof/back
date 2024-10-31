@@ -19,6 +19,7 @@ const cors_1 = __importDefault(require("cors"));
 const compression_1 = __importDefault(require("compression"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const morgan_1 = __importDefault(require("morgan"));
+const profileRoutes_1 = __importDefault(require("./routes/profileRoutes"));
 const utility_1 = require("./utility");
 const controllers_1 = require("./controllers");
 exports.default = (app) => __awaiter(void 0, void 0, void 0, function* () {
@@ -40,6 +41,7 @@ exports.default = (app) => __awaiter(void 0, void 0, void 0, function* () {
         app.use((0, morgan_1.default)('dev'));
     }
     // TODO: Add your routes here
+    app.use('/api/v1/profile', profileRoutes_1.default);
     app.get('/', (req, res) => {
         console.log('hello world');
         res.status(200).json({ msg: 'hello world,MAZROF COMMUNITY' });
