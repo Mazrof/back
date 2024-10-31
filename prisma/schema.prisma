@@ -7,10 +7,281 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id          Int     @id @default(autoincrement())
-  email       String  @unique
-  name        String?
-  largeNumber BigInt?
-  preferences Json?
+model admingroupfilters {
+  admin_id Int
+  group_id Int
+  admins   admins @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  groups   groups @relation(fields: [group_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([admin_id, group_id])
+}
+
+model admins {
+  id                  Int                 @id @default(autoincrement())
+  email               String              @unique @db.VarChar(255)
+  password            String
+  password_changed_at DateTime?           @db.Timestamp(6)
+  admingroupfilters   admingroupfilters[]
+  bannedusers         bannedusers[]
+}
+
+model bannedusers {
+  admin_id Int
+  user_id  Int
+  admins   admins @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users    users  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([admin_id, user_id])
+}
+
+model callreceivers {
+  id               Int           @id @default(autoincrement())
+  group_id         Int?
+  personal_chat_id Int?
+  groups           groups?       @relation(fields: [group_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  personalchat     personalchat? @relation(fields: [personal_chat_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  voice_calls      voice_calls[]
+}
+
+model channels {
+  id                   Int                    @id @default(autoincrement())
+  community_id         Int?
+  can_add_comments     Boolean?               @default(true)
+  communities          communities?           @relation(fields: [community_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  channelsubscriptions channelsubscriptions[]
+}
+
+model channelsubscriptions {
+  user_id                  Int
+  channel_id               Int
+  has_download_permissions Boolean?      @default(false)
+  current_role             channel_role?
+  channels                 channels      @relation(fields: [channel_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                    users         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, channel_id])
+}
+
+model communities {
+  id           Int            @id @default(autoincrement())
+  name         String         @db.VarChar(255)
+  privacy      Boolean?       @default(true)
+  creator_id   Int?
+  channels     channels[]
+  users        users?         @relation(fields: [creator_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  groups       groups[]
+  participants participants[]
+}
+
+model groupmemberships {
+  user_id                  Int
+  group_id                 Int
+  role                     String?  @db.VarChar(50)
+  has_download_permissions Boolean? @default(false)
+  has_message_permissions  Boolean? @default(false)
+  add_to_group_permission  Boolean? @default(false)
+  groups                   groups   @relation(fields: [group_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                    users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, group_id])
+}
+
+model groups {
+  id                Int                 @id @default(autoincrement())
+  community_id      Int?
+  group_size        Int?
+  status            Boolean?            @default(true)
+  admingroupfilters admingroupfilters[]
+  callreceivers     callreceivers[]
+  groupmemberships  groupmemberships[]
+  communities       communities?        @relation(fields: [community_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model media {
+  id         Int          @id @default(autoincrement())
+  media_type String?      @db.VarChar(50)
+  media_url  String?
+  storymedia storymedia[]
+}
+
+model messagementions {
+  user_id    Int
+  message_id Int
+  messages   messages @relation(fields: [message_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, message_id])
+}
+
+model messagereadreceipts {
+  user_id        Int
+  message_id     Int
+  delivered_at   DateTime?     @db.Timestamp(6)
+  read_at        DateTime?     @db.Timestamp(6)
+  participant_id Int?
+  messages       messages      @relation(fields: [message_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  participants   participants? @relation(fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users          users         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, message_id])
+}
+
+model messages {
+  id                  Int                   @id @default(autoincrement())
+  status              Boolean?              @default(true)
+  created_at          DateTime?             @default(now()) @db.Timestamp(6)
+  expire_at           DateTime?             @db.Timestamp(6)
+  is_announcement     Boolean?              @default(false)
+  is_forward          Boolean?              @default(false)
+  updated_at          DateTime?             @default(now()) @db.Timestamp(6)
+  content             String?
+  url                 String?
+  attachment          String?
+  sender_id           Int?
+  reply_to            Int?
+  participant_id      Int?
+  messagementions     messagementions[]
+  messagereadreceipts messagereadreceipts[]
+  participants        participants?         @relation(fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  messages            messages?             @relation("messagesTomessages", fields: [reply_to], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  other_messages      messages[]            @relation("messagesTomessages")
+  users               users?                @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model mutedparticipants {
+  user_id        Int
+  participant_id Int
+  duration       Unsupported("interval")?
+  participants   participants             @relation(fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users          users                    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, participant_id])
+}
+
+model participants {
+  id                  Int                   @id @default(autoincrement())
+  community_id        Int?
+  personal_chat_id    Int?
+  messagereadreceipts messagereadreceipts[]
+  messages            messages[]
+  mutedparticipants   mutedparticipants[]
+  communities         communities?          @relation(fields: [community_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  personalchat        personalchat?         @relation(fields: [personal_chat_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model personalchat {
+  id                                Int             @id @default(autoincrement())
+  user1id                           Int
+  user2id                           Int
+  callreceivers                     callreceivers[]
+  participants                      participants[]
+  users_personalchat_user1idTousers users           @relation("personalchat_user1idTousers", fields: [user1id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_personalchat_user2idTousers users           @relation("personalchat_user2idTousers", fields: [user2id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model stories {
+  id          Int           @id @default(autoincrement())
+  user_id     Int?
+  content     String?
+  status      Boolean?      @default(true)
+  expiry_date DateTime?     @db.Timestamp(6)
+  created_at  DateTime?     @default(now()) @db.Timestamp(6)
+  users       users?        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  story_views story_views[]
+  storymedia  storymedia[]
+}
+
+model story_views {
+  user_id  Int
+  story_id Int
+  stories  stories @relation(fields: [story_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users    users   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, story_id])
+}
+
+model storymedia {
+  story_id Int
+  media_id Int
+  media    media   @relation(fields: [media_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  stories  stories @relation(fields: [story_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([story_id, media_id])
+}
+
+model user_blacklist {
+  blocker_id                             Int
+  blocked_id                             Int
+  users_user_blacklist_blocked_idTousers users @relation("user_blacklist_blocked_idTousers", fields: [blocked_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_user_blacklist_blocker_idTousers users @relation("user_blacklist_blocker_idTousers", fields: [blocker_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([blocker_id, blocked_id])
+}
+
+model users {
+  id                                              Int                    @id @default(autoincrement())
+  username                                        String                 @unique @db.VarChar(255)
+  password                                        String
+  password_changed_at                             DateTime?              @db.Timestamp(6)
+  email                                           String                 @unique @db.VarChar(255)
+  phone                                           String?                @db.VarChar(20)
+  photo                                           String?
+  bio                                             String?
+  screen_name                                     String?                @db.VarChar(255)
+  status                                          Boolean?               @default(true)
+  last_seen                                       DateTime?              @db.Timestamp(6)
+  active_now                                      Boolean?               @default(false)
+  provider_type                                   social?
+  provider_id                                     Int?
+  auto_download_size_limit                        Int?
+  max_limit_file_size                             Int?
+  profile_pic_visibility                          privacy?               @default(everyone)
+  story_visibility                                privacy?               @default(everyone)
+  read_receipts_enabled                           privacy?               @default(everyone)
+  last_seen_visibility                            Boolean?               @default(true)
+  group_add_permission                            Boolean?               @default(true)
+  bannedusers                                     bannedusers[]
+  channelsubscriptions                            channelsubscriptions[]
+  communities                                     communities[]
+  groupmemberships                                groupmemberships[]
+  messagementions                                 messagementions[]
+  messagereadreceipts                             messagereadreceipts[]
+  messages                                        messages[]
+  mutedparticipants                               mutedparticipants[]
+  personalchat_personalchat_user1idTousers        personalchat[]         @relation("personalchat_user1idTousers")
+  personalchat_personalchat_user2idTousers        personalchat[]         @relation("personalchat_user2idTousers")
+  stories                                         stories[]
+  story_views                                     story_views[]
+  user_blacklist_user_blacklist_blocked_idTousers user_blacklist[]       @relation("user_blacklist_blocked_idTousers")
+  user_blacklist_user_blacklist_blocker_idTousers user_blacklist[]       @relation("user_blacklist_blocker_idTousers")
+  voice_calls                                     voice_calls[]
+}
+
+model voice_calls {
+  id                     Int            @id @default(autoincrement())
+  start_at               DateTime?      @db.Timestamp(6)
+  end_at                 DateTime?      @db.Timestamp(6)
+  number_of_participants Int?
+  status                 Boolean?       @default(true)
+  creator_id             Int?
+  callreceiver_id        Int?
+  callreceivers          callreceivers? @relation(fields: [callreceiver_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                  users?         @relation(fields: [creator_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+enum channel_role {
+  admin
+  member
+}
+
+enum privacy {
+  everyone
+  contacts
+  nobody
+}
+
+enum social {
+  github
+  facebook
+  google
 }

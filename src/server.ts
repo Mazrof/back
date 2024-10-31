@@ -30,7 +30,7 @@ const startServer = () => {
 export const server = startServer();
 
 process.on("unhandledRejection", (err: Error) => {
-  console.log("ERROR 🔥: ", err.name, err.message);
+  console.log("ERROR 🔥: ", err.name, err.message)
   console.log("Shutting down ...");
   // process.exit(1);//will abort all running reqeusts
   server.close(() => {
