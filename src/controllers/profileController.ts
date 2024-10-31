@@ -27,7 +27,6 @@ exports.getAllProfiles = catchAsync(
   }
 );
 
-// Get a single profile by ID
 exports.getProfile = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params; // Get users ID from URL parameters
@@ -38,15 +37,6 @@ exports.getProfile = catchAsync(
     if (!users) {
       return next(new AppError('No profile found with that ID', 404)); // Handle not found error
     }
-
-    if (req.body.phone && !isValidPhoneNumber(req.body.phone)) {
-      return next(new AppError('Invalid phone number', 400));
-    }
-
-    if (req.body.email && !isValidEmail(req.body.email)) {
-      return next(new AppError('Invalid email format.', 400));
-    }
-
     res.status(200).json({
       status: 'success',
       data: {
@@ -58,14 +48,20 @@ exports.getProfile = catchAsync(
 
 exports.addProfile = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const newUser = await prisma.users.create({
+    const User = await prisma.users.create({
       data: req.body,
     });
+    if (req.body.phone && !isValidPhoneNumber(req.body.phone)) {
+      return next(new AppError('Invalid phone number', 400));
+    }
 
+    if (req.body.email && !isValidEmail(req.body.email)) {
+      return next(new AppError('Invalid email format.', 400));
+    }
     res.status(201).json({
       status: 'success',
       data: {
-        'updated user': newUser,
+        User,
       },
     });
   }
@@ -74,7 +70,6 @@ exports.addProfile = catchAsync(
 exports.updateProfile = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-    console.log('id', id);
     const updatedUser = await prisma.users.update({
       where: { id: parseInt(id, 10) },
       data: req.body,
@@ -95,7 +90,7 @@ exports.updateProfile = catchAsync(
     res.status(200).json({
       status: 'success',
       data: {
-        users: updatedUser,
+        'updated user': updatedUser,
       },
     });
   }

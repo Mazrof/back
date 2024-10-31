@@ -30,7 +30,6 @@ exports.getAllProfiles = (0, utility_1.catchAsync)((req, res, next) => __awaiter
         },
     });
 }));
-// Get a single profile by ID
 exports.getProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params; // Get users ID from URL parameters
     const users = yield client_1.prisma.users.findUnique({
@@ -38,12 +37,6 @@ exports.getProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(voi
     });
     if (!users) {
         return next(new utility_2.AppError('No profile found with that ID', 404)); // Handle not found error
-    }
-    if (req.body.phone && !isValidPhoneNumber(req.body.phone)) {
-        return next(new utility_2.AppError('Invalid phone number', 400));
-    }
-    if (req.body.email && !isValidEmail(req.body.email)) {
-        return next(new utility_2.AppError('Invalid email format.', 400));
     }
     res.status(200).json({
         status: 'success',
@@ -53,19 +46,24 @@ exports.getProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(voi
     });
 }));
 exports.addProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const newUser = yield client_1.prisma.users.create({
+    const User = yield client_1.prisma.users.create({
         data: req.body,
     });
+    if (req.body.phone && !isValidPhoneNumber(req.body.phone)) {
+        return next(new utility_2.AppError('Invalid phone number', 400));
+    }
+    if (req.body.email && !isValidEmail(req.body.email)) {
+        return next(new utility_2.AppError('Invalid email format.', 400));
+    }
     res.status(201).json({
         status: 'success',
         data: {
-            'updated user': newUser,
+            User,
         },
     });
 }));
 exports.updateProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    console.log('id', id);
     const updatedUser = yield client_1.prisma.users.update({
         where: { id: parseInt(id, 10) },
         data: req.body,
@@ -82,7 +80,7 @@ exports.updateProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(
     res.status(200).json({
         status: 'success',
         data: {
-            users: updatedUser,
+            'updated user': updatedUser,
         },
     });
 }));
