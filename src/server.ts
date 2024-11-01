@@ -1,13 +1,8 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
 import { config } from 'dotenv';
 config();
-import { Server } from 'socket.io';
 import App from './app';
 import http from 'http';
-import chat from './sockets/chat';
 const PORT = 3000;
 
 process.on('uncaughtException', (err: Error) => {
@@ -18,15 +13,6 @@ process.on('uncaughtException', (err: Error) => {
 const startServer = () => {
   const app = express();
   let server = http.createServer(app);
-  const io = new Server(server, {
-    cors: {
-      origin: '*',
-    },
-    maxHttpBufferSize: 10e6,
-  });
-  chat(io);
-  // TODO: connect to db
-  // await connectToDB();
   App(app);
   server.listen(PORT, () => {
     console.log(`Server run on port ${PORT}`);
