@@ -5,42 +5,61 @@ import cors from 'cors';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
-import profileRouter from './routes/profileRoutes';
-import { AppError } from './utility';
-import { globalErrorHandler } from './controllers';
+
+import { AppError } from './types/appError';
+import { globalErrorHandler } from './middlewares/error_handlers/error_handler';
+import apiRoutes from './routes';
 
 export default async (app: Application) => {
+  // Serve static files from the 'public' directory
   app.use(express.static(path.join(__dirname, '../public')));
-  //Implement CORS
-  app.use(cors());
-  app.options('*', cors());
-  const limiter = rateLimit({
-    max: 100,
-    windowMs: 60 * 60 * 1000,
-    message: 'Too many requests from this IP,please try in an hour',
-  });
-  app.use('/api', limiter);
-  app.use(compression()); //for text send in responses
-  app.use(cookieParser());
-  app.use(express.json({ limit: '100mb' })); // 10 kilo byte as max for denial attacks
-  app.use(express.urlencoded({ extended: true, limit: '100mb' })); // for sending requests from forms
 
+  // Implement CORS
+  app.use(cors());
+  app.options('*', cors()); // Preflight for all routes
+
+  // Rate limiting middleware
+  const limiter = rateLimit({
+    max: 100, // limit each IP to 100 requests per windowMs
+    windowMs: 60 * 60 * 1000, // 1 hour
+    message: 'Too many requests from this IP, please try again later.',
+  });
+  app.use('/api', limiter); // Apply rate limiting to API routes
+
+  // Compression middleware for response bodies
+  app.use(compression());
+
+  // Cookie parsing middleware
+  app.use(cookieParser());
+
+  // Body parsing middleware
+  app.use(express.json({ limit: '100mb' })); // Limit JSON body size
+  app.use(express.urlencoded({ extended: true, limit: '100mb' })); // For form data
+
+  // Logging middleware for development
   if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
   }
-  // TODO: Add your routes here
-  app.use('/api/v1/profile', profileRouter);
+
+  // Base route
   app.get('/', (req: Request, res: Response) => {
     console.log('hello world');
-    res.status(200).json({ msg: 'hello world,MAZROF COMMUNITY' });
+    res.status(200).json({ msg: 'hello world, MAZROF COMMUNITY' });
   });
-  app.all('*', (req, res, next) => {
-    const err = new AppError(
-      `Can't find ${req.originalUrl} on this server`,
-      404
-    );
-    next(err);
+
+  // API routes
+  app.use('/api', apiRoutes);
+
+  // Handle all undefined routes
+  app.all('*', (req: Request, res: Response, next: Function) => {
+    res.status(404).json({
+      status: 'fail',
+      message: `Can't find ${req.originalUrl} on this server!`,
+    });
   });
-  app.use(globalErrorHandler);
+
+  // Global error handler
+  app.use(globalErrorHandler)
+
   return app;
 };
