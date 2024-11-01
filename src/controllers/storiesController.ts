@@ -1,8 +1,7 @@
-import { NextFunction } from 'express';
-
-const catchAsync = require('./../utils/catchAsync');
-const AppError = require('./../utils/appError');
-import { writeFile } from 'fs/promises';
+import { Request, Response, NextFunction } from 'express';
+import { catchAsync } from '../utility';
+import { AppError } from '../types/appError';
+import { prisma } from '../prisma/client';
 
 exports.addStory = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {}

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { catchAsync } from '../utility';
-import { AppError } from '../utility';
+import { AppError } from '../types/appError';
 import { prisma } from '../prisma/client';
 
 const isValidPhoneNumber = (phoneNumber: string) => {

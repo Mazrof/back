@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const utility_1 = require("../utility");
-const utility_2 = require("../utility");
+const appError_1 = require("../types/appError");
 const client_1 = require("../prisma/client");
 const isValidPhoneNumber = (phoneNumber) => {
     const phoneRegex = /^(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
@@ -36,7 +36,7 @@ exports.getProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(voi
         where: { id: parseInt(id, 10) }, // Find the users by ID
     });
     if (!users) {
-        return next(new utility_2.AppError('No profile found with that ID', 404)); // Handle not found error
+        return next(new appError_1.AppError('No profile found with that ID', 404)); // Handle not found error
     }
     res.status(200).json({
         status: 'success',
@@ -50,10 +50,10 @@ exports.addProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(voi
         data: req.body,
     });
     if (req.body.phone && !isValidPhoneNumber(req.body.phone)) {
-        return next(new utility_2.AppError('Invalid phone number', 400));
+        return next(new appError_1.AppError('Invalid phone number', 400));
     }
     if (req.body.email && !isValidEmail(req.body.email)) {
-        return next(new utility_2.AppError('Invalid email format.', 400));
+        return next(new appError_1.AppError('Invalid email format.', 400));
     }
     res.status(201).json({
         status: 'success',
@@ -69,13 +69,13 @@ exports.updateProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(
         data: req.body,
     });
     if (!updatedUser) {
-        return next(new utility_2.AppError('No profile found with that ID', 404)); // Handle not found error
+        return next(new appError_1.AppError('No profile found with that ID', 404)); // Handle not found error
     }
     if (req.body.phone && !isValidPhoneNumber(req.body.phone)) {
-        return next(new utility_2.AppError('Invalid phone number', 400));
+        return next(new appError_1.AppError('Invalid phone number', 400));
     }
     if (req.body.email && !isValidEmail(req.body.email)) {
-        return next(new utility_2.AppError('Invalid email format.', 400));
+        return next(new appError_1.AppError('Invalid email format.', 400));
     }
     res.status(200).json({
         status: 'success',
