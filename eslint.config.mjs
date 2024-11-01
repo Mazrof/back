@@ -1,5 +1,4 @@
 import globals from 'globals';
-import pluginJs from '@eslint/js';
 import tseslint from '@typescript-eslint/eslint-plugin'; // Typescript plugin
 import tsParser from '@typescript-eslint/parser'; // Parser for TypeScript
 import prettierConfig from 'eslint-config-prettier'; // Prettier conflict management
@@ -27,7 +26,7 @@ export default [
       'no-unused-vars': 'warn', // Warn about unused variables
       'consistent-return': 'error', // Enforce consistent return types
       eqeqeq: ['error', 'always'], // Require strict equality checks
-      'no-console': 'warn', // Warn on console usage (useful for production code)
+      'no-console': 'warn', // Warn about console.log
       'handle-callback-err': 'error', // Ensure error handling in callbacks
     },
   },
