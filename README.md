@@ -24,6 +24,9 @@ Before you begin, ensure you have the following installed on your machine:
    ```bash
    npm install
    ```
+3. ** Primsa **:
+   npx prisma generate
+
 ## Available Scripts
 
 - **`npm run start-dev`** - Runs the app in development mode.
