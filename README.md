@@ -25,7 +25,9 @@ Before you begin, ensure you have the following installed on your machine:
    npm install
    ```
 3. **Primsa**:
+   ```bash
    npx prisma generate
+   ```
 
 ## Available Scripts
 
