@@ -11,7 +11,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getProfileByUserName = exports.updateProfile = exports.addProfile = exports.getProfile = exports.getAllProfiles = exports.profileController = void 0;
 const utility_1 = require("../utility");
-const appError_1 = require("../types/appError");
 const client_1 = require("../prisma/client");
 exports.profileController = require('./../controllers/profileController');
 const isValidPhoneNumber = (phoneNumber) => {
@@ -36,7 +35,7 @@ exports.getProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(voi
         where: { id: parseInt(id, 10) },
     });
     if (!user) {
-        return next(new appError_1.AppError('No profile found with that ID', 404));
+        return next(new utility_1.AppError('No profile found with that ID', 404));
     }
     res.status(200).json({
         status: 'success',
@@ -45,10 +44,10 @@ exports.getProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(voi
 }));
 exports.addProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     if (req.body.phone && !isValidPhoneNumber(req.body.phone)) {
-        return next(new appError_1.AppError('Invalid phone number', 400));
+        return next(new utility_1.AppError('Invalid phone number', 400));
     }
     if (req.body.email && !isValidEmail(req.body.email)) {
-        return next(new appError_1.AppError('Invalid email format', 400));
+        return next(new utility_1.AppError('Invalid email format', 400));
     }
     const user = yield client_1.prisma.users.create({
         data: req.body,
@@ -61,17 +60,17 @@ exports.addProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(voi
 exports.updateProfile = (0, utility_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     if (req.body.phone && !isValidPhoneNumber(req.body.phone)) {
-        return next(new appError_1.AppError('Invalid phone number', 400));
+        return next(new utility_1.AppError('Invalid phone number', 400));
     }
     if (req.body.email && !isValidEmail(req.body.email)) {
-        return next(new appError_1.AppError('Invalid email format', 400));
+        return next(new utility_1.AppError('Invalid email format', 400));
     }
     const updatedUser = yield client_1.prisma.users.update({
         where: { id: parseInt(id, 10) },
         data: req.body,
     });
     if (!updatedUser) {
-        return next(new appError_1.AppError('No profile found with that ID', 404));
+        return next(new utility_1.AppError('No profile found with that ID', 404));
     }
     res.status(200).json({
         status: 'success',
@@ -90,11 +89,11 @@ const getProfileByUserName = (query) => __awaiter(void 0, void 0, void 0, functi
         return userProfiles;
     }
     catch (error) {
-        if (error instanceof appError_1.AppError) {
+        if (error instanceof utility_1.AppError) {
             throw error; // Re-throw AppError to be handled by higher-level error middleware
         }
         else {
-            throw new appError_1.AppError(`Error fetching profiles`, 500);
+            throw new utility_1.AppError(`Error fetching profiles`, 500);
         }
     }
 });

@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { catchAsync } from '../utility';
-import { AppError } from '../types/appError';
+import { catchAsync, AppError } from '../utility';
 import { prisma } from '../prisma/client';
 
 exports.addStory = catchAsync(
