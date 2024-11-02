@@ -9,8 +9,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const utility_1 = require("../utility");
 const services_1 = require("../services");
+const third_party_services_1 = require("../third_party_services");
 class Chat {
     constructor(io) {
         this.io = io;
@@ -60,7 +60,7 @@ class Chat {
         return __awaiter(this, void 0, void 0, function* () {
             console.log(message);
             if (message.content && message.content.length > 100) {
-                message.url = yield (0, utility_1.uploadFileToFirebase)(message.content);
+                message.url = yield (0, third_party_services_1.uploadFileToFirebase)(message.content);
                 message.content = null; // to avoid saving it in db
             }
             //TODO:

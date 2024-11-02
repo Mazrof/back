@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
-import { deleteFileFromFirebase, uploadFileToFirebase } from '../utility';
 import { Messages } from '@prisma/client';
 import { createMessage, getPersonalChatd } from '../services';
+import { uploadFileToFirebase } from '../third_party_services';
 
 type UserSocketMap = { [key: number]: Socket };
 class Chat {
