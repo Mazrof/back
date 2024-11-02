@@ -1,4 +1,4 @@
-import { AppError } from '../../types/appError';
+import { AppError } from '../../utility/appError';
 import { Request, Response } from 'express';
 
 const sendErrorDev = (err: AppError, req: Request, res: Response): Response => {
