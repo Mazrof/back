@@ -1,0 +1,90 @@
+import prisma from '../prisma/client';
+import { UpdateGroupMemberData } from '../types';
+
+export const findGroupMembership = async (userId: number, groupId: number) => {
+  return await prisma.groupMemberships.findFirst({
+    where: {
+      userId,
+      groupId,
+      status: true,
+    },
+    select: {
+      role: true,
+    },
+  });
+};
+
+export const findGroupMembers = async (groupId: number) => {
+  return await prisma.groupMemberships.findMany({
+    where: {
+      groupId,
+      status: true,
+    },
+    select: {
+      groupId: true,
+      userId: true,
+      role: true,
+      status: true,
+      hasDownloadPermissions: true,
+      hasMessagePermissions: true,
+      users: {
+        select: {
+          username: true,
+        },
+      },
+    },
+  });
+};
+
+export const findExistingMember = async (memberId: number, groupId: number) => {
+  return await prisma.groupMemberships.findFirst({
+    where: {
+      AND: [{ userId: memberId }, { groupId }],
+    },
+    select: {
+      role: true,
+      hasMessagePermissions: true,
+      hasDownloadPermissions: true,
+      status: true,
+    },
+  });
+};
+
+export const createGroupMembership = async (memberData: {
+  groupId: number;
+  userId: number;
+}) => {
+  return await prisma.groupMemberships.create({ data: memberData });
+};
+
+export const updateGroupMembershipStatus = async (
+  memberId: number,
+  groupId: number,
+  status: boolean
+) => {
+  return await prisma.groupMemberships.update({
+    where: {
+      userId_groupId: {
+        userId: memberId,
+        groupId,
+      },
+    },
+    data: { status },
+  });
+};
+
+export const updateGroupMembershipData = async (
+  memberId: number,
+  groupId: number,
+  data: UpdateGroupMemberData
+) => {
+  return await prisma.groupMemberships.update({
+    where: {
+      userId_groupId: {
+        userId: memberId,
+        groupId,
+      },
+    },
+    data,
+  });
+};

@@ -4,7 +4,7 @@ config();
 import App from './app';
 import http from 'http';
 import { Server } from 'socket.io';
-import chat from './sockets/chat';
+// import chat from './sockets/chat';
 const PORT = 3000;
 
 process.on('uncaughtException', (err: Error) => {
@@ -21,7 +21,7 @@ const startServer = () => {
     },
     maxHttpBufferSize: 10e6,
   });
-  chat(io);
+  // chat(io);
   App(app);
   server.listen(PORT, () => {
     console.log(`Server run on port ${PORT}`);
