@@ -5,12 +5,13 @@ import cors from 'cors';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
-import profileRouter from './routes/profileRoutes';
-import storiesRouter from './routes/storiesRoutes';
-import searchRouter from './routes/searchRoutes';
+
 import { AppError } from './types/appError';
 import { globalErrorHandler } from './middlewares/error_handlers/error_handler';
 import apiRoutes from './routes';
+import profileRouter from './routes/profileRoutes';
+import storiesRouter from './routes/storiesRoutes';
+import searchRouter from './routes/searchRoutes';
 
 export default async (app: Application) => {
   // Serve static files from the 'public' directory
@@ -44,14 +45,12 @@ export default async (app: Application) => {
   }
 
   // Base route
-  app.get('/', (req: Request, res: Response, next) => {
+  app.get('/', (req: Request, res: Response) => {
     console.log('hello world');
-    return next(new AppError('not found', 404));
     res.status(200).json({ msg: 'hello world, MAZROF COMMUNITY' });
   });
 
   // API routes
-
   app.use('/api/v1/profile', profileRouter);
   app.use('/api/v1/stories', storiesRouter);
   app.use('/api/v1/search', searchRouter);
@@ -61,10 +60,9 @@ export default async (app: Application) => {
   app.all('*', (req: Request, res: Response, next: NextFunction) => {
     res.status(404).json({
       status: 'fail',
-      message: "Can't find ${req.originalUrl} on this server!",
+      message: `Can't find ${req.originalUrl} on this server!`,
     });
   });
-
   // Global error handler
   app.use(globalErrorHandler);
 
