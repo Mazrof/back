@@ -1,6 +1,5 @@
 import { AppError } from '../../types/appError';
 import { Request, Response } from 'express';
-import logger from '../../utility/logger';
 
 const sendErrorDev = (err: AppError, req: Request, res: Response): Response => {
   console.log('DSffffffffffffffff');
@@ -36,8 +35,6 @@ export const globalErrorHandler = (
 ): void => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
-  console.log('hueiwfjknkjdnds');
-  // logger.log(process.env.NODE_ENV);
   if (
     process.env.NODE_ENV === 'development' ||
     process.env.NODE_ENV === 'test'
