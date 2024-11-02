@@ -11,6 +11,7 @@ import { globalErrorHandler } from './middlewares/error_handlers/error_handler';
 import apiRoutes from './routes';
 import profileRouter from './routes/profileRoutes';
 import storiesRouter from './routes/storiesRoutes';
+import searchRouter from './routes/searchRoutes';
 
 export default async (app: Application) => {
   // Serve static files from the 'public' directory
@@ -50,9 +51,10 @@ export default async (app: Application) => {
   });
 
   // API routes
-  app.use('/api', apiRoutes);
+  // app.use('/api', apiRoutes);
   app.use('/api/v1/profile', profileRouter);
   app.use('/api/v1/stories', storiesRouter);
+  app.use('/api/v1/search', searchRouter);
 
   // Handle all undefined routes
   app.all('*', (req: Request, res: Response, next: Function) => {
@@ -61,7 +63,6 @@ export default async (app: Application) => {
       message: `Can't find ${req.originalUrl} on this server!`,
     });
   });
-
   // Global error handler
   app.use(globalErrorHandler);
 
