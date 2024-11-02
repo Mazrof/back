@@ -9,9 +9,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const catchAsync = require('./../utils/catchAsync');
-const AppError = require('./../utils/appError');
-exports.addStory = catchAsync((req, res, next) => __awaiter(void 0, void 0, void 0, function* () { }));
-exports.getStory = catchAsync((req, res, next) => __awaiter(void 0, void 0, void 0, function* () { }));
-exports.getAllUserStories = catchAsync((req, res, next) => __awaiter(void 0, void 0, void 0, function* () { }));
-exports.deleteStory = catchAsync((req, res, next) => __awaiter(void 0, void 0, void 0, function* () { }));
+const utility_1 = require("../utility");
+exports.addStory = (0, utility_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () { }));
+exports.getStory = (0, utility_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () { }));
+exports.getAllUserStories = (0, utility_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () { }));
+exports.deleteStory = (0, utility_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () { }));

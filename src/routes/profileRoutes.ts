@@ -7,9 +7,9 @@ const router: Router = express.Router();
 
 router.post('/', profileController.addProfile);
 
-router.patch('/:userId', profileController.getProfile);
+router.patch('/:id', profileController.updateProfile);
 
-router.get('/:userId', profileController.updateProfile);
+router.get('/:id', profileController.getProfile);
 
 // TODO: add admin authentication
 
