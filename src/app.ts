@@ -8,6 +8,9 @@ import morgan from 'morgan';
 
 import { globalErrorHandler } from './middlewares/error_handlers/error_handler';
 import apiRoutes from './routes';
+import profileRouter from './routes/profileRoutes';
+import storiesRouter from './routes/storiesRoutes';
+import searchRouter from './routes/searchRoutes';
 import { AppError } from './utility';
 
 export default async (app: Application) => {
@@ -42,12 +45,15 @@ export default async (app: Application) => {
   }
 
   // Base route
-  app.get('/', (req: Request, res: Response, next) => {
+  app.get('/', (req: Request, res: Response) => {
     console.log('hello world');
     res.status(200).json({ msg: 'hello world, MAZROF COMMUNITY' });
   });
 
   // API routes
+  app.use('/api/v1/profile', profileRouter);
+  app.use('/api/v1/stories', storiesRouter);
+  app.use('/api/v1/search', searchRouter);
   app.use('/api', apiRoutes);
 
   // Handle all undefined routes
@@ -57,7 +63,6 @@ export default async (app: Application) => {
       message: `Can't find ${req.originalUrl} on this server!`,
     });
   });
-
   // Global error handler
   app.use(globalErrorHandler);
 
