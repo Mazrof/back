@@ -8,9 +8,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const services_1 = require("../services");
 const third_party_services_1 = require("../third_party_services");
+const logger_1 = __importDefault(require("../utility/logger"));
 class Chat {
     constructor(io) {
         this.io = io;
@@ -19,15 +23,20 @@ class Chat {
     }
     setUpListeners() {
         this.io.on('connection', (socket) => __awaiter(this, void 0, void 0, function* () {
-            console.log('User connected');
-            //TODO: socket.join(AllhisPersonalChats.id); store them if needed
-            const personalChatsId = yield (0, services_1.getPersonalChatd)(1);
-            personalChatsId.forEach((chatId) => {
+            logger_1.default.info('User connected');
+            // add user to his personal chats,groups,channels
+            const userParticipants = [];
+            const participantIdsOfUserPersonalChats = yield (0, services_1.getParticipantIdsOfUserPersonalChats)(1);
+            const participantIdsOfUserGroups = yield (0, services_1.getParticipantIdsOfUserGroups)(1);
+            const participantIdsOfUserChannels = yield (0, services_1.getParticipantIdsOfUserChannles)(1);
+            userParticipants.push(...participantIdsOfUserPersonalChats);
+            userParticipants.push(...participantIdsOfUserGroups);
+            userParticipants.push(...participantIdsOfUserChannels);
+            console.log(userParticipants);
+            userParticipants.forEach((chatId) => {
                 socket.join(chatId.toString());
             });
-            //TODO: socket.join(hisGroups.id); store them if needed
-            //TODO: socket.join(hisChannels.id); store them if needed
-            //TODO: push to the online user array [userId,socket]
+            this.onlineUsers.push({ 1: socket });
             //TODO: update all message to him to be deliveredAt this moment may be in the my-chats route
             // this.onlineUsers.push({123:socket})
             // console.log(this.isOnline(123))

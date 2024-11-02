@@ -1,7 +1,13 @@
 import { Server, Socket } from 'socket.io';
 import { Messages } from '@prisma/client';
-import { createMessage, getPersonalChatd } from '../services';
+import {
+  createMessage,
+  getParticipantIdsOfUserGroups,
+  getParticipantIdsOfUserPersonalChats,
+  getParticipantIdsOfUserChannles,
+} from '../services';
 import { uploadFileToFirebase } from '../third_party_services';
+import logger from '../utility/logger';
 
 type UserSocketMap = { [key: number]: Socket };
 class Chat {
@@ -13,16 +19,25 @@ class Chat {
   }
   setUpListeners() {
     this.io.on('connection', async (socket: Socket) => {
-      console.log('User connected');
-      //TODO: socket.join(AllhisPersonalChats.id); store them if needed
-      const personalChatsId = await getPersonalChatd(1);
-      personalChatsId.forEach((chatId) => {
+      logger.info('User connected');
+      // add user to his personal chats,groups,channels
+      const userParticipants: number[] = [];
+      const participantIdsOfUserPersonalChats =
+        await getParticipantIdsOfUserPersonalChats(1);
+      const participantIdsOfUserGroups = await getParticipantIdsOfUserGroups(1);
+      const participantIdsOfUserChannels =
+        await getParticipantIdsOfUserChannles(1);
+
+      userParticipants.push(...participantIdsOfUserPersonalChats);
+      userParticipants.push(...participantIdsOfUserGroups);
+      userParticipants.push(...participantIdsOfUserChannels);
+      console.log(userParticipants);
+      userParticipants.forEach((chatId) => {
         socket.join(chatId.toString());
       });
-      //TODO: socket.join(hisGroups.id); store them if needed
 
-      //TODO: socket.join(hisChannels.id); store them if needed
-      //TODO: push to the online user array [userId,socket]
+      this.onlineUsers.push({ 1: socket });
+
       //TODO: update all message to him to be deliveredAt this moment may be in the my-chats route
 
       // this.onlineUsers.push({123:socket})

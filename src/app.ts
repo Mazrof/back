@@ -6,9 +6,9 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 
-import { AppError } from './types/appError';
 import { globalErrorHandler } from './middlewares/error_handlers/error_handler';
 import apiRoutes from './routes';
+import { AppError } from './utility';
 
 export default async (app: Application) => {
   // Serve static files from the 'public' directory
@@ -42,7 +42,7 @@ export default async (app: Application) => {
   }
 
   // Base route
-  app.get('/', (req: Request, res: Response) => {
+  app.get('/', (req: Request, res: Response, next) => {
     console.log('hello world');
     res.status(200).json({ msg: 'hello world, MAZROF COMMUNITY' });
   });
