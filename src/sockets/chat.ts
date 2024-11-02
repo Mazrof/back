@@ -31,18 +31,16 @@ class Chat {
       userParticipants.push(...participantIdsOfUserPersonalChats);
       userParticipants.push(...participantIdsOfUserGroups);
       userParticipants.push(...participantIdsOfUserChannels);
-      console.log(userParticipants);
+      console.log('userParticipants', userParticipants);
       userParticipants.forEach((chatId) => {
         socket.join(chatId.toString());
       });
 
       this.onlineUsers.push({ 1: socket });
-
-      //TODO: update all message to him to be deliveredAt this moment may be in the my-chats route
-
-      // this.onlineUsers.push({123:socket})
       // console.log(this.isOnline(123))
       // console.log(this.getUserSocket(123))
+
+      //TODO: update all message to him to be deliveredAt this moment may be in the my-chats route
 
       socket.on('message:sent', async (message: Messages) => {
         console.log('create message', message);
@@ -57,8 +55,8 @@ class Chat {
       socket.on('message:get-info', (message: Messages) => {
         this.handleMessageInfo(socket, message);
       });
-      socket.on('context:opened', (data: { id: number }) => {
-        // data.contextId,
+      socket.on('context:opened', (data: { participantId: number }) => {
+        // data.participantId,
         //TODO: update user seen_at date for messsages of this context for the user who make the request
         //query: message join userDelivery on messageID where conext = contextId and recieverUser = requestedUser
         // 1-get all messages that are unseen in this context
@@ -69,7 +67,6 @@ class Chat {
     });
   }
   async handleNewMessage(socket: Socket, message: Messages) {
-    console.log(message);
     if (message.content && message.content.length > 100) {
       message.url = await uploadFileToFirebase(message.content);
       message.content = null; // to avoid saving it in db
@@ -79,6 +76,8 @@ class Chat {
     //TODO: in the frontend emit('context:opened when a new message')
     // add (derived at ,read at) =: =: > TABLE
     const createdMessage = await createMessage(message);
+    console.log(createdMessage);
+
     this.io
       .to(message.participantId.toString())
       .emit('message:receive', createdMessage);
@@ -144,3 +143,4 @@ export default (io: Server) => {
 //   .then((d) => console.log(d))
 //   .catch((d) => console.log(d));
 //TODO: DROP COLUMN ATTACKMENT,EXPIREAT
+//TODO: to create group or channel ==> create partitcipant also

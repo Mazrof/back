@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getParticipantIdsOfUserChannles = exports.getParticipantIdsOfUserGroups = exports.getParticipantIdsOfUserPersonalChats = exports.createPersonalChat = exports.createMessage = void 0;
+exports.markMessagesAsRead = exports.getParticipantIdsOfUserChannles = exports.getParticipantIdsOfUserGroups = exports.getParticipantIdsOfUserPersonalChats = exports.createPersonalChat = exports.createMessage = void 0;
 const client_1 = require("../prisma/client");
 const createMessage = (data) => __awaiter(void 0, void 0, void 0, function* () {
     return client_1.prisma.messages.create({
@@ -99,3 +99,18 @@ const getParticipantIdsOfUserChannles = (userId) => __awaiter(void 0, void 0, vo
     return memberships.flatMap((membership) => membership.channels.communities.participants.map((participant) => participant.id));
 });
 exports.getParticipantIdsOfUserChannles = getParticipantIdsOfUserChannles;
+const markMessagesAsRead = (userId, participantId, messageId) => __awaiter(void 0, void 0, void 0, function* () {
+    const updateReceipt = yield client_1.prisma.messageReadReceipts.updateMany({
+        where: {
+            userId: userId,
+            participantId: participantId,
+            messageId: messageId,
+            readAt: null, // Only update if readAt is currently null
+        },
+        data: {
+            readAt: new Date(), // Set readAt to the current timestamp
+        },
+    });
+    console.log(updateReceipt);
+});
+exports.markMessagesAsRead = markMessagesAsRead;
