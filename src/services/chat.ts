@@ -24,7 +24,7 @@ export const createPersonalChat = async (user1Id: number, user2Id: number) => {
     },
   });
 };
-export const getPersonalChatd = async (userId: number) => {
+export const getParticipantIdsOfUserPersonalChats = async (userId: number) => {
   const personalChats = await prisma.personalChat.findMany({
     where: {
       OR: [{ user1Id: userId }, { user2Id: userId }],
@@ -43,4 +43,62 @@ export const getPersonalChatd = async (userId: number) => {
   );
   console.log(participantIds);
   return participantIds;
+};
+export const getParticipantIdsOfUserGroups = async (userId: number) => {
+  const memberships = await prisma.groupMemberships.findMany({
+    where: {
+      userId: userId,
+    },
+    select: {
+      groups: {
+        select: {
+          communities: {
+            select: {
+              participants: {
+                select: {
+                  id: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  // Extract participant IDs step-by-step and handle nullable values
+  return memberships.flatMap((membership) =>
+    membership.groups.communities!.participants!.map(
+      (participant) => participant.id
+    )
+  );
+};
+//TODO: ensure the groups has communities and commnites has particpinats
+
+export const getParticipantIdsOfUserChannles = async (userId: number) => {
+  const memberships = await prisma.channelSubscriptions.findMany({
+    where: {
+      userId: userId,
+    },
+    select: {
+      channels: {
+        select: {
+          communities: {
+            select: {
+              participants: {
+                select: {
+                  id: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  // Extract participant IDs step-by-step and handle nullable values
+  return memberships.flatMap((membership) =>
+    membership.channels.communities!.participants!.map(
+      (participant) => participant.id
+    )
+  );
 };

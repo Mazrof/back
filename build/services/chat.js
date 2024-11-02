@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPersonalChatd = exports.createPersonalChat = exports.createMessage = void 0;
+exports.getParticipantIdsOfUserChannles = exports.getParticipantIdsOfUserGroups = exports.getParticipantIdsOfUserPersonalChats = exports.createPersonalChat = exports.createMessage = void 0;
 const client_1 = require("../prisma/client");
 const createMessage = (data) => __awaiter(void 0, void 0, void 0, function* () {
     return client_1.prisma.messages.create({
@@ -29,7 +29,7 @@ const createPersonalChat = (user1Id, user2Id) => __awaiter(void 0, void 0, void 
     });
 });
 exports.createPersonalChat = createPersonalChat;
-const getPersonalChatd = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+const getParticipantIdsOfUserPersonalChats = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     const personalChats = yield client_1.prisma.personalChat.findMany({
         where: {
             OR: [{ user1Id: userId }, { user2Id: userId }],
@@ -47,4 +47,55 @@ const getPersonalChatd = (userId) => __awaiter(void 0, void 0, void 0, function*
     console.log(participantIds);
     return participantIds;
 });
-exports.getPersonalChatd = getPersonalChatd;
+exports.getParticipantIdsOfUserPersonalChats = getParticipantIdsOfUserPersonalChats;
+const getParticipantIdsOfUserGroups = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const memberships = yield client_1.prisma.groupMemberships.findMany({
+        where: {
+            userId: userId,
+        },
+        select: {
+            groups: {
+                select: {
+                    communities: {
+                        select: {
+                            participants: {
+                                select: {
+                                    id: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    });
+    // Extract participant IDs step-by-step and handle nullable values
+    return memberships.flatMap((membership) => membership.groups.communities.participants.map((participant) => participant.id));
+});
+exports.getParticipantIdsOfUserGroups = getParticipantIdsOfUserGroups;
+//TODO: ensure the groups has communities and commnites has particpinats
+const getParticipantIdsOfUserChannles = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const memberships = yield client_1.prisma.channelSubscriptions.findMany({
+        where: {
+            userId: userId,
+        },
+        select: {
+            channels: {
+                select: {
+                    communities: {
+                        select: {
+                            participants: {
+                                select: {
+                                    id: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    });
+    // Extract participant IDs step-by-step and handle nullable values
+    return memberships.flatMap((membership) => membership.channels.communities.participants.map((participant) => participant.id));
+});
+exports.getParticipantIdsOfUserChannles = getParticipantIdsOfUserChannles;

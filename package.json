@@ -24,7 +24,7 @@
     "express": "^4.21.1",
     "express-rate-limit": "^7.3.1",
     "firebase": "^11.0.1",
-    "firebase-tools": "^13.23.0",
+    "firebase-tools": "^13.23.1",
     "helmet": "^7.1.0",
     "hpp": "^0.2.3",
     "morgan": "~1.9.1",

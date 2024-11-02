@@ -3,6 +3,8 @@ import { config } from 'dotenv';
 config();
 import App from './app';
 import http from 'http';
+import { Server } from 'socket.io';
+import chat from './sockets/chat';
 const PORT = 3000;
 
 process.on('uncaughtException', (err: Error) => {
@@ -13,6 +15,13 @@ process.on('uncaughtException', (err: Error) => {
 const startServer = () => {
   const app = express();
   let server = http.createServer(app);
+  const io = new Server(server, {
+    cors: {
+      origin: '*',
+    },
+    maxHttpBufferSize: 10e6,
+  });
+  chat(io);
   App(app);
   server.listen(PORT, () => {
     console.log(`Server run on port ${PORT}`);

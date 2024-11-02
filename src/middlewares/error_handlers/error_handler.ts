@@ -1,40 +1,41 @@
-import { AppError } from '../../utility/appError';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
+import { AppError } from '../../utility';
 
-const sendErrorDev = (err: AppError, req: Request, res: Response): Response => {
-  console.log('DSffffffffffffffff');
-
-  return res.status(err.statusCode || 500).json({
-    message: err.message || 'An error occurred',
-    status: err.status || 'error',
-    error: err,
-  });
-};
-
-const sendErrorProd = (err: AppError, req: Request, res: Response): void => {
+const sendErrorDev = (err: AppError, req: Request, res: Response) => {
   if (req.originalUrl.startsWith('/api')) {
-    if (err.isOperational) {
-      res.status(err.statusCode || 500).json({
-        message: err.message || 'An error occurred',
-        status: err.status || 'error',
-      });
-    } else {
-      console.error('Error 💣️💣️💣️', err);
-      res.status(500).json({
-        message: 'Something went wrong',
-        status: 'error',
-      });
-    }
+    return res.status(err.statusCode).json({
+      message: err.message,
+      status: err.status,
+      stack: err.stack,
+      error: err,
+    });
   }
 };
-
+const sendErrorProd = (err: AppError, req: Request, res: Response) => {
+  if (req.originalUrl.startsWith('/api')) {
+    if (err.isOperational) {
+      return res.status(err.statusCode).json({
+        message: err.message,
+        status: err.status,
+      });
+    }
+    //programming errors
+    console.error('Error 💣️💣️💣️', err);
+    return res.status(500).json({
+      message: 'Something went wrong',
+      status: 'error',
+    });
+  }
+};
 export const globalErrorHandler = (
   err: AppError,
   req: Request,
-  res: Response
-): void => {
+  res: Response,
+  next: NextFunction
+) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
+  console.log('Error');
   if (
     process.env.NODE_ENV === 'development' ||
     process.env.NODE_ENV === 'test'
