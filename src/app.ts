@@ -1,4 +1,4 @@
-import express, { Request, Response, Application } from 'express';
+import express, { Request, Response, Application, NextFunction } from 'express';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import cors from 'cors';
@@ -51,7 +51,7 @@ export default async (app: Application) => {
   app.use('/api', apiRoutes);
 
   // Handle all undefined routes
-  app.all('*', (req: Request, res: Response, next: Function) => {
+  app.all('*', (req: Request, res: Response, next: NextFunction) => {
     res.status(404).json({
       status: 'fail',
       message: `Can't find ${req.originalUrl} on this server!`,
@@ -59,7 +59,7 @@ export default async (app: Application) => {
   });
 
   // Global error handler
-  app.use(globalErrorHandler)
+  app.use(globalErrorHandler);
 
   return app;
 };
