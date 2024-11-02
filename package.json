@@ -7,9 +7,10 @@
     "start:build": "tsc -w",
     "start:run": "nodemon build/server.js",
     "start-dev": "concurrently npm:start:*",
-    "migrate-db": "npx prisma migrate dev --name change-model-names",
+    "migrate-db": "npx prisma migrate dev --name add-unique-constrain-participiants",
     "prisma-studio": "npx prisma studio",
-    "kill-port-3000": "lsof -ti :3000 | xargs kill -9 || true"
+    "kill-port-3000": "lsof -ti :3000 | xargs kill -9 || true",
+    "start": "node build/server.js"
   },
   "dependencies": {
     "@prisma/client": "^5.21.1",

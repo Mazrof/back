@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { deleteFileFromFirebase, uploadFileToFirebase } from '../utility';
 import { Messages } from '@prisma/client';
-import { createMessage } from '../services';
+import { createMessage, getPersonalChatd } from '../services';
 
 type UserSocketMap = { [key: number]: Socket };
 class Chat {
@@ -12,10 +12,15 @@ class Chat {
     this.onlineUsers = [];
   }
   setUpListeners() {
-    this.io.on('connection', (socket: Socket) => {
+    this.io.on('connection', async (socket: Socket) => {
       console.log('User connected');
       //TODO: socket.join(AllhisPersonalChats.id); store them if needed
+      const personalChatsId = await getPersonalChatd(1);
+      personalChatsId.forEach((chatId) => {
+        socket.join(chatId.toString());
+      });
       //TODO: socket.join(hisGroups.id); store them if needed
+
       //TODO: socket.join(hisChannels.id); store them if needed
       //TODO: push to the online user array [userId,socket]
       //TODO: update all message to him to be deliveredAt this moment may be in the my-chats route
@@ -49,33 +54,37 @@ class Chat {
     });
   }
   async handleNewMessage(socket: Socket, message: Messages) {
-    //add createdAt,updatedAt,add url, (derived at ,read at) ==> TABLE
     console.log(message);
     if (message.content && message.content.length > 100) {
       message.url = await uploadFileToFirebase(message.content);
       message.content = null; // to avoid saving it in db
     }
-    //TODO: using paritcipinet id to know the targeted users
-
-    //TODO:Save message in the db
-    message.createdAt = new Date();
-    message.updatedAt = new Date();
-
+    //TODO:
+    // message.senderId = user.id;
+    //TODO: in the frontend emit('context:opened when a new message')
+    // add (derived at ,read at) =: =: > TABLE
     const createdMessage = await createMessage(message);
-
-    //TODO:send the messages returned from db
-    //TODO:if the message has expire duration use set time out then call the even handler for delete message
-    //      settimeout(()=>{this.handledeleteMessage()}),duration)
     this.io
       .to(message.participantId.toString())
-      .emit('message:receive', message);
-    //TODO: DELETE THIS;
-    this.io.emit('message:receive', message);
+      .emit('message:receive', createdMessage);
+    //TODO: DELETE THIS
+    //TODO: WHAT IF THE ROW WAS NOT INSTERED AND YOU SAVE IT IN FIREBASE
+
+    this.io.emit('message:receive', createdMessage);
+    if (message.durationInMinutes) {
+      setTimeout(
+        () => {
+          this.handleDeleteMessage(socket, createdMessage);
+        },
+        message.durationInMinutes * 60 * 1000
+      );
+    }
   }
+
   handleEditMessage(socket: Socket, message: Messages) {
     //TODO: edit in db
     this.io
-      .to(message.participant_id.toString())
+      .to(message.participantId.toString())
       .emit('message:edited', message);
   }
   handleDeleteMessage(socket: Socket, message: Messages) {
@@ -83,16 +92,16 @@ class Chat {
     //TODO: delete from firebase
     //TODO: determine who can delete and post files in firebase
     //TODO:this.io.to(message.contextId.toString()).emit('message:edited', message)
-    deleteFileFromFirebase('http://example.com/uploads/fileurl');
-
+    // deleteFileFromFirebase('http://example.com/uploads/fileurl');
+    console.log('deleted message', message);
     this.io
-      .to(message.participant_id.toString())
+      .to(message.participantId.toString())
       .emit('message:deleted', message);
   }
   handleMessageInfo(socket: Socket, message: Messages) {
     //
     this.io
-      .to(message.participant_id.toString())
+      .to(message.participantId.toString())
       .emit('message:update-info', message);
   }
   isOnline(userId: number): boolean {
@@ -109,3 +118,14 @@ class Chat {
 export default (io: Server) => {
   new Chat(io);
 };
+
+// prisma.participants.deleteMany().then((d) => console.log(d));
+// prisma.participants
+//   .create({
+//     data: {
+//       personalChatId: 2,
+//     },
+//   })
+//   .then((d) => console.log(d))
+//   .catch((d) => console.log(d));
+//TODO: DROP COLUMN ATTACKMENT,EXPIREAT
