@@ -18,3 +18,4 @@ export interface UpdateChannelMemberData {
   hasMessagePermissions?: boolean;
   hasDownloadPermissions?: boolean;
 }
+

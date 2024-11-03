@@ -12,6 +12,7 @@ import profileRouter from './routes/profileRoutes';
 import storiesRouter from './routes/storiesRoutes';
 import searchRouter from './routes/searchRoutes';
 
+
 export default async (app: Application) => {
   // Serve static files from the 'public' directory
   app.use(express.static(path.join(__dirname, '../public')));
