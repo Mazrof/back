@@ -50,7 +50,7 @@ export default async (app: Application) => {
   });
 
   // API routes
-  app.use('/api/v1/profile', profileRouter);
+  app.use('/api/v1/profile', profileRoute);
   app.use('/api/v1/stories', storiesRouter);
   app.use('/api/v1/search', searchRouter);
   app.use('/api', apiRoutes);
