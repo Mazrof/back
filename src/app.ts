@@ -11,7 +11,6 @@ import apiRoutes from './routes';
 import profileRouter from './routes/profileRoutes';
 import storiesRouter from './routes/storiesRoutes';
 import searchRouter from './routes/searchRoutes';
-import { AppError } from './utility';
 
 export default async (app: Application) => {
   // Serve static files from the 'public' directory

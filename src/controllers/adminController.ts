@@ -1,36 +1,29 @@
 import { Request, Response, NextFunction } from 'express';
-import { AppError, catchAsync } from '../utility';
+import * as userService from '../services/adminService';
+import { catchAsync } from '../utility';
 
-
-// View all registered users
-export const getAllUsers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const users: string[] = ['ali', 'ahmed'];
-
+// get all users
+export const getAllUsers = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const adminId = parseInt(req.body.adminId);
+    const users = await userService.getAllUsers(adminId);
     return res.status(200).json({
-        status: 'success',
-        results: users.length,
-        data: {
-            users,
-        },
+      status: 'success',
+      results: users.length,
+      data: { users },
     });
-});
+  }
+);
 
-// Ban or deactivate a specific user by user ID
-export const banUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const { userId: string } = req.params;
-
-    // Simulated user retrieval
-    const user = { name: 'ahmed', isActive: true };
-
-    if (!user) {
-        return next(new AppError('No user found with that ID', 404));
-    }
-
-    user.isActive = false;
-    console.log(user);
-
+// toggle user status
+export const banUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const adminId = parseInt(req.body.adminId);
+    const userId = parseInt(req.params.userId);
+    const user = await userService.toggleUserStatus(userId, adminId);
     return res.status(200).json({
-        status: 'success',
-        message: 'User has been banned or deactivated.',
+      status: 'success',
+      data: { user },
     });
-});
+  }
+);
