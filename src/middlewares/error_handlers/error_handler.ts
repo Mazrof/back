@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../../utility';
+import logger from '../../utility/logger';
+import { z } from 'zod';
 
 const sendErrorDev = (err: AppError, req: Request, res: Response) => {
   if (req.originalUrl.startsWith('/api')) {
@@ -11,6 +13,7 @@ const sendErrorDev = (err: AppError, req: Request, res: Response) => {
     });
   }
 };
+
 const sendErrorProd = (err: AppError, req: Request, res: Response) => {
   if (req.originalUrl.startsWith('/api')) {
     if (err.isOperational) {
@@ -19,23 +22,43 @@ const sendErrorProd = (err: AppError, req: Request, res: Response) => {
         status: err.status,
       });
     }
-    //programming errors
-    console.error('Error 💣️💣️💣️', err);
+    logger.error('Error 💣️💣️💣️', err);
     return res.status(500).json({
       message: 'Something went wrong',
       status: 'error',
     });
   }
 };
+
+const hanldeZodErrors = (err: z.ZodError,req:Request,res:Response) => {
+  const formattedErrors = err.errors.map((error) => ({
+    field: error.path.join('.'),
+    message: error.message,
+  }));
+
+  return res.status(422).json({
+    status: 'fail',
+    message: 'Validation failed',
+    errors: formattedErrors,
+  });
+}
+
 export const globalErrorHandler = (
   err: AppError,
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
+  logger.info(`Error handled: ${err.message}`);
+  // Handle Zod validation errors
+  if (err instanceof z.ZodError) {
+    hanldeZodErrors(err,req,res);
+  }
+
+  // Handle other application errors
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
-  console.log('Error');
+
   if (
     process.env.NODE_ENV === 'development' ||
     process.env.NODE_ENV === 'test'

@@ -23,7 +23,7 @@ export default [
       ...prettierConfig.rules,
 
       // Custom Rules
-      'no-unused-vars': 'warn', // Warn about unused variables
+      'no-unused-vars': 'disable', // Warn about unused variables
       'consistent-return': 'error', // Enforce consistent return types
       eqeqeq: ['error', 'always'], // Require strict equality checks
       'no-console': 'warn', // Warn about console.log

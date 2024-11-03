@@ -4,3 +4,4 @@ export interface UpdateGroupMemberData {
   hasMessagePermissions?: boolean;
   hasDownloadPermissions?: boolean;
 }
+

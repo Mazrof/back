@@ -1,6 +1,7 @@
 import express from 'express';
 import { config } from 'dotenv';
-config();
+config()
+
 import App from './app';
 import http from 'http';
 import { Server } from 'socket.io';
