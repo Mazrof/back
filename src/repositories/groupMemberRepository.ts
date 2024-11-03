@@ -1,7 +1,7 @@
 import prisma from '../prisma/client';
-import { UpdateGroupMemberData } from '../types';
+import { UpdateCommunityMemberData } from '../types';
 
-export const findGroupMembership = async (userId: number, groupId: number) => {
+export const findGroupMember = async (userId: number, groupId: number) => {
   return await prisma.groupMemberships.findFirst({
     where: {
       userId,
@@ -50,14 +50,14 @@ export const findExistingMember = async (memberId: number, groupId: number) => {
   });
 };
 
-export const createGroupMembership = async (memberData: {
+export const addGroupMember = async (memberData: {
   groupId: number;
   userId: number;
 }) => {
   return await prisma.groupMemberships.create({ data: memberData });
 };
 
-export const updateGroupMembershipStatus = async (
+export const updateGroupMemberStatus = async (
   memberId: number,
   groupId: number,
   status: boolean
@@ -73,10 +73,10 @@ export const updateGroupMembershipStatus = async (
   });
 };
 
-export const updateGroupMembershipData = async (
+export const updateGroupMemberData = async (
   memberId: number,
   groupId: number,
-  data: UpdateGroupMemberData
+  data: UpdateCommunityMemberData
 ) => {
   return await prisma.groupMemberships.update({
     where: {
