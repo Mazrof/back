@@ -76,17 +76,20 @@ export const updateGroup = async (
   groupId: number,
   data: { name?: string; privacy?: boolean; groupSize?: number }
 ) => {
-  const group = await prisma.communities.findUnique({
+  const group = await prisma.groups.findUnique({
     where: { id: groupId },
+    select: {
+      communityId: true,
+    },
   });
-
-  if (!group) {
+  //TODO: fix the error in DB
+  if (!group || group.communityId === null) {
     throw new AppError('No Group found with that ID', 404);
   }
 
   if (data.name || data.privacy) {
     await prisma.communities.update({
-      where: { id: groupId },
+      where: { id: group.communityId },
       data: {
         name: data.name,
         privacy: data.privacy,
@@ -103,7 +106,7 @@ export const updateGroup = async (
     });
   }
 
-  return await findGroupById(groupId); // Return updated group
+  return await findGroupById(groupId);
 };
 
 export const deleteGroup = async (id: number) => {

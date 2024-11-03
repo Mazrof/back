@@ -1,6 +1,6 @@
 import * as groupMemberRepository from '../repositories/groupMemberRepository';
 import { AppError } from '../utility';
-import { UpdateGroupMemberData } from '../types';
+import { UpdateCommunityMemberData } from '../types';
 
 export const getGroupMembers = async (groupId: number) => {
   return await groupMemberRepository.findGroupMembers(groupId);
@@ -44,7 +44,7 @@ export const updateGroupMember = async (
   userId: number,
   groupId: number,
   memberId: number,
-  updates: UpdateGroupMemberData
+  updates: UpdateCommunityMemberData
 ) => {
   const user = await groupMemberRepository.findGroupMember(userId, groupId);
   if (!user || user.role !== 'Admin') {
@@ -59,7 +59,7 @@ export const updateGroupMember = async (
     throw new AppError('Member not found in this group', 404);
   }
 
-  const updatedData: UpdateGroupMemberData = {};
+  const updatedData: UpdateCommunityMemberData = {};
   if (updates.role) {
     updatedData.role = updates.role;
   }

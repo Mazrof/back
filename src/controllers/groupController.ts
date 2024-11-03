@@ -68,7 +68,6 @@ export const applyContentFilter = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const groupId = req.params.groupId;
     const group = { name: 'group', filter: false };
-    console.log(groupId);
     if (!group) {
       return next(new AppError('No Group found with that ID', 404));
     }

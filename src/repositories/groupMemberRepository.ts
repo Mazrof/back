@@ -1,5 +1,5 @@
 import prisma from '../prisma/client';
-import { UpdateGroupMemberData } from '../types';
+import { UpdateCommunityMemberData } from '../types';
 
 export const findGroupMember = async (userId: number, groupId: number) => {
   return await prisma.groupMemberships.findFirst({
@@ -76,7 +76,7 @@ export const updateGroupMemberStatus = async (
 export const updateGroupMemberData = async (
   memberId: number,
   groupId: number,
-  data: UpdateGroupMemberData
+  data: UpdateCommunityMemberData
 ) => {
   return await prisma.groupMemberships.update({
     where: {
