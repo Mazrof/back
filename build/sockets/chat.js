@@ -18,12 +18,18 @@ const logger_1 = __importDefault(require("../utility/logger"));
 class Chat {
     constructor(io) {
         this.io = io;
+        this.onlineUsers = new Map();
+        this.socketToUserMap = new Map();
         this.setUpListeners();
-        this.onlineUsers = [];
+    }
+    addUser(userId, socket) {
+        this.onlineUsers.set(userId, socket);
+        this.socketToUserMap.set(socket.id, userId);
     }
     setUpListeners() {
         this.io.on('connection', (socket) => __awaiter(this, void 0, void 0, function* () {
             logger_1.default.info('User connected');
+            this.addUser(1, socket);
             // add user to his personal chats,groups,channels
             const userParticipants = [];
             const participantIdsOfUserPersonalChats = yield (0, services_1.getParticipantIdsOfUserPersonalChats)(1);
@@ -36,46 +42,66 @@ class Chat {
             userParticipants.forEach((chatId) => {
                 socket.join(chatId.toString());
             });
-            this.onlineUsers.push({ 1: socket });
-            // console.log(this.isOnline(123))
-            // console.log(this.getUserSocket(123))
-            //TODO: update all message to him to be deliveredAt this moment may be in the my-chats route
+            // for each message id with particpiant id (insert a new row)
+            const insertedData = yield (0, services_1.insertParticiantDate)(1, userParticipants);
+            // tell others about that
+            insertedData.forEach((userRecipient) => {
+                this.io
+                    .to(userRecipient.participantId.toString())
+                    .emit('message:update-info', [userRecipient]);
+                //TODO: DELETE THIS
+                this.io.emit('message:update-info', [userRecipient]);
+            });
             socket.on('message:sent', (message) => __awaiter(this, void 0, void 0, function* () {
                 console.log('create message', message);
                 yield this.handleNewMessage(socket, message);
             }));
-            socket.on('message:edited', (message) => {
+            socket.on('message:edit', (message) => {
                 this.handleEditMessage(socket, message);
             });
-            socket.on('message:deleted', (message) => {
+            socket.on('message:delete', (message) => {
                 this.handleDeleteMessage(socket, message);
             });
-            socket.on('message:get-info', (message) => {
-                this.handleMessageInfo(socket, message);
-            });
-            socket.on('context:opened', (data) => {
-                // data.participantId,
-                //TODO: update user seen_at date for messsages of this context for the user who make the request
-                //query: message join userDelivery on messageID where conext = contextId and recieverUser = requestedUser
-                // 1-get all messages that are unseen in this context
-                // 2-update seen_at from message delviey table when id  in (array from the previous step)
-                // tell other people about that update
-                // this.io.to(message.contextId.toString()).emit('message:update-info',message)
+            socket.on('context:opened', (data) => __awaiter(this, void 0, void 0, function* () {
+                //TODO: get the data of the user from req after auth
+                const updatedMessages = yield (0, services_1.markMessagesAsRead)(1, data.participantId);
+                this.io
+                    .to(data.participantId.toString())
+                    .emit('message:update-info', updatedMessages);
+                //TODO: DELETE THIS LINE
+                this.io.emit('message:update-info', updatedMessages);
+            }));
+            socket.on('disconnect', () => {
+                this.removeUser(socket.id);
             });
         }));
     }
     handleNewMessage(socket, message) {
         return __awaiter(this, void 0, void 0, function* () {
+            // if you provide a receiver id this means I will create new personal chat
+            if (message.receiverId) {
+                //TODO : ADD SENDER ID FROM AUTH
+                message.participantId = (yield (0, services_1.createPersonalChat)(message.receiverId, 1)).participants.id;
+            }
+            message.receiverId = undefined;
             if (message.content && message.content.length > 100) {
                 message.url = yield (0, third_party_services_1.uploadFileToFirebase)(message.content);
                 message.content = null; // to avoid saving it in db
             }
-            //TODO:
-            // message.senderId = user.id;
-            //TODO: in the frontend emit('context:opened when a new message')
-            // add (derived at ,read at) =: =: > TABLE
+            //TODO: message.senderId = user.id
             const createdMessage = yield (0, services_1.createMessage)(message);
             console.log(createdMessage);
+            const roomSockets = this.io.sockets.adapter.rooms.get(message.participantId.toString());
+            if (roomSockets) {
+                for (const socketId of roomSockets) {
+                    const userId = this.socketToUserMap.get(socketId);
+                    const socket = this.io.sockets.sockets.get(socketId);
+                    yield (0, services_1.insertMessageRecipient)(userId, createdMessage);
+                    if (socket) {
+                        socket.emit('message:receive', { MSG: message });
+                    }
+                }
+            }
             this.io
                 .to(message.participantId.toString())
                 .emit('message:receive', createdMessage);
@@ -89,50 +115,79 @@ class Chat {
             }
         });
     }
-    handleEditMessage(socket, message) {
-        //TODO: edit in db
-        this.io
-            .to(message.participantId.toString())
-            .emit('message:edited', message);
+    handleEditMessage(socket, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // TODO:problem of drafted messages(discuss with frontend)
+            logger_1.default.info(`message with id ${data.id} is being edited`);
+            const message = yield (0, services_1.getMessageById)(data.id);
+            if (!message) {
+                //TODO: WHAT if message doesn't exist
+                return;
+            }
+            if (data.status === 'drafted') {
+                //TODO: return error "you can not make the message drafted"
+            }
+            console.log(message);
+            let url;
+            if (data.content) {
+                if (message.url) {
+                    yield (0, third_party_services_1.deleteFileFromFirebase)(message.url);
+                }
+                if (data.content.length > 100) {
+                    url = yield (0, third_party_services_1.uploadFileToFirebase)(data.content);
+                    data.content = null; // to avoid saving it in db
+                }
+                else {
+                    url = null;
+                }
+            }
+            const { content, status, isAnnouncement } = data;
+            const updatedMessage = yield (0, services_1.updateMessageById)(data.id, {
+                content,
+                status,
+                isAnnouncement,
+                url,
+            });
+            this.io
+                .to(updatedMessage.participantId.toString())
+                .emit('message:edited', updatedMessage);
+        });
     }
-    handleDeleteMessage(socket, message) {
-        //TODO: mark this message as deleted, make content null,
-        //TODO: delete from firebase
-        //TODO: determine who can delete and post files in firebase
-        //TODO:this.io.to(message.contextId.toString()).emit('message:edited', message)
-        // deleteFileFromFirebase('http://example.com/uploads/fileurl');
-        console.log('deleted message', message);
-        this.io
-            .to(message.participantId.toString())
-            .emit('message:deleted', message);
-    }
-    handleMessageInfo(socket, message) {
-        //
-        this.io
-            .to(message.participantId.toString())
-            .emit('message:update-info', message);
+    handleDeleteMessage(socket, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            //TODO: determine who can delete and post files in firebase
+            const message = yield (0, services_1.getMessageById)(data.id);
+            if (!message) {
+                //TODO: RETURN ERROR HERE
+            }
+            console.log('deleted message', message);
+            if (message.url)
+                yield (0, third_party_services_1.deleteFileFromFirebase)(message.url);
+            yield (0, services_1.deleteMessage)(message.id);
+            this.io.to(message.participantId.toString()).emit('message:deleted', {
+                message: { id: message.id, participantId: message.participantId },
+            });
+            //TODO: DELETE THIS
+            this.io.emit('message:deleted', {
+                message: { id: message.id, participantId: message.participantId },
+            });
+        });
     }
     isOnline(userId) {
-        return this.getUserSocket(userId) !== undefined;
+        return this.onlineUsers.has(userId);
     }
-    getUserSocket(userId) {
-        const userSocket = this.onlineUsers.find((userSocket) => userId in userSocket);
-        if (userSocket)
-            return userSocket[userId];
-        return undefined;
+    removeUser(socketId) {
+        // Get user ID based on socket ID and remove both mappings
+        const userId = this.socketToUserMap.get(socketId);
+        if (userId !== undefined) {
+            this.onlineUsers.delete(userId);
+            this.socketToUserMap.delete(socketId);
+        }
     }
 }
 exports.default = (io) => {
     new Chat(io);
 };
-// prisma.participants.deleteMany().then((d) => console.log(d));
-// prisma.participants
-//   .create({
-//     data: {
-//       personalChatId: 2,
-//     },
-//   })
-//   .then((d) => console.log(d))
-//   .catch((d) => console.log(d));
-//TODO: DROP COLUMN ATTACKMENT,EXPIREAT
-//TODO: to create group or channel ==> create partitcipant also
+//TODO: to create group or channel ==> create partitcipant also ask omar
+//TODO: popluate the public key of the user
+//TODO: how to start messaging on group or message

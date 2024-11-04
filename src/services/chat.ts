@@ -1,4 +1,5 @@
-import { prisma } from '../prisma/client';
+import { prisma, Schemas } from '../prisma/client';
+import { ParticipiantTypes } from '@prisma/client';
 
 export const createMessage = async (data: any) => {
   return prisma.messages.create({
@@ -14,16 +15,6 @@ export const createMessage = async (data: any) => {
   });
 };
 
-export const createPersonalChat = async (user1Id: number, user2Id: number) => {
-  // TODO:Ensure the IDs are ordered to enforce bidirectional uniqueness
-  if (user1Id > user2Id) [user1Id, user2Id] = [user2Id, user1Id];
-  return prisma.personalChat.create({
-    data: {
-      user1Id,
-      user2Id,
-    },
-  });
-};
 export const getParticipantIdsOfUserPersonalChats = async (userId: number) => {
   const personalChats = await prisma.personalChat.findMany({
     where: {
@@ -38,9 +29,7 @@ export const getParticipantIdsOfUserPersonalChats = async (userId: number) => {
     },
   });
   // Flatten to get only participant IDs
-  const participantIds = personalChats.flatMap((chat) =>
-    chat.participants.map((participant) => participant.id)
-  );
+  const participantIds = personalChats.flatMap((chat) => chat.participants!.id);
   console.log(participantIds);
   return participantIds;
 };
@@ -66,10 +55,8 @@ export const getParticipantIdsOfUserGroups = async (userId: number) => {
     },
   });
   // Extract participant IDs step-by-step and handle nullable values
-  return memberships.flatMap((membership) =>
-    membership.groups.communities!.participants!.map(
-      (participant) => participant.id
-    )
+  return memberships.flatMap(
+    (membership) => membership.groups.communities!.participants!.id
   );
 };
 //TODO: ensure the groups has communities and commnites has particpinats
@@ -96,9 +83,122 @@ export const getParticipantIdsOfUserChannles = async (userId: number) => {
     },
   });
   // Extract participant IDs step-by-step and handle nullable values
-  return memberships.flatMap((membership) =>
-    membership.channels.communities!.participants!.map(
-      (participant) => participant.id
-    )
+  console.log(memberships[0].channels.communities!.participants!.id);
+  return memberships.flatMap(
+    (membership) => membership.channels.communities!.participants!.id
   );
+};
+export const markMessagesAsRead = async (
+  userId: number,
+  participantId: number
+) => {
+  const receiptsToUpdate = await prisma.messageReadReceipts.findMany({
+    where: {
+      userId: userId,
+      participantId: participantId,
+      readAt: null,
+    },
+  });
+  const messageIds = receiptsToUpdate.map((receipts) => receipts.messageId);
+  await prisma.messageReadReceipts.updateMany({
+    where: {
+      userId: userId,
+      participantId: participantId,
+      readAt: null,
+    },
+    data: {
+      readAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
+    },
+  });
+  return prisma.messageReadReceipts.findMany({
+    where: {
+      userId: userId,
+      participantId: participantId,
+      messageId: { in: messageIds },
+      readAt: { not: null },
+    },
+  });
+};
+
+export const insertParticiantDate = async (
+  userId: number,
+  participantIds: number[]
+) => {
+  const missingMessages = await prisma.messages.findMany({
+    where: {
+      participants: {
+        id: { in: participantIds },
+      },
+      NOT: {
+        messageReadReceipts: {
+          some: {
+            userId: userId,
+          },
+        },
+      },
+    },
+    select: {
+      id: true,
+      participantId: true,
+    },
+  });
+  console.log(missingMessages);
+  const insertData = missingMessages.map((message) => ({
+    userId: userId,
+    messageId: message.id,
+    participantId: message.participantId,
+    deliveredAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
+    readAt: null,
+  }));
+
+  await prisma.messageReadReceipts.createMany({
+    data: insertData,
+  });
+  return insertData;
+};
+
+export const insertMessageRecipient = async (userId: number, message: any) => {
+  await prisma.messageReadReceipts.create({
+    data: {
+      userId,
+      participantId: message.participantId,
+      messageId: message.id,
+      deliveredAt: new Date(new Date().getTime() + 2 * 60 * 60),
+      readAt: null,
+    },
+  });
+};
+
+export const deleteMessage = async (messageId: number) => {
+  await prisma.messages.delete({
+    where: { id: messageId },
+  });
+};
+
+export const getMessageById = async (id: number) => {
+  return prisma.messages.findUnique({ where: { id } });
+};
+
+export const updateMessageById = async (
+  id: number,
+  data: Schemas.MessagesUpdateInput
+) => {
+  return prisma.messages.update({ where: { id }, data });
+};
+export const createPersonalChat = async (user1Id: number, user2Id: number) => {
+  if (user1Id > user2Id) [user1Id, user2Id] = [user2Id, user1Id];
+  return prisma.personalChat.create({
+    data: {
+      user1Id,
+      user2Id,
+      participants: {
+        create: {
+          type: ParticipiantTypes.personalChat,
+        },
+      },
+    },
+    include: {
+      participants: true,
+    },
+  });
 };

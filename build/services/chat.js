@@ -9,26 +9,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.markMessagesAsRead = exports.getParticipantIdsOfUserChannles = exports.getParticipantIdsOfUserGroups = exports.getParticipantIdsOfUserPersonalChats = exports.createPersonalChat = exports.createMessage = void 0;
+exports.createPersonalChat = exports.updateMessageById = exports.getMessageById = exports.deleteMessage = exports.insertMessageRecipient = exports.insertParticiantDate = exports.markMessagesAsRead = exports.getParticipantIdsOfUserChannles = exports.getParticipantIdsOfUserGroups = exports.getParticipantIdsOfUserPersonalChats = exports.createMessage = void 0;
 const client_1 = require("../prisma/client");
+const client_2 = require("@prisma/client");
 const createMessage = (data) => __awaiter(void 0, void 0, void 0, function* () {
     return client_1.prisma.messages.create({
         data: Object.assign(Object.assign({}, data), { participantId: undefined, participants: { connect: { id: data.participantId } }, messages: data.replyTo ? { connect: { id: data.replyTo } } : undefined, replyTo: undefined, users: { connect: { id: data.senderId } }, senderId: undefined }),
     });
 });
 exports.createMessage = createMessage;
-const createPersonalChat = (user1Id, user2Id) => __awaiter(void 0, void 0, void 0, function* () {
-    // TODO:Ensure the IDs are ordered to enforce bidirectional uniqueness
-    if (user1Id > user2Id)
-        [user1Id, user2Id] = [user2Id, user1Id];
-    return client_1.prisma.personalChat.create({
-        data: {
-            user1Id,
-            user2Id,
-        },
-    });
-});
-exports.createPersonalChat = createPersonalChat;
 const getParticipantIdsOfUserPersonalChats = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     const personalChats = yield client_1.prisma.personalChat.findMany({
         where: {
@@ -43,7 +32,7 @@ const getParticipantIdsOfUserPersonalChats = (userId) => __awaiter(void 0, void 
         },
     });
     // Flatten to get only participant IDs
-    const participantIds = personalChats.flatMap((chat) => chat.participants.map((participant) => participant.id));
+    const participantIds = personalChats.flatMap((chat) => chat.participants.id);
     console.log(participantIds);
     return participantIds;
 });
@@ -70,7 +59,7 @@ const getParticipantIdsOfUserGroups = (userId) => __awaiter(void 0, void 0, void
         },
     });
     // Extract participant IDs step-by-step and handle nullable values
-    return memberships.flatMap((membership) => membership.groups.communities.participants.map((participant) => participant.id));
+    return memberships.flatMap((membership) => membership.groups.communities.participants.id);
 });
 exports.getParticipantIdsOfUserGroups = getParticipantIdsOfUserGroups;
 //TODO: ensure the groups has communities and commnites has particpinats
@@ -96,21 +85,114 @@ const getParticipantIdsOfUserChannles = (userId) => __awaiter(void 0, void 0, vo
         },
     });
     // Extract participant IDs step-by-step and handle nullable values
-    return memberships.flatMap((membership) => membership.channels.communities.participants.map((participant) => participant.id));
+    console.log(memberships[0].channels.communities.participants.id);
+    return memberships.flatMap((membership) => membership.channels.communities.participants.id);
 });
 exports.getParticipantIdsOfUserChannles = getParticipantIdsOfUserChannles;
-const markMessagesAsRead = (userId, participantId, messageId) => __awaiter(void 0, void 0, void 0, function* () {
-    const updateReceipt = yield client_1.prisma.messageReadReceipts.updateMany({
+const markMessagesAsRead = (userId, participantId) => __awaiter(void 0, void 0, void 0, function* () {
+    const receiptsToUpdate = yield client_1.prisma.messageReadReceipts.findMany({
         where: {
             userId: userId,
             participantId: participantId,
-            messageId: messageId,
-            readAt: null, // Only update if readAt is currently null
-        },
-        data: {
-            readAt: new Date(), // Set readAt to the current timestamp
+            readAt: null,
         },
     });
-    console.log(updateReceipt);
+    const messageIds = receiptsToUpdate.map((receipts) => receipts.messageId);
+    yield client_1.prisma.messageReadReceipts.updateMany({
+        where: {
+            userId: userId,
+            participantId: participantId,
+            readAt: null,
+        },
+        data: {
+            readAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
+        },
+    });
+    return client_1.prisma.messageReadReceipts.findMany({
+        where: {
+            userId: userId,
+            participantId: participantId,
+            messageId: { in: messageIds },
+            readAt: { not: null },
+        },
+    });
 });
 exports.markMessagesAsRead = markMessagesAsRead;
+const insertParticiantDate = (userId, participantIds) => __awaiter(void 0, void 0, void 0, function* () {
+    const missingMessages = yield client_1.prisma.messages.findMany({
+        where: {
+            participants: {
+                id: { in: participantIds },
+            },
+            NOT: {
+                messageReadReceipts: {
+                    some: {
+                        userId: userId,
+                    },
+                },
+            },
+        },
+        select: {
+            id: true,
+            participantId: true,
+        },
+    });
+    console.log(missingMessages);
+    const insertData = missingMessages.map((message) => ({
+        userId: userId,
+        messageId: message.id,
+        participantId: message.participantId,
+        deliveredAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
+        readAt: null,
+    }));
+    yield client_1.prisma.messageReadReceipts.createMany({
+        data: insertData,
+    });
+    return insertData;
+});
+exports.insertParticiantDate = insertParticiantDate;
+const insertMessageRecipient = (userId, message) => __awaiter(void 0, void 0, void 0, function* () {
+    yield client_1.prisma.messageReadReceipts.create({
+        data: {
+            userId,
+            participantId: message.participantId,
+            messageId: message.id,
+            deliveredAt: new Date(new Date().getTime() + 2 * 60 * 60),
+            readAt: null,
+        },
+    });
+});
+exports.insertMessageRecipient = insertMessageRecipient;
+const deleteMessage = (messageId) => __awaiter(void 0, void 0, void 0, function* () {
+    yield client_1.prisma.messages.delete({
+        where: { id: messageId },
+    });
+});
+exports.deleteMessage = deleteMessage;
+const getMessageById = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    return client_1.prisma.messages.findUnique({ where: { id } });
+});
+exports.getMessageById = getMessageById;
+const updateMessageById = (id, data) => __awaiter(void 0, void 0, void 0, function* () {
+    return client_1.prisma.messages.update({ where: { id }, data });
+});
+exports.updateMessageById = updateMessageById;
+const createPersonalChat = (user1Id, user2Id) => __awaiter(void 0, void 0, void 0, function* () {
+    if (user1Id > user2Id)
+        [user1Id, user2Id] = [user2Id, user1Id];
+    return client_1.prisma.personalChat.create({
+        data: {
+            user1Id,
+            user2Id,
+            participants: {
+                create: {
+                    type: client_2.ParticipiantTypes.personalChat,
+                },
+            },
+        },
+        include: {
+            participants: true,
+        },
+    });
+});
+exports.createPersonalChat = createPersonalChat;
