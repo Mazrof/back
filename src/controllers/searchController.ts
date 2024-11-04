@@ -12,7 +12,6 @@ export const userSearch = catchAsync(
     const users = await searchService.getProfileByUsername(query);
     res.status(200).json({
       status: 'success',
-      Length: users.length,
       data: { users },
     });
   }
@@ -27,7 +26,6 @@ export const groupSearch = catchAsync(
     const groups = await searchService.getGroupByGroupName(query);
     res.status(200).json({
       status: 'success',
-      Length: groups.length,
       data: { groups },
     });
   }
@@ -42,7 +40,6 @@ export const channelSearch = catchAsync(
     const channels = await searchService.getChannelByChannelName(query);
     res.status(200).json({
       status: 'success',
-      Length: channels.length,
       data: { channels },
     });
   }
