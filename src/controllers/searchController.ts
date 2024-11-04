@@ -1,37 +1,49 @@
 import { Request, Response, NextFunction } from 'express';
 import { catchAsync, AppError } from '../utility';
-import { profileController } from './profileController';
+import * as profileService from '../services/profileService';
+import * as searchService from '../services/searchService';
 
-export const generalSearch = catchAsync(
+export const userSearch = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const query = req.query.query as string;
-    const type = req.query.type as string;
-
-    // Validate the type parameter
-    if (!type) {
-      return next(new AppError('Search type is required', 400));
+    const { query } = req.query;
+    if (typeof query !== 'string') {
+      return next(new AppError('Invalid query parameter', 400));
     }
+    const users = await searchService.getProfileByUsername(query);
+    res.status(200).json({
+      status: 'success',
+      Length: users.length,
+      data: { users },
+    });
+  }
+);
 
-    // Validate the query parameter
-    if (!query) {
-      return next(new AppError('Search query is required', 400));
+export const groupSearch = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { query } = req.query;
+    if (typeof query !== 'string') {
+      return next(new AppError('Invalid query parameter', 400));
     }
+    const groups = await searchService.getGroupByGroupName(query);
+    res.status(200).json({
+      status: 'success',
+      Length: groups.length,
+      data: { groups },
+    });
+  }
+);
 
-    // Handle user search
-    if (type === 'user') {
-      try {
-        const users = await profileController.getProfileByUserName(query);
-
-        return res.status(200).json({
-          status: 'success',
-          length: users.length,
-          data: { users },
-        });
-      } catch (error) {
-        return next(new AppError('Error during user search', 500));
-      }
-    } else {
-      return next(new AppError('Invalid search type', 400));
+export const channelSearch = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { query } = req.query;
+    if (typeof query !== 'string') {
+      return next(new AppError('Invalid query parameter', 400));
     }
+    const channels = await searchService.getChannelByChannelName(query);
+    res.status(200).json({
+      status: 'success',
+      Length: channels.length,
+      data: { channels },
+    });
   }
 );
