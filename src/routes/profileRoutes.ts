@@ -1,5 +1,5 @@
 import express, { Request, Response, Router } from 'express';
-const profileController = require('./../controllers/profileController');
+import { profileController } from './../controllers/profileController';
 
 const router: Router = express.Router();
 

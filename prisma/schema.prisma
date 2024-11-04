@@ -8,22 +8,20 @@ datasource db {
 }
 
 model AdminGroupFilters {
-  adminId Int @map("admin_id")
-  groupId Int @map("group_id")
-
-  admins Admins @relation(fields: [adminId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  groups Groups @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  adminId Int    @map("admin_id")
+  groupId Int    @map("group_id")
+  admins  Admins @relation(fields: [adminId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  groups  Groups @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([adminId, groupId])
   @@map("admingroupfilters")
 }
 
 model Admins {
-  id                Int       @id @default(autoincrement())
-  email             String    @unique @db.VarChar(255)
+  id                Int                 @id @default(autoincrement())
+  email             String              @unique @db.VarChar(255)
   password          String
-  passwordChangedAt DateTime? @map("password_changed_at") @db.Timestamp(6)
-
+  passwordChangedAt DateTime?           @map("password_changed_at") @db.Timestamp(6)
   adminGroupFilters AdminGroupFilters[]
   bannedUsers       BannedUsers[]
 
@@ -31,34 +29,32 @@ model Admins {
 }
 
 model BannedUsers {
-  adminId Int @map("admin_id")
-  userId  Int @map("user_id")
-
-  admins Admins @relation(fields: [adminId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users  Users  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  adminId Int    @map("admin_id")
+  userId  Int    @map("user_id")
+  admins  Admins @relation(fields: [adminId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users   Users  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([adminId, userId])
   @@map("bannedusers")
 }
 
 model CallReceivers {
-  id             Int  @id @default(autoincrement())
-  groupId        Int? @map("group_id")
-  personalChatId Int? @map("personal_chat_id")
-
-  groups       Groups?       @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  personalChat PersonalChat? @relation(fields: [personalChatId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  voiceCalls   VoiceCalls[]
+  id             Int           @id @default(autoincrement())
+  groupId        Int?          @map("group_id")
+  personalChatId Int?          @map("personal_chat_id")
+  groups         Groups?       @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  personalChat   PersonalChat? @relation(fields: [personalChatId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  voiceCalls     VoiceCalls[]
 
   @@map("callreceivers")
 }
 
 model Channels {
-  id             Int      @id @default(autoincrement())
-  communityId    Int?     @map("community_id")
-  canAddComments Boolean? @default(true) @map("can_add_comments")
-
-  communities          Communities?           @relation(fields: [communityId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                   Int                    @id @default(autoincrement())
+  communityId          Int?
+  canAddComments       Boolean?               @default(true) @map("can_add_comments")
+  status               Boolean?               @default(true)
+  communities          Communities?           @relation(fields: [communityId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "channels_community_id_fkey")
   channelSubscriptions ChannelSubscriptions[]
 
   @@map("channels")
@@ -68,24 +64,24 @@ model ChannelSubscriptions {
   userId                 Int          @map("user_id")
   channelId              Int          @map("channel_id")
   hasDownloadPermissions Boolean?     @default(false) @map("has_download_permissions")
-  currentRole            ChannelRole? @map("current_role")
-
-  channels Channels @relation(fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users    Users    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  role                   ChannelRole? @map("current_role")
+  channels               Channels     @relation(fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                  Users        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  status                 Boolean?     @default(true)
 
   @@id([userId, channelId])
   @@map("channelsubscriptions")
 }
 
 model Communities {
-  id           Int            @id @default(autoincrement())
-  name         String         @db.VarChar(255)
-  privacy      Boolean?       @default(true)
-  creatorId    Int?           @map("creator_id")
+  id           Int           @id @default(autoincrement())
+  name         String        @db.VarChar(255)
+  privacy      Boolean?      @default(true)
+  creatorId    Int?          @map("creator_id")
   channels     Channels[]
-  users        Users?         @relation(fields: [creatorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users        Users?        @relation(fields: [creatorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   groups       Groups[]
-  participants Participants[]
+  participants Participants?
 
   @@map("communities")
 }
@@ -93,10 +89,11 @@ model Communities {
 model GroupMemberships {
   userId                 Int      @map("user_id")
   groupId                Int      @map("group_id")
-  role                   String?  @db.VarChar(50)
+  role                   String?  @default("member") @db.VarChar(50)
   hasDownloadPermissions Boolean? @default(false) @map("has_download_permissions")
   hasMessagePermissions  Boolean? @default(false) @map("has_message_permissions")
   addToGroupPermission   Boolean? @default(false) @map("add_to_group_permission")
+  status                 Boolean? @default(true)
   groups                 Groups   @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users                  Users    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -152,24 +149,25 @@ model MessageReadReceipts {
 
 model Messages {
   id                  Int                   @id @default(autoincrement())
-  status              MessageStatus         @default(usual)
   createdAt           DateTime?             @default(now()) @map("created_at") @db.Timestamp(6)
   expireAt            DateTime?             @map("expire_at") @db.Timestamp(6)
   isAnnouncement      Boolean?              @default(false) @map("is_announcement")
   isForward           Boolean?              @default(false) @map("is_forward")
   updatedAt           DateTime?             @default(now()) @map("updated_at") @db.Timestamp(6)
   content             String?
-  durationInMinutes   Int?                  @map("duration_in_minutes")
   url                 String?
+  attachment          String?
   senderId            Int                   @map("sender_id")
   replyTo             Int?                  @map("reply_to")
   participantId       Int                   @map("participant_id")
+  durationInMinutes   Int?                  @map("duration_in_minutes")
+  status              MessageStatus         @default(usual)
   messageMentions     MessageMentions[]
   messageReadReceipts MessageReadReceipts[]
-  participants        Participants?         @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  participants        Participants          @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   messages            Messages?             @relation("MessagesToMessages", fields: [replyTo], references: [id], onDelete: Cascade, onUpdate: NoAction)
   otherMessages       Messages[]            @relation("MessagesToMessages")
-  users               Users?                @relation(fields: [senderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users               Users                 @relation(fields: [senderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("messages")
 }
@@ -187,17 +185,15 @@ model MutedParticipants {
 
 model Participants {
   id                  Int                   @id @default(autoincrement())
-  communityId         Int?                  @map("community_id")
-  personalChatId      Int?                  @map("personal_chat_id")
+  communityId         Int?                  @unique @map("community_id")
+  personalChatId      Int?                  @unique @map("personal_chat_id")
+  type                ParticipiantTypes     @default(personalChat)
   messageReadReceipts MessageReadReceipts[]
   messages            Messages[]
   mutedParticipants   MutedParticipants[]
   communities         Communities?          @relation(fields: [communityId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   personalChat        PersonalChat?         @relation(fields: [personalChatId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  type                ParticipiantTypes     @default(personalChat)
 
-  @@unique([personalChatId])
-  @@unique([communityId])
   @@map("participants")
 }
 
@@ -206,7 +202,7 @@ model PersonalChat {
   user1Id       Int             @map("user1id")
   user2Id       Int             @map("user2id")
   callReceivers CallReceivers[]
-  participants  Participants[]
+  participants  Participants?
   users1        Users           @relation("PersonalChat_User1IdToUsers", fields: [user1Id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users2        Users           @relation("PersonalChat_User2IdToUsers", fields: [user2Id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 

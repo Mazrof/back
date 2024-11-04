@@ -1,0 +1,28 @@
+name: main workflow
+
+on:
+  push:
+    branches:
+    - '**'
+  pull_request:
+    branches:
+    - '**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 'lts/*' # Automatically use the latest LTS version
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run start:build-nowatch

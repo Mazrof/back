@@ -1,6 +1,5 @@
-
-import  logger  from "../utility/logger";
+import logger from '../utility/logger';
 
 export const getUserById = async () => {
-    logger.info('REQUETST IS NOW IN REPOSITORY');
-}
+  logger.info('REQUETST IS NOW IN REPOSITORY');
+};
