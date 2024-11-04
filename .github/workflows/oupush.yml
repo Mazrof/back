@@ -1,12 +1,12 @@
-name: Node.js CI
+name: main workflow
 
 on:
   push:
     branches:
-      - main
+    - '**'
   pull_request:
     branches:
-      - main
+    - '**'
 
 jobs:
   build:
@@ -24,8 +24,5 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: TypeScript Compilation Check
-        run: npx tsc --noEmit
-        env:
-          CI: true
-
+      - name: Build
+        run: npm run start:build-nowatch
