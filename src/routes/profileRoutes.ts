@@ -1,19 +1,24 @@
 import express, { Request, Response, Router } from 'express';
-import { profileController } from './../controllers/profileController';
+import {
+  addProfile,
+  updateProfile,
+  getAllProfiles,
+  getProfile,
+} from '../controllers/profileController';
 
 const router: Router = express.Router();
 
 // TODO: add user authentication
 
-router.post('/', profileController.addProfile);
+router.post('/', addProfile);
 
-router.patch('/:id', profileController.updateProfile);
+router.patch('/:id', updateProfile);
 
-router.get('/:id', profileController.getProfile);
+router.get('/:id', getProfile);
 
 // TODO: add admin authentication
 
-router.get('/', profileController.getAllProfiles);
+router.get('/', getAllProfiles);
 
 // Export the router
 export default router;
