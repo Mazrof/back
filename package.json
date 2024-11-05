@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start:build": "tsc -w",
-    "start:build-nowatch": "tsc --noEmit",
+    "check":"tsc --noEmit",
+    "build":"tsc",
     "start:run": "nodemon build/server.js",
     "start-dev": "concurrently npm:start:*",
     "migrate-db": "npx prisma migrate dev --name add_status_to_members",
