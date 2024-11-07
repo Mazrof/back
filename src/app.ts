@@ -12,6 +12,7 @@ import profileRouter from './routes/profileRoutes';
 import storiesRouter from './routes/storiesRoutes';
 import searchRouter from './routes/searchRoutes';
 import { AppError } from './utility';
+import chatRoutes from './routes/chatRoutes';
 
 export default async (app: Application) => {
   // Serve static files from the 'public' directory
@@ -54,6 +55,7 @@ export default async (app: Application) => {
   app.use('/api/v1/profile', profileRouter);
   app.use('/api/v1/stories', storiesRouter);
   app.use('/api/v1/search', searchRouter);
+  app.use('/api/v1/chats', chatRoutes);
   app.use('/api', apiRoutes);
 
   // Handle all undefined routes

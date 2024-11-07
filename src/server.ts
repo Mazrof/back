@@ -9,6 +9,7 @@ const PORT = 3000;
 
 process.on('uncaughtException', (err: Error) => {
   console.log('ERROR 🔥: ', err);
+  io.emit('server:shutdown', { message: 'Server encountered an issue' });
   process.exit(1);
 });
 
@@ -26,13 +27,16 @@ const startServer = () => {
   server.listen(PORT, () => {
     console.log(`Server run on port ${PORT}`);
   });
-  return server;
+  return { server, io };
 };
 
-export const server = startServer();
+export const { server, io } = startServer();
 
 process.on('unhandledRejection', (err: Error) => {
   console.log('ERROR 🔥: ', err.name, err.message);
+  io.emit('server:shutdown', {
+    message: 'Server is shutting down for maintenance',
+  });
   console.log('Shutting down ...');
   // process.exit(1);//will abort all running requests
   server.close(() => {

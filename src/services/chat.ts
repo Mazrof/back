@@ -202,3 +202,88 @@ export const createPersonalChat = async (user1Id: number, user2Id: number) => {
     },
   });
 };
+export const getUserGroupsChannelsChats = async (userId: number) => {
+  const userData = await prisma.users.findUnique({
+    where: { id: userId },
+    select: {
+      groupMemberships: {
+        include: {
+          groups: {
+            include: {
+              communities: {
+                include: {
+                  participants: {
+                    include: {
+                      messages: {
+                        include: {
+                          messageReadReceipts: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      channelSubscriptions: {
+        include: {
+          channels: {
+            include: {
+              communities: {
+                include: {
+                  participants: {
+                    include: {
+                      messages: {
+                        include: {
+                          messageReadReceipts: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      personalChatsAsUser1: {
+        include: {
+          participants: {
+            include: {
+              messages: {
+                include: {
+                  messageReadReceipts: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      personalChatsAsUser2: {
+        include: {
+          participants: {
+            include: {
+              messages: {
+                include: {
+                  messageReadReceipts: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  const combinedPersonalChats = [
+    ...(userData?.personalChatsAsUser1 || []),
+    ...(userData?.personalChatsAsUser2 || []),
+  ];
+  return {
+    ...userData,
+    personalChatsAsUser1: undefined,
+    personalChatsAsUser2: undefined,
+    personalChats: combinedPersonalChats,
+  };
+};

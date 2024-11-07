@@ -18,6 +18,7 @@ import {
   uploadFileToFirebase,
 } from '../third_party_services';
 import logger from '../utility/logger';
+import { catchAsyncSockets } from '../utility';
 
 type UserSocketMap = Map<number, Socket>; // Maps user ID to Socket
 type SocketUserMap = Map<string, number>;
@@ -66,17 +67,21 @@ class Chat {
         //TODO: DELETE THIS
         this.io.emit('message:update-info', [userRecipient]);
       });
-
       socket.on('message:sent', async (message: Messages) => {
+        console.log(message);
         console.log('create message', message);
         await this.handleNewMessage(socket, message);
       });
-      socket.on('message:edit', (message: Messages) => {
+      socket.on('message:edit', async (message: Messages) => {
         this.handleEditMessage(socket, message);
       });
-      socket.on('message:delete', (message: Messages) => {
-        this.handleDeleteMessage(socket, message);
-      });
+      socket.on(
+        'message:delete',
+        catchAsyncSockets(async (message: Messages) => {
+          Promise.reject({ message: 'erro' });
+          this.handleDeleteMessage(socket, message);
+        }, socket)
+      );
       socket.on('context:opened', async (data: { participantId: number }) => {
         //TODO: get the data of the user from req after auth
         const updatedMessages = await markMessagesAsRead(1, data.participantId);
@@ -93,23 +98,37 @@ class Chat {
     });
   }
   async handleNewMessage(socket: Socket, message: NewMessages) {
-    // if you provide a receiver id this means I will create new personal chat
+    if (!message.content) {
+      //TODO return error to user
+      return;
+    }
     if (message.receiverId) {
+      // if you provide a receiver id this means I will create new personal chat
       //TODO : ADD SENDER ID FROM AUTH
+      //TODO: message.senderId = user.id
       message.participantId = (await createPersonalChat(
         message.receiverId,
         1
       ))!.participants!.id;
     }
     message.receiverId = undefined;
-
-    if (message.content && message.content.length > 100) {
+    let createdMessage = await createMessage({
+      ...message,
+      content: null,
+      url: null,
+    });
+    console.log(createdMessage, 'after saving');
+    if (message.content.length > 100) {
       message.url = await uploadFileToFirebase(message.content);
-      message.content = null; // to avoid saving it in db
+      createdMessage = await updateMessageById(createdMessage.id, {
+        url: message.url,
+      });
+    } else {
+      createdMessage = await updateMessageById(createdMessage.id, {
+        content: message.content,
+      });
     }
-    //TODO: message.senderId = user.id
-    const createdMessage = await createMessage(message);
-    console.log(createdMessage);
+    console.log(createdMessage, 'after updating');
     const roomSockets = this.io.sockets.adapter.rooms.get(
       message.participantId.toString()
     );
@@ -206,9 +225,22 @@ class Chat {
   }
 }
 export default (io: Server) => {
-  new Chat(io);
+  return new Chat(io);
 };
 
 //TODO: to create group or channel ==> create partitcipant also ask omar
 //TODO: popluate the public key of the user
 //TODO: how to start messaging on group or message
+//TODO: error handling
+//TODO: UNIT TEST
+//TODO: WHEN the server opened delete all messages that expires while the server down
+
+// io.use((socket, next) => {
+//   // Middleware logic, e.g., authentication
+//   const isAuthenticated = true; // Replace with your logic
+//   if (isAuthenticated) {
+//     next(); // Proceed to the event handler
+//   } else {
+//     next(new Error("Authentication error")); // Reject connection
+//   }
+// });

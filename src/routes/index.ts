@@ -6,7 +6,7 @@ import example_router from './route_example';
 
 const router = express.Router();
 
-
-router.use('/example',example_router);
+router.use('/example', example_router);
 
 export default router;
+export * from './chatRoutes';

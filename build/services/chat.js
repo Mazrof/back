@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createPersonalChat = exports.updateMessageById = exports.getMessageById = exports.deleteMessage = exports.insertMessageRecipient = exports.insertParticiantDate = exports.markMessagesAsRead = exports.getParticipantIdsOfUserChannles = exports.getParticipantIdsOfUserGroups = exports.getParticipantIdsOfUserPersonalChats = exports.createMessage = void 0;
+exports.getUserGroupsChannelsChats = exports.createPersonalChat = exports.updateMessageById = exports.getMessageById = exports.deleteMessage = exports.insertMessageRecipient = exports.insertParticiantDate = exports.markMessagesAsRead = exports.getParticipantIdsOfUserChannles = exports.getParticipantIdsOfUserGroups = exports.getParticipantIdsOfUserPersonalChats = exports.createMessage = void 0;
 const client_1 = require("../prisma/client");
 const client_2 = require("@prisma/client");
 const createMessage = (data) => __awaiter(void 0, void 0, void 0, function* () {
@@ -196,3 +196,84 @@ const createPersonalChat = (user1Id, user2Id) => __awaiter(void 0, void 0, void 
     });
 });
 exports.createPersonalChat = createPersonalChat;
+const getUserGroupsChannelsChats = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const userData = yield client_1.prisma.users.findUnique({
+        where: { id: userId },
+        select: {
+            groupMemberships: {
+                include: {
+                    groups: {
+                        include: {
+                            communities: {
+                                include: {
+                                    participants: {
+                                        include: {
+                                            messages: {
+                                                include: {
+                                                    messageReadReceipts: true,
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            channelSubscriptions: {
+                include: {
+                    channels: {
+                        include: {
+                            communities: {
+                                include: {
+                                    participants: {
+                                        include: {
+                                            messages: {
+                                                include: {
+                                                    messageReadReceipts: true,
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            personalChatsAsUser1: {
+                include: {
+                    participants: {
+                        include: {
+                            messages: {
+                                include: {
+                                    messageReadReceipts: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            personalChatsAsUser2: {
+                include: {
+                    participants: {
+                        include: {
+                            messages: {
+                                include: {
+                                    messageReadReceipts: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    });
+    const combinedPersonalChats = [
+        ...((userData === null || userData === void 0 ? void 0 : userData.personalChatsAsUser1) || []),
+        ...((userData === null || userData === void 0 ? void 0 : userData.personalChatsAsUser2) || []),
+    ];
+    return Object.assign(Object.assign({}, userData), { personalChatsAsUser1: undefined, personalChatsAsUser2: undefined, personalChats: combinedPersonalChats });
+});
+exports.getUserGroupsChannelsChats = getUserGroupsChannelsChats;

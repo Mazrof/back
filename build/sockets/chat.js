@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const services_1 = require("../services");
 const third_party_services_1 = require("../third_party_services");
 const logger_1 = __importDefault(require("../utility/logger"));
+const utility_1 = require("../utility");
 class Chat {
     constructor(io) {
         this.io = io;
@@ -53,15 +54,17 @@ class Chat {
                 this.io.emit('message:update-info', [userRecipient]);
             });
             socket.on('message:sent', (message) => __awaiter(this, void 0, void 0, function* () {
+                console.log(message);
                 console.log('create message', message);
                 yield this.handleNewMessage(socket, message);
             }));
-            socket.on('message:edit', (message) => {
+            socket.on('message:edit', (message) => __awaiter(this, void 0, void 0, function* () {
                 this.handleEditMessage(socket, message);
-            });
-            socket.on('message:delete', (message) => {
+            }));
+            socket.on('message:delete', (0, utility_1.catchAsyncSockets)((message) => __awaiter(this, void 0, void 0, function* () {
+                Promise.reject({ message: 'erro' });
                 this.handleDeleteMessage(socket, message);
-            });
+            }), socket));
             socket.on('context:opened', (data) => __awaiter(this, void 0, void 0, function* () {
                 //TODO: get the data of the user from req after auth
                 const updatedMessages = yield (0, services_1.markMessagesAsRead)(1, data.participantId);
@@ -78,19 +81,31 @@ class Chat {
     }
     handleNewMessage(socket, message) {
         return __awaiter(this, void 0, void 0, function* () {
-            // if you provide a receiver id this means I will create new personal chat
+            if (!message.content) {
+                //TODO return error to user
+                return;
+            }
             if (message.receiverId) {
+                // if you provide a receiver id this means I will create new personal chat
                 //TODO : ADD SENDER ID FROM AUTH
+                //TODO: message.senderId = user.id
                 message.participantId = (yield (0, services_1.createPersonalChat)(message.receiverId, 1)).participants.id;
             }
             message.receiverId = undefined;
-            if (message.content && message.content.length > 100) {
+            let createdMessage = yield (0, services_1.createMessage)(Object.assign(Object.assign({}, message), { content: null, url: null }));
+            console.log(createdMessage, 'after saving');
+            if (message.content.length > 100) {
                 message.url = yield (0, third_party_services_1.uploadFileToFirebase)(message.content);
-                message.content = null; // to avoid saving it in db
+                createdMessage = yield (0, services_1.updateMessageById)(createdMessage.id, {
+                    url: message.url,
+                });
             }
-            //TODO: message.senderId = user.id
-            const createdMessage = yield (0, services_1.createMessage)(message);
-            console.log(createdMessage);
+            else {
+                createdMessage = yield (0, services_1.updateMessageById)(createdMessage.id, {
+                    content: message.content,
+                });
+            }
+            console.log(createdMessage, 'after updating');
             const roomSockets = this.io.sockets.adapter.rooms.get(message.participantId.toString());
             if (roomSockets) {
                 for (const socketId of roomSockets) {
@@ -186,8 +201,20 @@ class Chat {
     }
 }
 exports.default = (io) => {
-    new Chat(io);
+    return new Chat(io);
 };
 //TODO: to create group or channel ==> create partitcipant also ask omar
 //TODO: popluate the public key of the user
 //TODO: how to start messaging on group or message
+//TODO: error handling
+//TODO: UNIT TEST
+//TODO: WHEN the server opened delete all messages that expires while the server down
+// io.use((socket, next) => {
+//   // Middleware logic, e.g., authentication
+//   const isAuthenticated = true; // Replace with your logic
+//   if (isAuthenticated) {
+//     next(); // Proceed to the event handler
+//   } else {
+//     next(new Error("Authentication error")); // Reject connection
+//   }
+// });
