@@ -4,11 +4,11 @@ import {
   createPersonalChat,
   deleteMessage,
   getMessageById,
-  getParticipantIdsOfUserChannles,
+  getParticipantIdsOfUserChannels,
   getParticipantIdsOfUserGroups,
   getParticipantIdsOfUserPersonalChats,
   insertMessageRecipient,
-  insertParticiantDate,
+  insertParticipantDate,
   markMessagesAsRead,
   updateMessageById,
 } from '../../services';
@@ -163,34 +163,42 @@ export const handleOpenContext = async (data: { participantId: number }) => {
 };
 
 export const handleNewConnection = async (socket: Socket) => {
-  logger.info('User connected');
-  Chat.getInstance().addUser(1, socket);
+  //TODO: DELETE THIS
+  const userId = 1;
+  logger.info(`User ${userId} connected`);
+  const chatInstance = Chat.getInstance();
+  chatInstance.addUser(userId, socket);
+  const userParticipants = await getAllParticipantIds(userId);
+  // Join user to all their chat rooms
+  userParticipants.forEach((chatId) => socket.join(chatId.toString()));
+  // Insert participant data and notify recipients
+  const insertedData = await insertParticipantDate(userId, userParticipants);
+  notifyParticipants(insertedData, socket);
+  // Set up socket event handlers
+  setupSocketEventHandlers(socket);
+};
 
-  // add user to his personal chats,groups,channels
-  const userParticipants: number[] = [];
-  const participantIdsOfUserPersonalChats =
-    await getParticipantIdsOfUserPersonalChats(1);
-  const participantIdsOfUserGroups = await getParticipantIdsOfUserGroups(1);
-  const participantIdsOfUserChannels = await getParticipantIdsOfUserChannles(1);
+// Helper function to retrieve all participant IDs
+const getAllParticipantIds = async (userId: number): Promise<number[]> => {
+  const [personalChatIds, groupIds, channelIds] = await Promise.all([
+    getParticipantIdsOfUserPersonalChats(userId),
+    getParticipantIdsOfUserGroups(userId),
+    getParticipantIdsOfUserChannels(userId),
+  ]);
+  console.log([...personalChatIds, ...groupIds, ...channelIds]);
+  return [...personalChatIds, ...groupIds, ...channelIds];
+};
 
-  userParticipants.push(...participantIdsOfUserPersonalChats);
-  userParticipants.push(...participantIdsOfUserGroups);
-  userParticipants.push(...participantIdsOfUserChannels);
-
-  console.log('userParticipants', userParticipants);
-  userParticipants.forEach((chatId) => {
-    socket.join(chatId.toString());
-  });
-  // for each message id with particpiant id (insert a new row)
-  const insertedData = await insertParticiantDate(1, userParticipants);
-  // tell others about that
+// Notify other participants about the updated info
+const notifyParticipants = (insertedData: any[], socket: Socket) => {
   insertedData.forEach((userRecipient) => {
-    io.to(userRecipient.participantId.toString()).emit('message:update-info', [
-      userRecipient,
-    ]);
-    //TODO: DELETE THIS
-    io.emit('message:update-info', [userRecipient]);
+    socket
+      .to(userRecipient.participantId.toString())
+      .emit('message:update-info', [userRecipient]);
   });
+};
+
+const setupSocketEventHandlers = (socket: Socket) => {
   socket.on('message:sent', async (message: Messages) => {
     await handleNewMessage(socket, message);
   });
@@ -200,12 +208,10 @@ export const handleNewConnection = async (socket: Socket) => {
   socket.on(
     'message:delete',
     catchAsyncSockets(async (message: Messages) => {
-      await Promise.reject({ message: 'erro' });
       await handleDeleteMessage(socket, message);
     }, socket)
   );
   socket.on('context:opened', handleOpenContext);
-
   socket.on('disconnect', () => {
     Chat.getInstance().removeUser(socket.id);
   });

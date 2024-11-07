@@ -61,7 +61,7 @@ export const getParticipantIdsOfUserGroups = async (userId: number) => {
 };
 //TODO: ensure the groups has communities and commnites has particpinats
 
-export const getParticipantIdsOfUserChannles = async (userId: number) => {
+export const getParticipantIdsOfUserChannels = async (userId: number) => {
   const memberships = await prisma.channelSubscriptions.findMany({
     where: {
       userId: userId,
@@ -120,7 +120,7 @@ export const markMessagesAsRead = async (
   });
 };
 
-export const insertParticiantDate = async (
+export const insertParticipantDate = async (
   userId: number,
   participantIds: number[]
 ) => {

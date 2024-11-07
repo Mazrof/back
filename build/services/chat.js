@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserGroupsChannelsChats = exports.createPersonalChat = exports.updateMessageById = exports.getMessageById = exports.deleteMessage = exports.insertMessageRecipient = exports.insertParticiantDate = exports.markMessagesAsRead = exports.getParticipantIdsOfUserChannles = exports.getParticipantIdsOfUserGroups = exports.getParticipantIdsOfUserPersonalChats = exports.createMessage = void 0;
+exports.getUserGroupsChannelsChats = exports.createPersonalChat = exports.updateMessageById = exports.getMessageById = exports.deleteMessage = exports.insertMessageRecipient = exports.insertParticipantDate = exports.markMessagesAsRead = exports.getParticipantIdsOfUserChannels = exports.getParticipantIdsOfUserGroups = exports.getParticipantIdsOfUserPersonalChats = exports.createMessage = void 0;
 const client_1 = require("../prisma/client");
 const client_2 = require("@prisma/client");
 const createMessage = (data) => __awaiter(void 0, void 0, void 0, function* () {
@@ -63,7 +63,7 @@ const getParticipantIdsOfUserGroups = (userId) => __awaiter(void 0, void 0, void
 });
 exports.getParticipantIdsOfUserGroups = getParticipantIdsOfUserGroups;
 //TODO: ensure the groups has communities and commnites has particpinats
-const getParticipantIdsOfUserChannles = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+const getParticipantIdsOfUserChannels = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     const memberships = yield client_1.prisma.channelSubscriptions.findMany({
         where: {
             userId: userId,
@@ -88,7 +88,7 @@ const getParticipantIdsOfUserChannles = (userId) => __awaiter(void 0, void 0, vo
     console.log(memberships[0].channels.communities.participants.id);
     return memberships.flatMap((membership) => membership.channels.communities.participants.id);
 });
-exports.getParticipantIdsOfUserChannles = getParticipantIdsOfUserChannles;
+exports.getParticipantIdsOfUserChannels = getParticipantIdsOfUserChannels;
 const markMessagesAsRead = (userId, participantId) => __awaiter(void 0, void 0, void 0, function* () {
     const receiptsToUpdate = yield client_1.prisma.messageReadReceipts.findMany({
         where: {
@@ -118,7 +118,7 @@ const markMessagesAsRead = (userId, participantId) => __awaiter(void 0, void 0, 
     });
 });
 exports.markMessagesAsRead = markMessagesAsRead;
-const insertParticiantDate = (userId, participantIds) => __awaiter(void 0, void 0, void 0, function* () {
+const insertParticipantDate = (userId, participantIds) => __awaiter(void 0, void 0, void 0, function* () {
     const missingMessages = yield client_1.prisma.messages.findMany({
         where: {
             participants: {
@@ -150,7 +150,7 @@ const insertParticiantDate = (userId, participantIds) => __awaiter(void 0, void 
     });
     return insertData;
 });
-exports.insertParticiantDate = insertParticiantDate;
+exports.insertParticipantDate = insertParticipantDate;
 const insertMessageRecipient = (userId, message) => __awaiter(void 0, void 0, void 0, function* () {
     yield client_1.prisma.messageReadReceipts.create({
         data: {
