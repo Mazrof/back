@@ -1,6 +1,5 @@
 import * as userRepository from '../repositories/adminRepository';
 import { AppError } from '../utility';
-import { findAdminById } from '../repositories/adminRepository';
 
 // Fetch all users
 export const getAllUsers = async (adminId: number) => {

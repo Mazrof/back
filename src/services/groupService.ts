@@ -1,4 +1,9 @@
+import crypto from 'crypto';
 import * as groupRepository from '../repositories';
+
+function generateInviteToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
 
 export const findAllGroups = async () => {
   return await groupRepository.findAllGroups();
@@ -14,7 +19,13 @@ export const createGroup = async (data: {
   creatorId: number;
   groupSize: number;
 }) => {
-  return await groupRepository.createGroup(data);
+  const token: string = generateInviteToken();
+  const invitationLink: string = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+
+  return await groupRepository.createGroup({ ...data, invitationLink });
 };
 
 export const updateGroup = async (
@@ -26,4 +37,8 @@ export const updateGroup = async (
 
 export const deleteGroup = async (id: number) => {
   return await groupRepository.deleteGroup(id);
+};
+
+export const applyGroupFilter = async (groupId: number, adminId: number) => {
+  return await groupRepository.applyGroupFilter(groupId, adminId);
 };

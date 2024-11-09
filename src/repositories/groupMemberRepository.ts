@@ -88,3 +88,12 @@ export const updateGroupMemberData = async (
     data,
   });
 };
+
+export const findGroupByInvitationLinkHash = async (invitationLink: string) => {
+  return await prisma.groups.findUnique({
+    where: { invitationLink },
+    select: {
+      id: true,
+    },
+  });
+};

@@ -44,6 +44,7 @@ export const createGroup = async (data: {
   privacy: boolean;
   creatorId: number;
   groupSize: number;
+  invitationLink: string;
 }) => {
   const community = await prisma.communities.create({
     data: {
@@ -58,6 +59,7 @@ export const createGroup = async (data: {
       groupSize: data.groupSize,
       status: true,
       communityId: community.id,
+      invitationLink: data.invitationLink,
     },
     select: {
       id: true,
@@ -121,6 +123,36 @@ export const deleteGroup = async (id: number) => {
   await prisma.groups.update({
     where: { id, status: true },
     data: { status: false },
+  });
+
+  return group;
+};
+
+export const applyGroupFilter = async (groupId: number, adminId: number) => {
+  const group = await prisma.communities.findUnique({
+    where: { id: groupId },
+  });
+
+  if (!group) {
+    throw new AppError('No Group found with that ID', 404);
+  }
+
+  let groupFilter = await prisma.adminGroupFilters.findFirst({
+    where: { groupId: groupId },
+  });
+
+  if (!groupFilter) {
+    await prisma.adminGroupFilters.delete({
+      where: { groupId: groupId },
+    });
+    return groupFilter;
+  }
+
+  groupFilter = await prisma.adminGroupFilters.create({
+    data: {
+      groupId,
+      adminId,
+    },
   });
 
   return group;

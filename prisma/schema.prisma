@@ -9,7 +9,7 @@ datasource db {
 
 model AdminGroupFilters {
   adminId Int    @map("admin_id")
-  groupId Int    @map("group_id")
+  groupId Int    @unique @map("group_id")
   admins  Admins @relation(fields: [adminId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   groups  Groups @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -51,10 +51,9 @@ model CallReceivers {
 
 model Channels {
   id                   Int                    @id @default(autoincrement())
-  communityId          Int?
+  community_id         Int?
   canAddComments       Boolean?               @default(true) @map("can_add_comments")
-  status               Boolean?               @default(true)
-  communities          Communities?           @relation(fields: [communityId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "channels_community_id_fkey")
+  communities          Communities?           @relation(fields: [community_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   channelSubscriptions ChannelSubscriptions[]
 
   @@map("channels")
@@ -67,7 +66,6 @@ model ChannelSubscriptions {
   role                   ChannelRole? @map("current_role")
   channels               Channels     @relation(fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users                  Users        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  status                 Boolean?     @default(true)
 
   @@id([userId, channelId])
   @@map("channelsubscriptions")
@@ -89,7 +87,7 @@ model Communities {
 model GroupMemberships {
   userId                 Int      @map("user_id")
   groupId                Int      @map("group_id")
-  role                   String?  @default("member") @db.VarChar(50)
+  role                   String?  @db.VarChar(50)
   hasDownloadPermissions Boolean? @default(false) @map("has_download_permissions")
   hasMessagePermissions  Boolean? @default(false) @map("has_message_permissions")
   addToGroupPermission   Boolean? @default(false) @map("add_to_group_permission")
@@ -102,14 +100,15 @@ model GroupMemberships {
 }
 
 model Groups {
-  id                Int                 @id @default(autoincrement())
-  communityId       Int?                @map("community_id")
-  groupSize         Int?                @map("group_size")
-  status            Boolean?            @default(true)
-  adminGroupFilters AdminGroupFilters[]
-  callReceivers     CallReceivers[]
-  groupMemberships  GroupMemberships[]
-  communities       Communities?        @relation(fields: [communityId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id               Int                @id @default(autoincrement())
+  communityId      Int?               @map("community_id")
+  groupSize        Int?               @map("group_size")
+  status           Boolean?           @default(true)
+  invitationLink   String             @unique
+  adminGroupFilter AdminGroupFilters?
+  callReceivers    CallReceivers[]
+  groupMemberships GroupMemberships[]
+  communities      Communities?       @relation(fields: [communityId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("groups")
 }
@@ -150,13 +149,11 @@ model MessageReadReceipts {
 model Messages {
   id                  Int                   @id @default(autoincrement())
   createdAt           DateTime?             @default(now()) @map("created_at") @db.Timestamp(6)
-  expireAt            DateTime?             @map("expire_at") @db.Timestamp(6)
   isAnnouncement      Boolean?              @default(false) @map("is_announcement")
   isForward           Boolean?              @default(false) @map("is_forward")
   updatedAt           DateTime?             @default(now()) @map("updated_at") @db.Timestamp(6)
   content             String?
   url                 String?
-  attachment          String?
   senderId            Int                   @map("sender_id")
   replyTo             Int?                  @map("reply_to")
   participantId       Int                   @map("participant_id")
@@ -335,7 +332,6 @@ enum Social {
 enum MessageStatus {
   usual
   pinned
-  deleted
   drafted
 }
 
