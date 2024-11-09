@@ -14,7 +14,7 @@ async function testPrismaConnection() {
 prisma
   .$connect()
   .then(() => {
-    testPrismaConnection(); // Test connection on startup
+    testPrismaConnection().then(); // Test connection on startup
   })
   .catch((error) => {
     console.error('Error connecting to the database:', error);
