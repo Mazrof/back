@@ -155,5 +155,5 @@ export const applyGroupFilter = async (groupId: number, adminId: number) => {
     },
   });
 
-  return group;
+  return groupFilter;
 };

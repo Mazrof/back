@@ -3,6 +3,7 @@ import {
   addGroupMember,
   deleteGroupMember,
   getGroupMembers,
+  inviteGroupMember,
   updateGroupMember,
 } from '../controllers/groupMemberController';
 
@@ -11,6 +12,7 @@ const router: Router = express.Router({
 });
 
 // Routes for group members
+router.route('/invite').post(inviteGroupMember);
 router
   .route('')
   .get(getGroupMembers) // Anyone can access
