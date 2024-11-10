@@ -47,7 +47,6 @@ export const handleNewMessage = async (
     content: null,
     url: null,
   });
-  console.log(createdMessage, 'after saving');
   if (message.content.length > 100) {
     message.url = await uploadFileToFirebase(message.content);
     createdMessage = await updateMessageById(createdMessage.id, {
@@ -58,7 +57,6 @@ export const handleNewMessage = async (
       content: message.content,
     });
   }
-  console.log(createdMessage, 'after updating');
   const roomSockets = io.sockets.adapter.rooms.get(
     message.participantId.toString()
   );
@@ -69,9 +67,10 @@ export const handleNewMessage = async (
       ) as number;
       const socket = io.sockets.sockets.get(socketId);
       await insertMessageRecipient(userId, createdMessage);
-      if (socket) {
-        socket.emit('message:receive', { MSG: message });
-      }
+      //TODO: what about message info
+      // if (socket) {
+      //   socket.emit('message:receive', { MSG: message });
+      // }
     }
   }
 
@@ -79,10 +78,8 @@ export const handleNewMessage = async (
     'message:receive',
     createdMessage
   );
-  //TODO: DELETE THIS
   //TODO: WHAT IF THE ROW WAS NOT INSTERED AND YOU SAVE IT IN FIREBASE
 
-  io.emit('message:receive', createdMessage);
   if (message.durationInMinutes) {
     setTimeout(
       () => {
@@ -106,10 +103,6 @@ export const handleDeleteMessage = async (
   await deleteMessage(message!.id);
 
   io.to(message!.participantId.toString()).emit('message:deleted', {
-    message: { id: message!.id, participantId: message!.participantId },
-  });
-  //TODO: DELETE THIS
-  io.emit('message:deleted', {
     message: { id: message!.id, participantId: message!.participantId },
   });
 };
@@ -158,8 +151,6 @@ export const handleOpenContext = async (data: { participantId: number }) => {
     'message:update-info',
     updatedMessages
   );
-  //TODO: DELETE THIS LINE
-  io.emit('message:update-info', updatedMessages);
 };
 
 export const handleNewConnection = async (socket: Socket) => {
@@ -185,7 +176,6 @@ const getAllParticipantIds = async (userId: number): Promise<number[]> => {
     getParticipantIdsOfUserGroups(userId),
     getParticipantIdsOfUserChannels(userId),
   ]);
-  console.log([...personalChatIds, ...groupIds, ...channelIds]);
   return [...personalChatIds, ...groupIds, ...channelIds];
 };
 

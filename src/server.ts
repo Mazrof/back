@@ -38,6 +38,7 @@ process.on('unhandledRejection', (err: Error) => {
     message: 'Server is shutting down for maintenance',
   });
   console.log('Shutting down ...');
+  console.log(err);
   // process.exit(1);//will abort all running requests
   server.close(() => {
     process.exit(1);

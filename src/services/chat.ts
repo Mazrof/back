@@ -1,5 +1,5 @@
 import { prisma, Schemas } from '../prisma/client';
-import { ParticipiantTypes } from '@prisma/client';
+import { ParticipiantTypes, Privacy, Social } from '@prisma/client';
 
 export const createMessage = async (data: any) => {
   return prisma.messages.create({
@@ -29,9 +29,7 @@ export const getParticipantIdsOfUserPersonalChats = async (userId: number) => {
     },
   });
   // Flatten to get only participant IDs
-  const participantIds = personalChats.flatMap((chat) => chat.participants!.id);
-  console.log(participantIds);
-  return participantIds;
+  return personalChats.flatMap((chat) => chat.participants!.id);
 };
 export const getParticipantIdsOfUserGroups = async (userId: number) => {
   const memberships = await prisma.groupMemberships.findMany({
@@ -83,7 +81,6 @@ export const getParticipantIdsOfUserChannels = async (userId: number) => {
     },
   });
   // Extract participant IDs step-by-step and handle nullable values
-  console.log(memberships[0].channels.communities!.participants!.id);
   return memberships.flatMap(
     (membership) => membership.channels.communities!.participants!.id
   );
@@ -142,7 +139,6 @@ export const insertParticipantDate = async (
       participantId: true,
     },
   });
-  console.log(missingMessages);
   const insertData = missingMessages.map((message) => ({
     userId: userId,
     messageId: message.id,
@@ -187,6 +183,17 @@ export const updateMessageById = async (
 };
 export const createPersonalChat = async (user1Id: number, user2Id: number) => {
   if (user1Id > user2Id) [user1Id, user2Id] = [user2Id, user1Id];
+  // if this pair was exists before return it existing
+  const personalChat = prisma.personalChat.findFirst({
+    where: {
+      user1Id,
+      user2Id,
+    },
+    include: {
+      participants: true,
+    },
+  });
+  if (personalChat) return personalChat;
   return prisma.personalChat.create({
     data: {
       user1Id,
