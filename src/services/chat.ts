@@ -1,5 +1,6 @@
 import { prisma, Schemas } from '../prisma/client';
 import { Messages, ParticipiantTypes, Privacy, Social } from '@prisma/client';
+import { handleDeleteMessage } from '../sockets/listeners/chatListeners';
 
 interface Participant {
   type: string;
@@ -406,9 +407,7 @@ export const getUserParticipants = async (userId: number) => {
     channel: {} as undefined | object,
     group: {} as undefined | object,
   }));
-  console.log(results);
   results.forEach((participant) => {
-    console.log(participant.type);
     if (participant.type !== 'personalChat') {
       if (participant.communities!.channels.length) {
         participant.channel = {
@@ -452,10 +451,6 @@ export const getUserParticipants = async (userId: number) => {
       p2.lastMessage.createdAt!.getTime() - p1.lastMessage.createdAt!.getTime()
     );
   });
-  console.log(results);
-
   return results;
 };
 getUserParticipants(1);
-//TODO:
-// what if the is deleted and the server off in temporay messages

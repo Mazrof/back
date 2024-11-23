@@ -369,10 +369,8 @@ const getUserParticipants = (userId) => __awaiter(void 0, void 0, void 0, functi
             : undefined, user2: participant.personalChat
             ? participant.personalChat.users2
             : undefined, lastMessage: participant.messages ? participant.messages[0] : undefined, channel: {}, group: {} })));
-    console.log(results);
     results.forEach((participant) => {
         var _a, _b;
-        console.log(participant.type);
         if (participant.type !== 'personalChat') {
             if (participant.communities.channels.length) {
                 participant.channel = Object.assign(Object.assign(Object.assign({}, participant.communities), (_a = participant.communities) === null || _a === void 0 ? void 0 : _a.channels[0]), { groups: undefined, channels: undefined });
@@ -407,10 +405,7 @@ const getUserParticipants = (userId) => __awaiter(void 0, void 0, void 0, functi
             return -1;
         return (p2.lastMessage.createdAt.getTime() - p1.lastMessage.createdAt.getTime());
     });
-    console.log(results);
     return results;
 });
 exports.getUserParticipants = getUserParticipants;
 (0, exports.getUserParticipants)(1);
-//TODO:
-// what if the is deleted and the server off in temporay messages
