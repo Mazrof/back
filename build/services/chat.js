@@ -353,6 +353,8 @@ const getUserParticipants = (userId) => __awaiter(void 0, void 0, void 0, functi
                             screenName: true,
                             phone: true,
                             publicKey: true,
+                            lastSeen: true,
+                            activeNow: true,
                         },
                     },
                     users2: {
@@ -363,6 +365,8 @@ const getUserParticipants = (userId) => __awaiter(void 0, void 0, void 0, functi
                             screenName: true,
                             phone: true,
                             publicKey: true,
+                            lastSeen: true,
+                            activeNow: true,
                         },
                     },
                 },
@@ -420,14 +424,19 @@ const getUserParticipants = (userId) => __awaiter(void 0, void 0, void 0, functi
     return results;
 });
 exports.getUserParticipants = getUserParticipants;
-const getMessagesService = (id) => __awaiter(void 0, void 0, void 0, function* () {
+const getMessagesService = (id, take, skip) => __awaiter(void 0, void 0, void 0, function* () {
     const messages = yield client_1.prisma.messages.findMany({
+        take,
+        skip,
         where: {
             participantId: id,
         },
         include: {
             messageReadReceipts: true,
             messageMentions: true,
+        },
+        orderBy: {
+            createdAt: 'desc',
         },
     });
     return messages;

@@ -391,6 +391,8 @@ export const getUserParticipants = async (userId: number) => {
               screenName: true,
               phone: true,
               publicKey: true,
+              lastSeen: true,
+              activeNow: true,
             },
           },
           users2: {
@@ -401,6 +403,8 @@ export const getUserParticipants = async (userId: number) => {
               screenName: true,
               phone: true,
               publicKey: true,
+              lastSeen: true,
+              activeNow: true,
             },
           },
         },
@@ -477,14 +481,23 @@ export const getUserParticipants = async (userId: number) => {
   return results;
 };
 
-export const getMessagesService = async (id: number) => {
+export const getMessagesService = async (
+  id: number,
+  take: number,
+  skip: number
+) => {
   const messages = await prisma.messages.findMany({
+    take,
+    skip,
     where: {
       participantId: id,
     },
     include: {
       messageReadReceipts: true,
       messageMentions: true,
+    },
+    orderBy: {
+      createdAt: 'desc',
     },
   });
   return messages;
