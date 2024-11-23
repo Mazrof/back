@@ -66,6 +66,8 @@ export const handleNewMessage = async (
         socketId
       ) as number;
       const socket = io.sockets.sockets.get(socketId);
+      //TODO: GET THIS FROM AUTH
+      // if(userId !== message.senderId)
       await insertMessageRecipient(userId, createdMessage);
       //TODO: what about message info
       // if (socket) {

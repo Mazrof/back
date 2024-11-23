@@ -454,3 +454,58 @@ export const getUserParticipants = async (userId: number) => {
   return results;
 };
 getUserParticipants(1);
+
+export const getMessagesService = async (id: number) => {
+  const messages = await prisma.messages.findMany({
+    where: {
+      participantId: id,
+    },
+    include: {
+      messageReadReceipts: true,
+      //TODO: WHAT ABOUT MENTIONS
+      messageMentions: true,
+    },
+  });
+  return messages;
+};
+getMessagesService(1);
+export const canSeeMessages = async (
+  userId: number,
+  participantId: number
+): Promise<boolean> => {
+  const participant = await prisma.participants.findMany({
+    where: {
+      id: participantId,
+      OR: [
+        {
+          personalChat: {
+            OR: [{ user1Id: userId }, { user2Id: userId }],
+          },
+        },
+        {
+          communities: {
+            groups: {
+              some: {
+                groupMemberships: {
+                  some: { userId },
+                },
+              },
+            },
+          },
+        },
+        {
+          communities: {
+            channels: {
+              some: {
+                channelSubscriptions: {
+                  some: { userId },
+                },
+              },
+            },
+          },
+        },
+      ],
+    },
+  });
+  return participant.length !== 0;
+};

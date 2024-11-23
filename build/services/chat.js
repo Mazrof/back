@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserParticipants = exports.getUserGroupsChannelsChats = exports.createPersonalChat = exports.updateMessageById = exports.getMessageById = exports.deleteMessage = exports.insertMessageRecipient = exports.insertParticipantDate = exports.markMessagesAsRead = exports.getParticipantIdsOfUserChannels = exports.getParticipantIdsOfUserGroups = exports.getParticipantIdsOfUserPersonalChats = exports.createMessage = void 0;
+exports.canSeeMessages = exports.getMessagesService = exports.getUserParticipants = exports.getUserGroupsChannelsChats = exports.createPersonalChat = exports.updateMessageById = exports.getMessageById = exports.deleteMessage = exports.insertMessageRecipient = exports.insertParticipantDate = exports.markMessagesAsRead = exports.getParticipantIdsOfUserChannels = exports.getParticipantIdsOfUserGroups = exports.getParticipantIdsOfUserPersonalChats = exports.createMessage = void 0;
 const client_1 = require("../prisma/client");
 const client_2 = require("@prisma/client");
 const createMessage = (data) => __awaiter(void 0, void 0, void 0, function* () {
@@ -409,3 +409,56 @@ const getUserParticipants = (userId) => __awaiter(void 0, void 0, void 0, functi
 });
 exports.getUserParticipants = getUserParticipants;
 (0, exports.getUserParticipants)(1);
+const getMessagesService = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    const messages = yield client_1.prisma.messages.findMany({
+        where: {
+            participantId: id,
+        },
+        include: {
+            messageReadReceipts: true,
+            //TODO: WHAT ABOUT MENTIONS
+            messageMentions: true,
+        },
+    });
+    return messages;
+});
+exports.getMessagesService = getMessagesService;
+(0, exports.getMessagesService)(1);
+const canSeeMessages = (userId, participantId) => __awaiter(void 0, void 0, void 0, function* () {
+    const participant = yield client_1.prisma.participants.findMany({
+        where: {
+            id: participantId,
+            OR: [
+                {
+                    personalChat: {
+                        OR: [{ user1Id: userId }, { user2Id: userId }],
+                    },
+                },
+                {
+                    communities: {
+                        groups: {
+                            some: {
+                                groupMemberships: {
+                                    some: { userId },
+                                },
+                            },
+                        },
+                    },
+                },
+                {
+                    communities: {
+                        channels: {
+                            some: {
+                                channelSubscriptions: {
+                                    some: { userId },
+                                },
+                            },
+                        },
+                    },
+                },
+            ],
+        },
+    });
+    return participant.length !== 0;
+});
+exports.canSeeMessages = canSeeMessages;
