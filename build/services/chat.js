@@ -9,12 +9,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserGroupsChannelsChats = exports.createPersonalChat = exports.updateMessageById = exports.getMessageById = exports.deleteMessage = exports.insertMessageRecipient = exports.insertParticipantDate = exports.markMessagesAsRead = exports.getParticipantIdsOfUserChannels = exports.getParticipantIdsOfUserGroups = exports.getParticipantIdsOfUserPersonalChats = exports.createMessage = void 0;
+exports.getUserParticipants = exports.getUserGroupsChannelsChats = exports.createPersonalChat = exports.updateMessageById = exports.getMessageById = exports.deleteMessage = exports.insertMessageRecipient = exports.insertParticipantDate = exports.markMessagesAsRead = exports.getParticipantIdsOfUserChannels = exports.getParticipantIdsOfUserGroups = exports.getParticipantIdsOfUserPersonalChats = exports.createMessage = void 0;
 const client_1 = require("../prisma/client");
 const client_2 = require("@prisma/client");
 const createMessage = (data) => __awaiter(void 0, void 0, void 0, function* () {
     return client_1.prisma.messages.create({
-        data: Object.assign(Object.assign({}, data), { participantId: undefined, participants: { connect: { id: data.participantId } }, messages: data.replyTo ? { connect: { id: data.replyTo } } : undefined, replyTo: undefined, users: { connect: { id: data.senderId } }, senderId: undefined }),
+        data: Object.assign(Object.assign({}, data), { participantId: undefined, participants: { connect: { id: data.participantId } }, messages: data.replyTo ? { connect: { id: data.replyTo } } : undefined, replyTo: undefined, users: { connect: { id: data.senderId } }, senderId: undefined, createdAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000), updatedAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000) }),
     });
 });
 exports.createMessage = createMessage;
@@ -217,6 +217,8 @@ const getUserGroupsChannelsChats = (userId) => __awaiter(void 0, void 0, void 0,
                                     participants: {
                                         include: {
                                             messages: {
+                                                orderBy: { createdAt: 'desc' },
+                                                take: 1,
                                                 include: {
                                                     messageReadReceipts: true,
                                                 },
@@ -238,6 +240,8 @@ const getUserGroupsChannelsChats = (userId) => __awaiter(void 0, void 0, void 0,
                                     participants: {
                                         include: {
                                             messages: {
+                                                orderBy: { createdAt: 'desc' },
+                                                take: 1,
                                                 include: {
                                                     messageReadReceipts: true,
                                                 },
@@ -255,6 +259,8 @@ const getUserGroupsChannelsChats = (userId) => __awaiter(void 0, void 0, void 0,
                     participants: {
                         include: {
                             messages: {
+                                orderBy: { createdAt: 'desc' },
+                                take: 1,
                                 include: {
                                     messageReadReceipts: true,
                                 },
@@ -268,6 +274,8 @@ const getUserGroupsChannelsChats = (userId) => __awaiter(void 0, void 0, void 0,
                     participants: {
                         include: {
                             messages: {
+                                orderBy: { createdAt: 'desc' },
+                                take: 1,
                                 include: {
                                     messageReadReceipts: true,
                                 },
@@ -285,3 +293,124 @@ const getUserGroupsChannelsChats = (userId) => __awaiter(void 0, void 0, void 0,
     return Object.assign(Object.assign({}, userData), { personalChatsAsUser1: undefined, personalChatsAsUser2: undefined, personalChats: combinedPersonalChats });
 });
 exports.getUserGroupsChannelsChats = getUserGroupsChannelsChats;
+const getUserParticipants = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const userParticipants = yield client_1.prisma.participants.findMany({
+        where: {
+            OR: [
+                {
+                    personalChat: {
+                        OR: [{ user1Id: userId }, { user2Id: userId }],
+                    },
+                },
+                {
+                    communities: {
+                        groups: {
+                            some: {
+                                groupMemberships: {
+                                    some: { userId },
+                                },
+                            },
+                        },
+                    },
+                },
+                {
+                    communities: {
+                        channels: {
+                            some: {
+                                channelSubscriptions: {
+                                    some: { userId },
+                                },
+                            },
+                        },
+                    },
+                },
+            ],
+        },
+        include: {
+            messages: {
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+                include: {
+                    messageReadReceipts: true,
+                },
+            },
+            personalChat: {
+                include: {
+                    users1: {
+                        select: {
+                            id: true,
+                            username: true,
+                            photo: true,
+                            screenName: true,
+                            phone: true,
+                        },
+                    },
+                    users2: {
+                        select: {
+                            id: true,
+                            username: true,
+                            photo: true,
+                            screenName: true,
+                            phone: true,
+                        },
+                    },
+                },
+            },
+            communities: {
+                include: {
+                    groups: true,
+                    channels: true,
+                },
+            },
+        },
+    });
+    const results = userParticipants.map((participant) => (Object.assign(Object.assign({}, participant), { communityId: undefined, personalChatId: undefined, messages: undefined, personalChat: undefined, user1: participant.personalChat
+            ? participant.personalChat.users1
+            : undefined, user2: participant.personalChat
+            ? participant.personalChat.users2
+            : undefined, lastMessage: participant.messages ? participant.messages[0] : undefined, channel: {}, group: {} })));
+    console.log(results);
+    results.forEach((participant) => {
+        var _a, _b;
+        console.log(participant.type);
+        if (participant.type !== 'personalChat') {
+            if (participant.communities.channels.length) {
+                participant.channel = Object.assign(Object.assign(Object.assign({}, participant.communities), (_a = participant.communities) === null || _a === void 0 ? void 0 : _a.channels[0]), { groups: undefined, channels: undefined });
+                participant.group = undefined;
+                participant.type = 'channel';
+            }
+            else {
+                participant.group = Object.assign(Object.assign(Object.assign({}, participant.communities), (_b = participant.communities) === null || _b === void 0 ? void 0 : _b.groups[0]), { groups: undefined, channels: undefined });
+                participant.type = 'group';
+                participant.channel = undefined;
+            }
+        }
+        else {
+            // personal chat
+            participant.group = undefined;
+            participant.channel = undefined;
+            if (participant.user1.id === userId) {
+                participant.secondUser = participant.user2;
+            }
+            if (participant.user2.id === userId) {
+                participant.secondUser = participant.user1;
+            }
+            participant.user1 = undefined;
+            participant.user2 = undefined;
+        }
+        participant.communities = undefined;
+    });
+    results.sort((p1, p2) => {
+        if (!p1.lastMessage)
+            return 1;
+        if (!p2.lastMessage)
+            return -1;
+        return (p2.lastMessage.createdAt.getTime() - p1.lastMessage.createdAt.getTime());
+    });
+    console.log(results);
+    return results;
+});
+exports.getUserParticipants = getUserParticipants;
+(0, exports.getUserParticipants)(1);
+//TODO:
+// what if the is deleted and the server off in temporay messages

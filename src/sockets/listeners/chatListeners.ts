@@ -83,16 +83,13 @@ export const handleNewMessage = async (
   if (message.durationInMinutes) {
     setTimeout(
       () => {
-        handleDeleteMessage(socket, createdMessage);
+        handleDeleteMessage(createdMessage);
       },
       message.durationInMinutes * 60 * 1000
     );
   }
 };
-export const handleDeleteMessage = async (
-  socket: Socket,
-  data: { id: number }
-) => {
+export const handleDeleteMessage = async (data: { id: number }) => {
   //TODO: determine who can delete and post files in firebase
   const message = await getMessageById(data.id);
   if (!message) {
@@ -198,7 +195,7 @@ const setupSocketEventHandlers = (socket: Socket) => {
   socket.on(
     'message:delete',
     catchAsyncSockets(async (message: Messages) => {
-      await handleDeleteMessage(socket, message);
+      await handleDeleteMessage(message);
     }, socket)
   );
   socket.on('context:opened', handleOpenContext);

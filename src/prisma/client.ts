@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import { log } from 'node:util';
 const prisma = new PrismaClient();
 
 async function testPrismaConnection() {
@@ -15,6 +16,9 @@ prisma
   .$connect()
   .then(() => {
     testPrismaConnection(); // Test connection on startup
+  })
+  .then(async () => {
+    // delete expired messages
   })
   .catch((error) => {
     console.error('Error connecting to the database:', error);
