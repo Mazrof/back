@@ -172,7 +172,7 @@ export const insertParticipantDate = async (
 };
 
 export const insertMessageRecipient = async (userId: number, message: any) => {
-  await prisma.messageReadReceipts.create({
+  return prisma.messageReadReceipts.create({
     data: {
       userId,
       participantId: message.participantId,
@@ -197,8 +197,13 @@ export const updateMessageById = async (
   id: number,
   data: Schemas.MessagesUpdateInput
 ) => {
-  return prisma.messages.update({ where: { id }, data });
+  const message = await prisma.messages.update({ where: { id }, data });
+  return {
+    ...message,
+    messageReadReceipts: [],
+  };
 };
+
 export const createPersonalChat = async (user1Id: number, user2Id: number) => {
   if (user1Id > user2Id) [user1Id, user2Id] = [user2Id, user1Id];
   // if this pair was exists before return it existing

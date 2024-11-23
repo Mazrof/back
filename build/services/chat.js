@@ -148,7 +148,7 @@ const insertParticipantDate = (userId, participantIds) => __awaiter(void 0, void
 });
 exports.insertParticipantDate = insertParticipantDate;
 const insertMessageRecipient = (userId, message) => __awaiter(void 0, void 0, void 0, function* () {
-    yield client_1.prisma.messageReadReceipts.create({
+    return client_1.prisma.messageReadReceipts.create({
         data: {
             userId,
             participantId: message.participantId,
@@ -170,7 +170,8 @@ const getMessageById = (id) => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.getMessageById = getMessageById;
 const updateMessageById = (id, data) => __awaiter(void 0, void 0, void 0, function* () {
-    return client_1.prisma.messages.update({ where: { id }, data });
+    const message = yield client_1.prisma.messages.update({ where: { id }, data });
+    return Object.assign(Object.assign({}, message), { messageReadReceipts: [] });
 });
 exports.updateMessageById = updateMessageById;
 const createPersonalChat = (user1Id, user2Id) => __awaiter(void 0, void 0, void 0, function* () {

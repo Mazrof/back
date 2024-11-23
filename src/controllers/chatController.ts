@@ -21,11 +21,6 @@ export const getMessages = catchAsync(async (req, res) => {
   const participantId = parseInt(req.params.id, 10);
   if (isNaN(participantId))
     throw new AppError('please provide a valid chat id', 400);
-  if (!['group', 'channel', 'personalChat'].includes(req.body.type))
-    throw new AppError(
-      "please provide a valid chat type 'group', 'channel', 'personalChat'",
-      400
-    );
   //the sender should be in the asked participant
   if (!(await canSeeMessages(userId, participantId)))
     throw new AppError('you are not allowed to see this chat', 403);

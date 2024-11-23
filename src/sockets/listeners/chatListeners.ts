@@ -26,10 +26,14 @@ export interface NewMessages extends Messages {
 }
 export const handleNewMessage = async (
   socket: Socket,
+  callback: (arg: object) => void,
   message: NewMessages
 ) => {
   if (!message.content) {
-    //TODO return error to user
+    //callback(err,info)
+    callback({
+      message: 'message is empty',
+    });
     return;
   }
   if (message.receiverId) {
@@ -38,6 +42,7 @@ export const handleNewMessage = async (
     //TODO: message.senderId = user.id
     message.participantId = (await createPersonalChat(
       message.receiverId,
+      //TODO:DELETE THIS 1
       1
     ))!.participants!.id;
   }
@@ -60,6 +65,7 @@ export const handleNewMessage = async (
   const roomSockets = io.sockets.adapter.rooms.get(
     message.participantId.toString()
   );
+  const messageReadReceipts = [];
   if (roomSockets) {
     for (const socketId of roomSockets) {
       const userId = Chat.getInstance().getUserUsingSocketId(
@@ -68,18 +74,20 @@ export const handleNewMessage = async (
       const socket = io.sockets.sockets.get(socketId);
       //TODO: GET THIS FROM AUTH
       // if(userId !== message.senderId)
-      await insertMessageRecipient(userId, createdMessage);
-      //TODO: what about message info
+      messageReadReceipts.push(
+        await insertMessageRecipient(userId, createdMessage)
+      );
+      //if any event with name "" then append to this array
+
       // if (socket) {
       //   socket.emit('message:receive', { MSG: message });
       // }
     }
   }
-
-  io.to(message.participantId.toString()).emit(
-    'message:receive',
-    createdMessage
-  );
+  io.to(message.participantId.toString()).emit('message:receive', {
+    ...createdMessage,
+    messageReadReceipts,
+  });
   //TODO: WHAT IF THE ROW WAS NOT INSTERED AND YOU SAVE IT IN FIREBASE
 
   if (message.durationInMinutes) {
@@ -154,13 +162,17 @@ export const handleOpenContext = async (data: { participantId: number }) => {
 
 export const handleNewConnection = async (socket: Socket) => {
   //TODO: DELETE THIS
-  const userId = 1;
+  const userId = 4;
   logger.info(`User ${userId} connected`);
   const chatInstance = Chat.getInstance();
   chatInstance.addUser(userId, socket);
   const userParticipants = await getAllParticipantIds(userId);
+  console.log(userParticipants);
   // Join user to all their chat rooms
-  userParticipants.forEach((chatId) => socket.join(chatId.toString()));
+  const socketJoinPromises = userParticipants.map((chatId) =>
+    socket.join(chatId.toString())
+  );
+  await Promise.all(socketJoinPromises);
   // Insert participant data and notify recipients
   const insertedData = await insertParticipantDate(userId, userParticipants);
   notifyParticipants(insertedData, socket);
@@ -179,18 +191,26 @@ const getAllParticipantIds = async (userId: number): Promise<number[]> => {
 };
 
 // Notify other participants about the updated info
-const notifyParticipants = (insertedData: any[], socket: Socket) => {
+const notifyParticipants = (
+  insertedData: { participantId: number }[],
+  socket: Socket
+) => {
+  console.log(insertedData);
   insertedData.forEach((userRecipient) => {
-    socket
+    //TODO:TEST THIS AFTER AUTH
+    socket.broadcast
       .to(userRecipient.participantId.toString())
       .emit('message:update-info', [userRecipient]);
   });
 };
 
 const setupSocketEventHandlers = (socket: Socket) => {
-  socket.on('message:sent', async (message: Messages) => {
-    await handleNewMessage(socket, message);
-  });
+  socket.on(
+    'message:sent',
+    async (message: Messages, callback: (arg: object) => void) => {
+      await handleNewMessage(socket, callback, message);
+    }
+  );
   socket.on('message:edit', async (message: Messages) => {
     await handleEditMessage(socket, message);
   });
