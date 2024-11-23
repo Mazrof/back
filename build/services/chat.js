@@ -14,7 +14,9 @@ const client_1 = require("../prisma/client");
 const client_2 = require("@prisma/client");
 const createMessage = (data) => __awaiter(void 0, void 0, void 0, function* () {
     return client_1.prisma.messages.create({
-        data: Object.assign(Object.assign({}, data), { participantId: undefined, participants: { connect: { id: data.participantId } }, messages: data.replyTo ? { connect: { id: data.replyTo } } : undefined, replyTo: undefined, users: { connect: { id: data.senderId } }, senderId: undefined, createdAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000), updatedAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000) }),
+        data: Object.assign(Object.assign({}, data), { participantId: undefined, participants: { connect: { id: data.participantId } }, messages: data.replyTo ? { connect: { id: data.replyTo } } : undefined, replyTo: undefined, users: { connect: { id: data.senderId } }, senderId: undefined, createdAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000), updatedAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000), messageMentions: {
+                create: data.messageMentions,
+            } }),
     });
 });
 exports.createMessage = createMessage;
@@ -417,7 +419,6 @@ const getMessagesService = (id) => __awaiter(void 0, void 0, void 0, function* (
         },
         include: {
             messageReadReceipts: true,
-            //TODO: WHAT ABOUT MENTIONS
             messageMentions: true,
         },
     });

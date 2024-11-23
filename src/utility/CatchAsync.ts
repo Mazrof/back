@@ -10,14 +10,14 @@ export const catchAsync = (
   };
 };
 //{ [key: string]: string | number | boolean }
-export const catchAsyncSockets = (
-  fn: (...args: any[]) => void,
-  socket: Socket
-) => {
-  return async (...args: any[]) => {
-    Promise.resolve(fn(...args)).catch((error) => {
-      logger.error('Error in event handler:', error);
-      socket.emit('errorEvent', { message: error.message });
-    });
-  };
-};
+// export const catchAsyncSockets = (
+//   fn: (...args: any[]) => void,
+//   socket: Socket
+// ) => {
+//   return async (...args: any[]) => {
+//     Promise.resolve(fn(...args)).catch((error) => {
+//       logger.error('Error in event handler:', error);
+//       socket.emit('errorEvent', { message: error.message });
+//     });
+//   };
+// };

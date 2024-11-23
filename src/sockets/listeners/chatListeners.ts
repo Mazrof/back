@@ -20,8 +20,8 @@ import { Messages } from '@prisma/client';
 import { Chat } from '../chat';
 import { io } from '../../server';
 import logger from '../../utility/logger';
-import { catchAsyncSockets } from '../../utility';
 export interface NewMessages extends Messages {
+  messageMentions: any[];
   receiverId?: number;
 }
 export const handleNewMessage = async (
@@ -46,12 +46,18 @@ export const handleNewMessage = async (
       1
     ))!.participants!.id;
   }
+  message.messageMentions = (message.messageMentions || []).map(
+    (mention: number) => ({
+      userId: mention,
+    })
+  );
   message.receiverId = undefined;
   let createdMessage = await createMessage({
     ...message,
     content: null,
     url: null,
   });
+
   if (message.content.length > 100) {
     message.url = await uploadFileToFirebase(message.content);
     createdMessage = await updateMessageById(createdMessage.id, {
@@ -71,25 +77,19 @@ export const handleNewMessage = async (
       const userId = Chat.getInstance().getUserUsingSocketId(
         socketId
       ) as number;
-      const socket = io.sockets.sockets.get(socketId);
+      // const socket = io.sockets.sockets.get(socketId);
       //TODO: GET THIS FROM AUTH
       // if(userId !== message.senderId)
       messageReadReceipts.push(
         await insertMessageRecipient(userId, createdMessage)
       );
-      //if any event with name "" then append to this array
-
-      // if (socket) {
-      //   socket.emit('message:receive', { MSG: message });
-      // }
     }
   }
   io.to(message.participantId.toString()).emit('message:receive', {
     ...createdMessage,
     messageReadReceipts,
+    messageMentions: message.messageMentions,
   });
-  //TODO: WHAT IF THE ROW WAS NOT INSTERED AND YOU SAVE IT IN FIREBASE
-
   if (message.durationInMinutes) {
     setTimeout(
       () => {
@@ -99,11 +99,16 @@ export const handleNewMessage = async (
     );
   }
 };
-export const handleDeleteMessage = async (data: { id: number }) => {
-  //TODO: determine who can delete and post files in firebase
+export const handleDeleteMessage = async (
+  data: { id: number },
+  callback?: (err: object) => void
+) => {
+  //TODO: ADD AUTH
   const message = await getMessageById(data.id);
   if (!message) {
-    //TODO: RETURN ERROR HERE
+    if (callback) callback({ message: 'message is not found' });
+    console.log('message not found');
+    return;
   }
   console.log('deleted message', message);
   if (message!.url) await deleteFileFromFirebase(message!.url);
@@ -114,18 +119,24 @@ export const handleDeleteMessage = async (data: { id: number }) => {
   });
 };
 
-export const handleEditMessage = async (socket: Socket, data: Messages) => {
+export const handleEditMessage = async (
+  socket: Socket,
+  data: Messages,
+  callback?: (err: object) => void
+) => {
   // TODO:problem of drafted messages(discuss with frontend)
+  //TODO: what if the message isn't the user message
   logger.info(`message with id ${data.id} is being edited`);
   const message = await getMessageById(data.id);
   if (!message) {
-    //TODO: WHAT if message doesn't exist
+    if (callback) callback({ message: 'message is not found' });
+    logger.info('message not found');
     return;
   }
   if (data.status === 'drafted') {
-    //TODO: return error "you can not make the message drafted"
+    if (callback) callback({ message: 'you can not make the message drafted' });
+    return;
   }
-  console.log(message);
   let url;
   if (data.content) {
     if (message.url) {
@@ -207,21 +218,25 @@ const notifyParticipants = (
 const setupSocketEventHandlers = (socket: Socket) => {
   socket.on(
     'message:sent',
-    async (message: Messages, callback: (arg: object) => void) => {
+    async (message: NewMessages, callback: (arg: object) => void) => {
       await handleNewMessage(socket, callback, message);
     }
   );
-  socket.on('message:edit', async (message: Messages) => {
-    await handleEditMessage(socket, message);
-  });
+  socket.on(
+    'message:edit',
+    async (message: Messages, callback: (arg: object) => void) => {
+      await handleEditMessage(socket, message, callback);
+    }
+  );
   socket.on(
     'message:delete',
-    catchAsyncSockets(async (message: Messages) => {
-      await handleDeleteMessage(message);
-    }, socket)
+    async (message: Messages, callback: (err: object) => void) => {
+      await handleDeleteMessage(message, callback);
+    }
   );
   socket.on('context:opened', handleOpenContext);
   socket.on('disconnect', () => {
     Chat.getInstance().removeUser(socket.id);
   });
 };
+//TODO: determine who can delete and post files in firebase

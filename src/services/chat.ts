@@ -29,6 +29,9 @@ export const createMessage = async (data: any) => {
       senderId: undefined,
       createdAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
       updatedAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
+      messageMentions: {
+        create: data.messageMentions,
+      },
     },
   });
 };
@@ -467,7 +470,6 @@ export const getMessagesService = async (id: number) => {
     },
     include: {
       messageReadReceipts: true,
-      //TODO: WHAT ABOUT MENTIONS
       messageMentions: true,
     },
   });
