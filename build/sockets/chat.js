@@ -27,7 +27,9 @@ class Chat {
         if (userId !== undefined) {
             this.onlineUsers.delete(userId);
             this.socketToUserMap.delete(socketId);
+            return userId;
         }
+        return -1;
     }
     static getInstance(io) {
         if (!this._instance) {
@@ -41,11 +43,8 @@ class Chat {
 }
 exports.Chat = Chat;
 //TODO: to create group or channel ==> create partitcipant also ask omar
-//TODO: popluate the public key of the user
-//TODO: how to start messaging on group or message
 //TODO: error handling
 //TODO: UNIT TEST
-//TODO: WHEN the server opened delete all messages that expires while the server down
 // io.use((socket, next) => {
 //   // Middleware logic, e.g., authentication
 //   const isAuthenticated = true; // Replace with your logic

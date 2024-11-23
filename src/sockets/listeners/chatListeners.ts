@@ -11,6 +11,7 @@ import {
   insertParticipantDate,
   markMessagesAsRead,
   updateMessageById,
+  updateUserProfile,
 } from '../../services';
 import {
   deleteFileFromFirebase,
@@ -20,6 +21,7 @@ import { Messages } from '@prisma/client';
 import { Chat } from '../chat';
 import { io } from '../../server';
 import logger from '../../utility/logger';
+import { updateProfile } from '../../controllers/profileController';
 export interface NewMessages extends Messages {
   messageMentions: any[];
   receiverId?: number;
@@ -176,6 +178,8 @@ export const handleOpenContext = async (data: { participantId: number }) => {
 export const handleNewConnection = async (socket: Socket) => {
   //TODO: DELETE THIS
   const userId = 1;
+  //mark user as active now
+  await updateUserProfile(userId, { activeNow: true, lastSeen: null });
   logger.info(`User ${userId} connected`);
   const chatInstance = Chat.getInstance();
   chatInstance.addUser(userId, socket);
@@ -234,8 +238,12 @@ const setupSocketEventHandlers = (socket: Socket) => {
     }
   );
   socket.on('context:opened', handleOpenContext);
-  socket.on('disconnect', () => {
-    Chat.getInstance().removeUser(socket.id);
+  socket.on('disconnect', async () => {
+    const userId = Chat.getInstance().removeUser(socket.id);
+    await updateUserProfile(userId, {
+      activeNow: false,
+      lastSeen: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
+    });
   });
 };
 //TODO: determine who can delete and post files in firebase

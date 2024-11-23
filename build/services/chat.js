@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.canSeeMessages = exports.getMessagesService = exports.getUserParticipants = exports.getUserGroupsChannelsChats = exports.createPersonalChat = exports.updateMessageById = exports.getMessageById = exports.deleteMessage = exports.insertMessageRecipient = exports.insertParticipantDate = exports.markMessagesAsRead = exports.getParticipantIdsOfUserChannels = exports.getParticipantIdsOfUserGroups = exports.getParticipantIdsOfUserPersonalChats = exports.createMessage = void 0;
+exports.updateUserProfile = exports.canSeeMessages = exports.getMessagesService = exports.getUserParticipants = exports.getUserGroupsChannelsChats = exports.createPersonalChat = exports.updateMessageById = exports.getMessageById = exports.deleteMessage = exports.insertMessageRecipient = exports.insertParticipantDate = exports.markMessagesAsRead = exports.getParticipantIdsOfUserChannels = exports.getParticipantIdsOfUserGroups = exports.getParticipantIdsOfUserPersonalChats = exports.createMessage = void 0;
 const client_1 = require("../prisma/client");
 const client_2 = require("@prisma/client");
 const createMessage = (data) => __awaiter(void 0, void 0, void 0, function* () {
@@ -471,3 +471,8 @@ const canSeeMessages = (userId, participantId) => __awaiter(void 0, void 0, void
     return participant.length !== 0;
 });
 exports.canSeeMessages = canSeeMessages;
+//TODO: MOVE THIS TO ANOTHER FILE
+const updateUserProfile = (userId, userInfo) => __awaiter(void 0, void 0, void 0, function* () {
+    return client_1.prisma.users.update({ where: { id: userId }, data: Object.assign({}, userInfo) });
+});
+exports.updateUserProfile = updateUserProfile;

@@ -1,5 +1,12 @@
 import { prisma, Schemas } from '../prisma/client';
-import { Messages, ParticipiantTypes, Privacy, Social } from '@prisma/client';
+import {
+  Messages,
+  ParticipiantTypes,
+  Prisma,
+  Privacy,
+  Social,
+  Users,
+} from '@prisma/client';
 
 interface Participant {
   type: string;
@@ -521,4 +528,12 @@ export const canSeeMessages = async (
     },
   });
   return participant.length !== 0;
+};
+
+//TODO: MOVE THIS TO ANOTHER FILE
+export const updateUserProfile = async (
+  userId: number,
+  userInfo: Prisma.UsersUpdateInput
+) => {
+  return prisma.users.update({ where: { id: userId }, data: { ...userInfo } });
 };
