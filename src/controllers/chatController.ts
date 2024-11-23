@@ -1,9 +1,7 @@
 import { catchAsync, AppError } from '../utility';
-import prisma from '../prisma/client';
 import {
   canSeeMessages,
   getMessagesService,
-  getUserGroupsChannelsChats,
   getUserParticipants,
 } from '../services';
 import { ParticipiantTypes } from '@prisma/client';

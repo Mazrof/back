@@ -1,6 +1,5 @@
 import { prisma, Schemas } from '../prisma/client';
 import { Messages, ParticipiantTypes, Privacy, Social } from '@prisma/client';
-import { handleDeleteMessage } from '../sockets/listeners/chatListeners';
 
 interface Participant {
   type: string;
@@ -209,8 +208,9 @@ export const updateMessageById = async (
 
 export const createPersonalChat = async (user1Id: number, user2Id: number) => {
   if (user1Id > user2Id) [user1Id, user2Id] = [user2Id, user1Id];
+  console.log('creating personal chat between', user1Id, 'and', user2Id);
   // if this pair was exists before return it existing
-  const personalChat = prisma.personalChat.findFirst({
+  const personalChat = await prisma.personalChat.findFirst({
     where: {
       user1Id,
       user2Id,
@@ -252,6 +252,7 @@ export const getUserGroupsChannelsChats = async (userId: number) => {
                         take: 1,
                         include: {
                           messageReadReceipts: true,
+                          messageMentions: true,
                         },
                       },
                     },
@@ -275,6 +276,7 @@ export const getUserGroupsChannelsChats = async (userId: number) => {
                         take: 1,
                         include: {
                           messageReadReceipts: true,
+                          messageMentions: true,
                         },
                       },
                     },
@@ -294,6 +296,7 @@ export const getUserGroupsChannelsChats = async (userId: number) => {
                 take: 1,
                 include: {
                   messageReadReceipts: true,
+                  messageMentions: true,
                 },
               },
             },
@@ -309,6 +312,7 @@ export const getUserGroupsChannelsChats = async (userId: number) => {
                 take: 1,
                 include: {
                   messageReadReceipts: true,
+                  messageMentions: true,
                 },
               },
             },
@@ -367,6 +371,7 @@ export const getUserParticipants = async (userId: number) => {
         take: 1,
         include: {
           messageReadReceipts: true,
+          messageMentions: true,
         },
       },
       personalChat: {
@@ -378,6 +383,7 @@ export const getUserParticipants = async (userId: number) => {
               photo: true,
               screenName: true,
               phone: true,
+              publicKey: true,
             },
           },
           users2: {
@@ -387,6 +393,7 @@ export const getUserParticipants = async (userId: number) => {
               photo: true,
               screenName: true,
               phone: true,
+              publicKey: true,
             },
           },
         },
@@ -440,6 +447,7 @@ export const getUserParticipants = async (userId: number) => {
       // personal chat
       participant.group = undefined;
       participant.channel = undefined;
+      console.log(participant);
       if (participant!.user1!.id === userId) {
         participant.secondUser = participant.user2;
       }
@@ -461,7 +469,6 @@ export const getUserParticipants = async (userId: number) => {
   });
   return results;
 };
-getUserParticipants(1);
 
 export const getMessagesService = async (id: number) => {
   const messages = await prisma.messages.findMany({
@@ -475,7 +482,6 @@ export const getMessagesService = async (id: number) => {
   });
   return messages;
 };
-getMessagesService(1);
 export const canSeeMessages = async (
   userId: number,
   participantId: number

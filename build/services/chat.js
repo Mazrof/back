@@ -179,8 +179,9 @@ exports.updateMessageById = updateMessageById;
 const createPersonalChat = (user1Id, user2Id) => __awaiter(void 0, void 0, void 0, function* () {
     if (user1Id > user2Id)
         [user1Id, user2Id] = [user2Id, user1Id];
+    console.log('creating personal chat between', user1Id, 'and', user2Id);
     // if this pair was exists before return it existing
-    const personalChat = client_1.prisma.personalChat.findFirst({
+    const personalChat = yield client_1.prisma.personalChat.findFirst({
         where: {
             user1Id,
             user2Id,
@@ -224,6 +225,7 @@ const getUserGroupsChannelsChats = (userId) => __awaiter(void 0, void 0, void 0,
                                                 take: 1,
                                                 include: {
                                                     messageReadReceipts: true,
+                                                    messageMentions: true,
                                                 },
                                             },
                                         },
@@ -247,6 +249,7 @@ const getUserGroupsChannelsChats = (userId) => __awaiter(void 0, void 0, void 0,
                                                 take: 1,
                                                 include: {
                                                     messageReadReceipts: true,
+                                                    messageMentions: true,
                                                 },
                                             },
                                         },
@@ -266,6 +269,7 @@ const getUserGroupsChannelsChats = (userId) => __awaiter(void 0, void 0, void 0,
                                 take: 1,
                                 include: {
                                     messageReadReceipts: true,
+                                    messageMentions: true,
                                 },
                             },
                         },
@@ -281,6 +285,7 @@ const getUserGroupsChannelsChats = (userId) => __awaiter(void 0, void 0, void 0,
                                 take: 1,
                                 include: {
                                     messageReadReceipts: true,
+                                    messageMentions: true,
                                 },
                             },
                         },
@@ -335,6 +340,7 @@ const getUserParticipants = (userId) => __awaiter(void 0, void 0, void 0, functi
                 take: 1,
                 include: {
                     messageReadReceipts: true,
+                    messageMentions: true,
                 },
             },
             personalChat: {
@@ -346,6 +352,7 @@ const getUserParticipants = (userId) => __awaiter(void 0, void 0, void 0, functi
                             photo: true,
                             screenName: true,
                             phone: true,
+                            publicKey: true,
                         },
                     },
                     users2: {
@@ -355,6 +362,7 @@ const getUserParticipants = (userId) => __awaiter(void 0, void 0, void 0, functi
                             photo: true,
                             screenName: true,
                             phone: true,
+                            publicKey: true,
                         },
                     },
                 },
@@ -390,6 +398,7 @@ const getUserParticipants = (userId) => __awaiter(void 0, void 0, void 0, functi
             // personal chat
             participant.group = undefined;
             participant.channel = undefined;
+            console.log(participant);
             if (participant.user1.id === userId) {
                 participant.secondUser = participant.user2;
             }
@@ -411,7 +420,6 @@ const getUserParticipants = (userId) => __awaiter(void 0, void 0, void 0, functi
     return results;
 });
 exports.getUserParticipants = getUserParticipants;
-(0, exports.getUserParticipants)(1);
 const getMessagesService = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const messages = yield client_1.prisma.messages.findMany({
         where: {
@@ -425,7 +433,6 @@ const getMessagesService = (id) => __awaiter(void 0, void 0, void 0, function* (
     return messages;
 });
 exports.getMessagesService = getMessagesService;
-(0, exports.getMessagesService)(1);
 const canSeeMessages = (userId, participantId) => __awaiter(void 0, void 0, void 0, function* () {
     const participant = yield client_1.prisma.participants.findMany({
         where: {

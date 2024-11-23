@@ -43,6 +43,7 @@ class Chat {
 export { Chat };
 
 //TODO: to create group or channel ==> create partitcipant also ask omar
+
 //TODO: popluate the public key of the user
 //TODO: how to start messaging on group or message
 //TODO: error handling

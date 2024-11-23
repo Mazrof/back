@@ -68,10 +68,12 @@ export const handleNewMessage = async (
       content: message.content,
     });
   }
+  console.log('HI');
   const roomSockets = io.sockets.adapter.rooms.get(
     message.participantId.toString()
   );
   const messageReadReceipts = [];
+  console.log(roomSockets);
   if (roomSockets) {
     for (const socketId of roomSockets) {
       const userId = Chat.getInstance().getUserUsingSocketId(
@@ -173,17 +175,14 @@ export const handleOpenContext = async (data: { participantId: number }) => {
 
 export const handleNewConnection = async (socket: Socket) => {
   //TODO: DELETE THIS
-  const userId = 4;
+  const userId = 1;
   logger.info(`User ${userId} connected`);
   const chatInstance = Chat.getInstance();
   chatInstance.addUser(userId, socket);
   const userParticipants = await getAllParticipantIds(userId);
-  console.log(userParticipants);
+  console.log(userParticipants, 'participants');
   // Join user to all their chat rooms
-  const socketJoinPromises = userParticipants.map((chatId) =>
-    socket.join(chatId.toString())
-  );
-  await Promise.all(socketJoinPromises);
+  userParticipants.forEach((chatId) => socket.join(chatId.toString()));
   // Insert participant data and notify recipients
   const insertedData = await insertParticipantDate(userId, userParticipants);
   notifyParticipants(insertedData, socket);
