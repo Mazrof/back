@@ -8,7 +8,7 @@ import { ParticipiantTypes } from '@prisma/client';
 
 export const getUserChats = catchAsync(async (req, res) => {
   //TODO: ADD AUTH remove call(1)
-  const data = await getUserParticipants(1);
+  const data = await getUserParticipants(2);
   res.status(200).json(data);
 });
 
@@ -26,6 +26,7 @@ export const getMessages = catchAsync(async (req, res) => {
     throw new AppError('you are not allowed to see this chat', 403);
   const data = await getMessagesService(
     participantId,
+    userId,
     limit,
     (page - 1) * limit
   );

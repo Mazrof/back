@@ -17,11 +17,12 @@ import {
   deleteFileFromFirebase,
   uploadFileToFirebase,
 } from '../../third_party_services';
-import { Messages } from '@prisma/client';
+import { Messages, MessageStatus } from '@prisma/client';
 import { Chat } from '../chat';
 import { io } from '../../server';
 import logger from '../../utility/logger';
 import { updateProfile } from '../../controllers/profileController';
+import client from '../../prisma/client';
 export interface NewMessages extends Messages {
   messageMentions: any[];
   receiverId?: number;
@@ -31,6 +32,14 @@ export const handleNewMessage = async (
   callback: (arg: object) => void,
   message: NewMessages
 ) => {
+  if (message.status === 'drafted') {
+    if (callback)
+      callback({
+        message:
+          "you can't save a new message as drafted you are allowed to update the drafted messages only",
+      });
+    return;
+  }
   if (!message.content) {
     //callback(err,info)
     callback({
@@ -83,17 +92,21 @@ export const handleNewMessage = async (
       ) as number;
       // const socket = io.sockets.sockets.get(socketId);
       //TODO: GET THIS FROM AUTH
-      // if(userId !== message.senderId)
-      messageReadReceipts.push(
-        await insertMessageRecipient(userId, createdMessage)
-      );
+      //TODO: TEST ON MORE THAN ONE USER
+      if (userId !== message.senderId)
+        messageReadReceipts.push(
+          await insertMessageRecipient(userId, createdMessage)
+        );
     }
   }
-  io.to(message.participantId.toString()).emit('message:receive', {
-    ...createdMessage,
-    messageReadReceipts,
-    messageMentions: message.messageMentions,
-  });
+  //TODO: TEST THIS
+  socket.broadcast
+    .to(message.participantId.toString())
+    .emit('message:receive', {
+      ...createdMessage,
+      messageReadReceipts: undefined,
+    });
+  socket.emit('message:receive', createdMessage);
   if (message.durationInMinutes) {
     setTimeout(
       () => {
@@ -128,17 +141,12 @@ export const handleEditMessage = async (
   data: Messages,
   callback?: (err: object) => void
 ) => {
-  // TODO:problem of drafted messages(discuss with frontend)
   //TODO: what if the message isn't the user message
   logger.info(`message with id ${data.id} is being edited`);
   const message = await getMessageById(data.id);
   if (!message) {
     if (callback) callback({ message: 'message is not found' });
     logger.info('message not found');
-    return;
-  }
-  if (data.status === 'drafted') {
-    if (callback) callback({ message: 'you can not make the message drafted' });
     return;
   }
   let url;
@@ -153,22 +161,28 @@ export const handleEditMessage = async (
       url = null;
     }
   }
-  const { content, status, isAnnouncement } = data;
+  const { content } = data;
   const updatedMessage = await updateMessageById(data.id, {
     content,
-    status,
-    isAnnouncement,
     url,
   });
-  io.to(updatedMessage.participantId.toString()).emit(
-    'message:edited',
-    updatedMessage
-  );
+  if (message.status === MessageStatus.drafted) {
+    io.to(updatedMessage.senderId.toString()).emit('message:edited', {
+      ...updatedMessage,
+      messageReadReceipts: undefined,
+    });
+    return;
+  }
+  io.to(updatedMessage.participantId.toString()).emit('message:edited', {
+    ...updatedMessage,
+    messageReadReceipts: undefined,
+  });
 };
 
 export const handleOpenContext = async (data: { participantId: number }) => {
   //TODO: get the data of the user from req after auth
   const updatedMessages = await markMessagesAsRead(1, data.participantId);
+  //TODO: RETURN THIS FOR THE SENDER ONLY MODIFY THE UPPER PART
   io.to(data.participantId.toString()).emit(
     'message:update-info',
     updatedMessages
@@ -177,7 +191,7 @@ export const handleOpenContext = async (data: { participantId: number }) => {
 
 export const handleNewConnection = async (socket: Socket) => {
   //TODO: DELETE THIS
-  const userId = 1;
+  const userId = 2;
   //mark user as active now
   await updateUserProfile(userId, { activeNow: true, lastSeen: null });
   logger.info(`User ${userId} connected`);
@@ -187,6 +201,8 @@ export const handleNewConnection = async (socket: Socket) => {
   console.log(userParticipants, 'participants');
   // Join user to all their chat rooms
   userParticipants.forEach((chatId) => socket.join(chatId.toString()));
+  //to sync drafted messages
+  socket.join(userId.toString());
   // Insert participant data and notify recipients
   const insertedData = await insertParticipantDate(userId, userParticipants);
   notifyParticipants(insertedData, socket);

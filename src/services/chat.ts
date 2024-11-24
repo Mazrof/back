@@ -1,6 +1,7 @@
 import { prisma, Schemas } from '../prisma/client';
 import {
   Messages,
+  MessageStatus,
   ParticipiantTypes,
   Prisma,
   Privacy,
@@ -38,6 +39,10 @@ export const createMessage = async (data: any) => {
       messageMentions: {
         create: data.messageMentions,
       },
+    },
+    include: {
+      messageMentions: true,
+      messageReadReceipts: true,
     },
   });
 };
@@ -150,6 +155,13 @@ export const insertParticipantDate = async (
 ) => {
   const missingMessages = await prisma.messages.findMany({
     where: {
+      //TODO: TEST THIS
+      senderId: {
+        not: userId,
+      },
+      status: {
+        not: MessageStatus.drafted,
+      },
       participants: {
         id: { in: participantIds },
       },
@@ -164,15 +176,18 @@ export const insertParticipantDate = async (
     select: {
       id: true,
       participantId: true,
+      senderId: true,
     },
   });
-  const insertData = missingMessages.map((message) => ({
-    userId: userId,
-    messageId: message.id,
-    participantId: message.participantId,
-    deliveredAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
-    readAt: null,
-  }));
+  const insertData = missingMessages.map((message) => {
+    return {
+      userId: userId,
+      messageId: message.id,
+      participantId: message.participantId,
+      deliveredAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
+      readAt: null,
+    };
+  });
 
   await prisma.messageReadReceipts.createMany({
     data: insertData,
@@ -206,10 +221,19 @@ export const updateMessageById = async (
   id: number,
   data: Schemas.MessagesUpdateInput
 ) => {
-  const message = await prisma.messages.update({ where: { id }, data });
+  const message = await prisma.messages.update({
+    where: { id },
+    data: {
+      ...data,
+      updatedAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
+    },
+    include: {
+      messageReadReceipts: true,
+      messageMentions: true,
+    },
+  });
   return {
     ...message,
-    messageReadReceipts: [],
   };
 };
 
@@ -377,8 +401,8 @@ export const getUserParticipants = async (userId: number) => {
         orderBy: { createdAt: 'desc' },
         take: 1,
         include: {
-          messageReadReceipts: true,
-          messageMentions: true,
+          // messageReadReceipts: true,
+          // messageMentions: true,
         },
       },
       personalChat: {
@@ -482,15 +506,19 @@ export const getUserParticipants = async (userId: number) => {
 };
 
 export const getMessagesService = async (
-  id: number,
+  participantId: number,
+  senderId: number,
   take: number,
   skip: number
 ) => {
-  const messages = await prisma.messages.findMany({
+  let messages = await prisma.messages.findMany({
     take,
     skip,
     where: {
-      participantId: id,
+      participantId,
+      status: {
+        not: MessageStatus.drafted,
+      },
     },
     include: {
       messageReadReceipts: true,
@@ -500,7 +528,37 @@ export const getMessagesService = async (
       createdAt: 'desc',
     },
   });
-  return messages;
+  messages.forEach((msg) => {
+    if (msg.senderId !== senderId) {
+      //TODO: CHECK THIS MENTIONS
+      msg.messageMentions = [];
+      msg.messageReadReceipts = [];
+    }
+  });
+  if (skip !== 0) return messages;
+  let draftedMessage = await prisma.messages.findFirst({
+    where: {
+      participantId,
+      senderId,
+      status: MessageStatus.drafted,
+    },
+    include: {
+      messageReadReceipts: true,
+      messageMentions: true,
+    },
+  });
+
+  if (!draftedMessage) {
+    const data = {
+      participantId,
+      senderId,
+      status: MessageStatus.drafted,
+      content: '',
+    };
+    draftedMessage = await createMessage(data);
+  }
+
+  return [...messages, draftedMessage];
 };
 export const canSeeMessages = async (
   userId: number,
