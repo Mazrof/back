@@ -1,4 +1,4 @@
-import { ChannelRole, PrismaClient } from '@prisma/client';
+import { ChannelRole, ParticipiantTypes, PrismaClient } from '@prisma/client';
 import { faker } from '@faker-js/faker';
 
 const prisma = new PrismaClient();
@@ -188,19 +188,26 @@ async function seedPersonalChats(count: number) {
 async function seedParticipants(count: number) {
   const communities = await prisma.communities.findMany();
   const personalChats = await prisma.personalChat.findMany();
+  const participantTypes: ParticipiantTypes[] = ['community', 'personalChat'];
   for (let i = 0; i < count; i++) {
     try {
+      const participantType: ParticipiantTypes =
+        participantTypes[faker.number.int({ min: 0, max: 1 })];
       await prisma.participants.create({
         data: {
           communityId:
-            communities[
-              faker.number.int({ min: 0, max: communities.length - 1 })
-            ].id,
+            participantType == 'community'
+              ? communities[
+                  faker.number.int({ min: 0, max: communities.length - 1 })
+                ].id
+              : null,
           personalChatId:
-            personalChats[
-              faker.number.int({ min: 0, max: personalChats.length - 1 })
-            ].id,
-          type: 'community',
+            participantType == 'personalChat'
+              ? personalChats[
+                  faker.number.int({ min: 0, max: personalChats.length - 1 })
+                ].id
+              : null,
+          type: participantType,
         },
       });
     } catch (err) {
