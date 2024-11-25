@@ -51,9 +51,9 @@ model CallReceivers {
 
 model Channels {
   id                   Int                    @id @default(autoincrement())
-  community_id         Int?
+  community_id         Int                    @unique
   canAddComments       Boolean?               @default(true) @map("can_add_comments")
-  communities          Communities?           @relation(fields: [community_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  communities          Communities            @relation(fields: [community_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   channelSubscriptions ChannelSubscriptions[]
 
   @@map("channels")
@@ -64,6 +64,7 @@ model ChannelSubscriptions {
   channelId              Int          @map("channel_id")
   hasDownloadPermissions Boolean?     @default(false) @map("has_download_permissions")
   role                   ChannelRole? @map("current_role")
+  status                 Boolean?     @default(true)
   channels               Channels     @relation(fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users                  Users        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -76,9 +77,10 @@ model Communities {
   name         String        @db.VarChar(255)
   privacy      Boolean?      @default(true)
   creatorId    Int?          @map("creator_id")
-  channels     Channels[]
+  status       Boolean?      @default(true)
+  channels     Channels?
   users        Users?        @relation(fields: [creatorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  groups       Groups[]
+  groups       Groups?
   participants Participants?
 
   @@map("communities")
@@ -101,14 +103,13 @@ model GroupMemberships {
 
 model Groups {
   id                Int                @id @default(autoincrement())
-  communityId       Int?               @map("community_id")
+  communityId       Int                @unique @map("community_id")
   groupSize         Int?               @map("group_size")
-  status            Boolean?           @default(true)
   invitationLink    String             @unique
   adminGroupFilters AdminGroupFilters?
   callReceivers     CallReceivers[]
   groupMemberships  GroupMemberships[]
-  communities       Communities?       @relation(fields: [communityId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  communities       Communities        @relation(fields: [communityId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("groups")
 }
