@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { catchAsync } from '../utility';
 import * as groupMemberService from '../services/groupMemberService';
-import { joinGroupByInvite } from '../services/groupMemberService';
 
 export const getGroupMembers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {

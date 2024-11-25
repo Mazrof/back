@@ -1,14 +1,14 @@
 import express, { Router } from 'express';
 import {
-  addGroupMember,
-  deleteGroupMember,
-  getGroupMembers,
-  inviteGroupMember,
-  updateGroupMember,
+    addGroupMember,
+    deleteGroupMember,
+    getGroupMembers,
+    inviteGroupMember,
+    updateGroupMember,
 } from '../controllers/groupMemberController';
 
 const router: Router = express.Router({
-  mergeParams: true,
+    mergeParams: true,
 });
 
 // Routes for group members
