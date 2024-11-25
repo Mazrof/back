@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import * as groupMemberRepository from '../repositories/groupMemberRepository';
 import { AppError } from '../utility';
 import { UpdateCommunityMemberData } from '../types';
@@ -22,6 +23,7 @@ export const addGroupMember = async (
     memberId,
     groupId
   );
+
   if (existingMember) {
     if (!existingMember.status) {
       return await groupMemberRepository.updateGroupMemberStatus(
@@ -102,4 +104,42 @@ export const deleteGroupMember = async (
     groupId,
     false
   );
+};
+
+export const joinGroupByInvite = async (token: string, memberId: number) => {
+  const invitationLinkHash = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+  const group =
+    await groupMemberRepository.findGroupByInvitationLinkHash(
+      invitationLinkHash
+    );
+
+  if (!group) {
+    throw new Error('Invalid or expired invitation link');
+  }
+
+  // Check if the member already exists in the group
+  const existingMember = await groupMemberRepository.findExistingMember(
+    memberId,
+    group.id
+  );
+
+  if (existingMember) {
+    if (!existingMember.status) {
+      return await groupMemberRepository.updateGroupMemberStatus(
+        memberId,
+        group.id,
+        true
+      );
+    }
+    throw new AppError('Member already exists in this group', 404);
+  }
+
+  // Create a new group membership for the member
+  return await groupMemberRepository.addGroupMember({
+    groupId: group.id,
+    userId: memberId,
+  });
 };

@@ -54,7 +54,13 @@ export const addGroupMember = async (memberData: {
   groupId: number;
   userId: number;
 }) => {
-  return await prisma.groupMemberships.create({ data: memberData });
+  return await prisma.groupMemberships.create({
+    data: memberData,
+    select: {
+      groupId: true,
+      userId: true,
+    },
+  });
 };
 
 export const updateGroupMemberStatus = async (
@@ -86,5 +92,14 @@ export const updateGroupMemberData = async (
       },
     },
     data,
+  });
+};
+
+export const findGroupByInvitationLinkHash = async (invitationLink: string) => {
+  return await prisma.groups.findUnique({
+    where: { invitationLink },
+    select: {
+      id: true,
+    },
   });
 };

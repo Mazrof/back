@@ -22,8 +22,8 @@ export default [
       // Prettier Conflict Rules (Disable conflicting rules)
       ...prettierConfig.rules,
 
-      // Custom Rules
-      'no-unused-vars': 'disable', // Warn about unused variables
+      // Custom Rule
+      'no-unused-vars': 'warn', // Warn about unused variables
       'consistent-return': 'error', // Enforce consistent return types
       eqeqeq: ['error', 'always'], // Require strict equality checks
       'no-console': 'warn', // Warn about console.log
