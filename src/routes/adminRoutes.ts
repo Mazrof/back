@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import { getAllUsers, banUser } from '../controllers/adminController';
 
 const router = express.Router();

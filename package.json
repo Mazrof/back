@@ -5,14 +5,16 @@
   "main": "index.js",
   "scripts": {
     "start:build": "tsc -w",
-    "start:build-nowatch": "tsc --noEmit",
+    "check":"tsc --noEmit",
+    "build":"tsc",
     "start:run": "nodemon build/server.js",
     "start-dev": "concurrently npm:start:*",
-    "migrate-db": "npx prisma migrate dev --name add_status_to_members",
+    "migrate-db": "npx prisma migrate dev --name fix_names",
     "prisma-studio": "npx prisma studio",
     "kill-port-3000": "lsof -ti :3000 | xargs kill -9 || true",
     "pull_db": "npx prisma db pull",
-    "start": "node build/server.js"
+    "start": "node build/server.js",
+    "container":"npm run migrate-db & npm run start" 
   },
   "dependencies": {
     "@faker-js/faker": "^9.2.0",

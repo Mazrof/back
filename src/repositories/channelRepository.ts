@@ -2,12 +2,16 @@ import { prisma } from '../prisma/client';
 import { AppError } from '../utility';
 
 export const findAllChannels = async () => {
-  return await prisma.channels.findMany({
-    where: { status: true },
+  return prisma.channels.findMany({
+    where: {
+      community: {
+          status: true,
+      },
+    },
     select: {
       id: true,
       canAddComments: true,
-      communities: {
+      community: {
         select: {
           name: true,
           privacy: true,
@@ -23,7 +27,7 @@ export const findChannelById = async (id: number) => {
     select: {
       id: true,
       canAddComments: true,
-      communities: {
+      community: {
         select: {
           name: true,
           privacy: true,
@@ -61,7 +65,7 @@ export const createChannel = async (data: {
     select: {
       id: true,
       canAddComments: true,
-      communities: {
+      community: {
         select: {
           name: true,
           privacy: true,
@@ -109,16 +113,19 @@ export const updateChannel = async (
 };
 
 export const deleteChannel = async (id: number) => {
-  const channel = await prisma.communities.findUnique({
+  const channel = await prisma.channels.findUnique({
     where: { id },
+    select: {
+      communityId: true
+    }
   });
 
   if (!channel) {
     throw new AppError('No channel found with that ID', 404);
   }
 
-  await prisma.channels.update({
-    where: { id, status: true },
+  await prisma.communities.update({
+    where: { id: channel.communityId, status: true },
     data: { status: false },
   });
 
