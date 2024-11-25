@@ -1,11 +1,12 @@
 import { prisma } from '../prisma/client';
 import { AppError } from '../utility';
+import { ParticipiantTypes } from '@prisma/client';
 
 export const findAllChannels = async () => {
   return prisma.channels.findMany({
     where: {
       community: {
-          status: true,
+        status: true,
       },
     },
     select: {
@@ -56,7 +57,12 @@ export const createChannel = async (data: {
       creatorId: data.creatorId,
     },
   });
-
+  await prisma.participants.create({
+    data: {
+      communityId: community.id,
+      type: ParticipiantTypes.community,
+    },
+  });
   return await prisma.channels.create({
     data: {
       canAddComments: data.canAddComments,
@@ -116,8 +122,8 @@ export const deleteChannel = async (id: number) => {
   const channel = await prisma.channels.findUnique({
     where: { id },
     select: {
-      communityId: true
-    }
+      communityId: true,
+    },
   });
 
   if (!channel) {
