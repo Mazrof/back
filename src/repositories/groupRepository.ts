@@ -3,11 +3,13 @@ import { AppError } from '../utility';
 
 export const findAllGroups = async () => {
   return await prisma.groups.findMany({
-    where: { status: true },
+    where: { community: {
+        status: true,
+      }, },
     select: {
       id: true,
       groupSize: true,
-      communities: {
+      community: {
         select: {
           name: true,
           privacy: true,
@@ -23,7 +25,7 @@ export const findGroupById = async (id: number) => {
     select: {
       id: true,
       groupSize: true,
-      communities: {
+      community: {
         select: {
           name: true,
           privacy: true,
@@ -57,14 +59,13 @@ export const createGroup = async (data: {
   return await prisma.groups.create({
     data: {
       groupSize: data.groupSize,
-      status: true,
       communityId: community.id,
       invitationLink: data.invitationLink,
     },
     select: {
       id: true,
       groupSize: true,
-      communities: {
+      community: {
         select: {
           name: true,
           privacy: true,
@@ -112,16 +113,19 @@ export const updateGroup = async (
 };
 
 export const deleteGroup = async (id: number) => {
-  const group = await prisma.communities.findUnique({
+  const group = await prisma.groups.findUnique({
     where: { id },
+    select: {
+      communityId: true
+    }
   });
 
   if (!group) {
     throw new AppError('No Group found with that ID', 404);
   }
 
-  await prisma.groups.update({
-    where: { id, status: true },
+  await prisma.communities.update({
+    where: { id: group.communityId, status: true },
     data: { status: false },
   });
 
@@ -152,6 +156,10 @@ export const applyGroupFilter = async (groupId: number, adminId: number) => {
     data: {
       groupId,
       adminId,
+    },
+    select: {
+      groupId: true,
+      adminId: true,
     },
   });
 

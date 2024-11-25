@@ -51,9 +51,9 @@ model CallReceivers {
 
 model Channels {
   id                   Int                    @id @default(autoincrement())
-  community_id         Int?
+  communityId          Int                    @unique
   canAddComments       Boolean?               @default(true) @map("can_add_comments")
-  communities          Communities?           @relation(fields: [community_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  community            Communities            @relation(fields: [communityId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   channelSubscriptions ChannelSubscriptions[]
 
   @@map("channels")
@@ -62,6 +62,7 @@ model Channels {
 model ChannelSubscriptions {
   userId                 Int          @map("user_id")
   channelId              Int          @map("channel_id")
+  status                 Boolean?     @default(true)
   hasDownloadPermissions Boolean?     @default(false) @map("has_download_permissions")
   role                   ChannelRole? @map("current_role")
   channels               Channels     @relation(fields: [channelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -74,6 +75,7 @@ model ChannelSubscriptions {
 model Communities {
   id           Int           @id @default(autoincrement())
   name         String        @db.VarChar(255)
+  status       Boolean?      @default(true)
   privacy      Boolean?      @default(true)
   creatorId    Int?          @map("creator_id")
   channels     Channels[]
@@ -100,15 +102,14 @@ model GroupMemberships {
 }
 
 model Groups {
-  id               Int                @id @default(autoincrement())
-  communityId      Int?               @map("community_id")
-  groupSize        Int?               @map("group_size")
-  status           Boolean?           @default(true)
-  invitationLink   String             @unique
-  adminGroupFilter AdminGroupFilters?
-  callReceivers    CallReceivers[]
-  groupMemberships GroupMemberships[]
-  communities      Communities?       @relation(fields: [communityId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                Int                @id @default(autoincrement())
+  communityId       Int                @unique @map("community_id")
+  groupSize         Int?               @map("group_size")
+  invitationLink    String             @unique
+  adminGroupFilters AdminGroupFilters?
+  callReceivers     CallReceivers[]
+  groupMemberships  GroupMemberships[]
+  community         Communities        @relation(fields: [communityId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("groups")
 }
@@ -166,6 +167,7 @@ model Messages {
   otherMessages       Messages[]            @relation("MessagesToMessages")
   users               Users                 @relation(fields: [senderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([participantId])
   @@map("messages")
 }
 
@@ -273,6 +275,8 @@ model Users {
   readReceiptsEnabled   Privacy?               @default(everyone) @map("read_receipts_enabled")
   lastSeenVisibility    Boolean?               @default(true) @map("last_seen_visibility")
   groupAddPermission    Boolean?               @default(true) @map("group_add_permission")
+  private_key           String?
+  public_key            String
   bannedUsers           BannedUsers[]
   channelSubscriptions  ChannelSubscriptions[]
   communities           Communities[]
