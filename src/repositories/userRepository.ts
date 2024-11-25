@@ -50,7 +50,6 @@ export const GetUserBlockedList = async (blockerId: number) => {
     },
     include: {
       blockedUser: true,
-      blockerId: false,
     },
   });
 };
