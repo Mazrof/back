@@ -1,11 +1,19 @@
 import { prisma } from '../prisma/client';
 import { AppError } from '../utility';
+import { ParticipiantTypes } from '@prisma/client';
 
 export const findAllGroups = async () => {
-  return await prisma.groups.findMany({
-    where: { community: {
+  // Fetch the groups with their communities
+  const groups: {
+    id: number;
+    groupSize: number | null;
+    community: { name: string; privacy: boolean | null };
+  }[] = await prisma.groups.findMany({
+    where: {
+      community: {
         status: true,
-      }, },
+      },
+    },
     select: {
       id: true,
       groupSize: true,
@@ -17,6 +25,32 @@ export const findAllGroups = async () => {
       },
     },
   });
+
+  // Check which groups have filters
+  const filters: { groupId: number }[] =
+    await prisma.adminGroupFilters.findMany({
+      select: {
+        groupId: true,
+      },
+    });
+
+  // Create a Set of filtered group IDs for efficient lookup
+  const filteredGroupIds: Set<number> = new Set(
+    filters.map((filter) => filter.groupId)
+  );
+
+  // Add the filtered property to the groups
+  const groupsWithFilter: {
+    hasFilter: boolean;
+    id: number;
+    groupSize: number | null;
+    community: { name: string; privacy: boolean | null };
+  }[] = groups.map((group) => ({
+    ...group,
+    hasFilter: filteredGroupIds.has(group.id),
+  }));
+
+  return groupsWithFilter;
 };
 
 export const findGroupById = async (id: number) => {
@@ -55,7 +89,12 @@ export const createGroup = async (data: {
       creatorId: data.creatorId,
     },
   });
-
+  await prisma.participants.create({
+    data: {
+      communityId: community.id,
+      type: ParticipiantTypes.community,
+    },
+  });
   return await prisma.groups.create({
     data: {
       groupSize: data.groupSize,
@@ -116,8 +155,8 @@ export const deleteGroup = async (id: number) => {
   const group = await prisma.groups.findUnique({
     where: { id },
     select: {
-      communityId: true
-    }
+      communityId: true,
+    },
   });
 
   if (!group) {
@@ -133,7 +172,7 @@ export const deleteGroup = async (id: number) => {
 };
 
 export const applyGroupFilter = async (groupId: number, adminId: number) => {
-  const group = await prisma.communities.findUnique({
+  const group = await prisma.groups.findUnique({
     where: { id: groupId },
   });
 
@@ -145,9 +184,13 @@ export const applyGroupFilter = async (groupId: number, adminId: number) => {
     where: { groupId: groupId },
   });
 
-  if (!groupFilter) {
+  if (groupFilter) {
     await prisma.adminGroupFilters.delete({
       where: { groupId: groupId },
+      select: {
+        groupId: true,
+        adminId: true,
+      },
     });
     return groupFilter;
   }
