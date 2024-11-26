@@ -6,7 +6,7 @@ export const findAllChannels = async () => {
   return prisma.channels.findMany({
     where: {
       community: {
-        status: true,
+        active: true,
       },
     },
     select: {
@@ -22,9 +22,21 @@ export const findAllChannels = async () => {
   });
 };
 
-export const findChannelById = async (id: number) => {
-  const channel = await prisma.channels.findUnique({
-    where: { id },
+export const findChannelById = async (
+  id: number
+): Promise<{
+  id: number;
+  canAddComments: boolean;
+  community: { name: string; privacy: boolean };
+}> => {
+  const channel: {
+    id: number;
+    canAddComments: boolean;
+    community: { name: string; privacy: boolean; active: boolean };
+  } | null = await prisma.channels.findUnique({
+    where: {
+      id,
+    },
     select: {
       id: true,
       canAddComments: true,
@@ -32,12 +44,13 @@ export const findChannelById = async (id: number) => {
         select: {
           name: true,
           privacy: true,
+          active: true,
         },
       },
     },
   });
 
-  if (!channel) {
+  if (!channel || !channel.community.active) {
     throw new AppError('No channel found with that ID', 404);
   }
 
@@ -49,8 +62,26 @@ export const createChannel = async (data: {
   privacy: boolean;
   creatorId: number;
   canAddComments: boolean;
+  invitationLink: string;
 }) => {
-  const community = await prisma.communities.create({
+  let message: string = '';
+  if (!data.name) {
+    message = 'Invalid Group name';
+  }
+  if (!data.creatorId) {
+    if (message) message += ', ';
+    message += 'Invalid Creator ID';
+  }
+  if (message) {
+    throw new AppError(`${message}`, 400);
+  }
+  const community: {
+    name: string;
+    id: number;
+    active: boolean;
+    privacy: boolean;
+    creatorId: number;
+  } = await prisma.communities.create({
     data: {
       name: data.name,
       privacy: data.privacy,
@@ -63,10 +94,12 @@ export const createChannel = async (data: {
       type: ParticipiantTypes.community,
     },
   });
-  return await prisma.channels.create({
+
+  const channel = prisma.channels.create({
     data: {
       canAddComments: data.canAddComments,
       communityId: community.id,
+      invitationLink: data.invitationLink
     },
     select: {
       id: true,
@@ -79,20 +112,34 @@ export const createChannel = async (data: {
       },
     },
   });
+  return channel;
 };
 
 export const updateChannel = async (
   channelId: number,
   data: { name?: string; privacy?: boolean; canAddComments?: boolean }
 ) => {
-  const channel = await prisma.channels.findUnique({
-    where: { id: channelId },
+  if (!data.name && !data.privacy && !data.canAddComments) {
+    throw new AppError('No data to update', 400);
+  }
+  const channel: {
+    communityId: number;
+    community: { active: boolean };
+  } | null = await prisma.channels.findUnique({
+    where: {
+      id: channelId,
+    },
     select: {
       communityId: true,
+      community: {
+        select: {
+          active: true,
+        },
+      },
     },
   });
-  //TODO: fix the error in DB
-  if (!channel || channel.communityId === null) {
+
+  if (!channel || !channel.community.active) {
     throw new AppError('No channel found with that ID', 404);
   }
 
@@ -106,7 +153,7 @@ export const updateChannel = async (
     });
   }
 
-  if (data.canAddComments !== undefined) {
+  if (data.canAddComments) {
     await prisma.channels.update({
       where: { id: channelId },
       data: {
@@ -118,21 +165,31 @@ export const updateChannel = async (
   return await findChannelById(channelId);
 };
 
-export const deleteChannel = async (id: number) => {
-  const channel = await prisma.channels.findUnique({
+export const deleteChannel = async (
+  id: number
+): Promise<{ communityId: number }> => {
+  const channel: {
+    communityId: number;
+    community: { active: boolean };
+  } | null = await prisma.channels.findUnique({
     where: { id },
     select: {
       communityId: true,
+      community: {
+        select: {
+          active: true,
+        },
+      },
     },
   });
 
-  if (!channel) {
+  if (!channel || !channel.community.active) {
     throw new AppError('No channel found with that ID', 404);
   }
 
   await prisma.communities.update({
-    where: { id: channel.communityId, status: true },
-    data: { status: false },
+    where: { id: channel.communityId, active: true },
+    data: { active: false },
   });
 
   return channel;

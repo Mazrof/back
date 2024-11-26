@@ -1,11 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
 import { catchAsync } from '../utility';
 import * as groupMemberService from '../services/groupMemberService';
+import { CommunityRole } from '@prisma/client';
 
 export const getGroupMembers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const groupId = parseInt(req.params.groupId);
-    const members = await groupMemberService.getGroupMembers(groupId);
+    const groupId: number = parseInt(req.params.groupId);
+
+    const members: {
+      role: CommunityRole;
+      userId: number;
+      groupId: number;
+      hasDownloadPermissions: boolean;
+      hasMessagePermissions: boolean;
+      active: boolean;
+      users: { username: string };
+    }[] = await groupMemberService.getGroupMembers(groupId);
 
     return res.status(200).json({
       status: 'success',
@@ -19,14 +29,16 @@ export const getGroupMembers = catchAsync(
 
 export const addGroupMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const userId = parseInt(req.body.userId);
-    const groupId = parseInt(req.params.groupId);
-    const memberId = parseInt(req.body.memberId);
+    const adminId : number = parseInt(req.body.userId);
+    const groupId : number = parseInt(req.params.groupId);
+    const memberId : number = parseInt(req.body.memberId);
+    const role: CommunityRole = req.body.role;
 
     const member = await groupMemberService.addGroupMember(
-      userId,
+      adminId,
       groupId,
-      memberId
+      memberId,
+      role
     );
 
     return res.status(201).json({
@@ -40,10 +52,14 @@ export const addGroupMember = catchAsync(
 
 export const inviteGroupMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.body;
-    const memberId = parseInt(req.body.memberId);
+    const token: string = req.body;
+    const memberId: number = parseInt(req.body.memberId);
+    const role = req.body.role;
 
-    const member = await groupMemberService.joinGroupByInvite(token, memberId);
+    const member: {
+      userId: number;
+      groupId: number;
+    } = await groupMemberService.joinGroupByInvite(token, memberId, role);
 
     return res.status(201).json({
       status: 'success',
@@ -59,13 +75,12 @@ export const updateGroupMember = catchAsync(
     const userId = parseInt(req.body.userId);
     const groupId = parseInt(req.params.groupId);
     const memberId = parseInt(req.params.id);
-    const updates = req.body;
 
     const member = await groupMemberService.updateGroupMember(
       userId,
       groupId,
       memberId,
-      updates
+      req.body
     );
 
     return res.status(200).json({
@@ -79,9 +94,9 @@ export const updateGroupMember = catchAsync(
 
 export const deleteGroupMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const userId = parseInt(req.body.userId);
-    const groupId = parseInt(req.params.groupId);
-    const memberId = parseInt(req.params.id);
+    const userId : number = parseInt(req.body.userId);
+    const groupId : number = parseInt(req.params.groupId);
+    const memberId : number = parseInt(req.params.id);
 
     await groupMemberService.deleteGroupMember(userId, groupId, memberId);
 
