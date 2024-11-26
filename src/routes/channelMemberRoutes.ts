@@ -5,12 +5,14 @@ import {
   getChannelMembers,
   updateChannelMember,
 } from '../controllers/channelMemberController';
+import { inviteGroupMember } from '../controllers/groupMemberController';
 
 const router = express.Router({
   mergeParams: true,
 });
 
 // Routes for channel members
+router.route('/invitation').post(inviteGroupMember);
 router
   .route('')
   .get(getChannelMembers) // Anyone can access
