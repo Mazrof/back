@@ -62,6 +62,7 @@ export const createChannel = async (data: {
   privacy: boolean;
   creatorId: number;
   canAddComments: boolean;
+  invitationLink: string;
 }) => {
   let message: string = '';
   if (!data.name) {
@@ -93,10 +94,12 @@ export const createChannel = async (data: {
       type: ParticipiantTypes.community,
     },
   });
-  return await prisma.channels.create({
+
+  const channel = prisma.channels.create({
     data: {
       canAddComments: data.canAddComments,
       communityId: community.id,
+      invitationLink: data.invitationLink
     },
     select: {
       id: true,
@@ -109,6 +112,7 @@ export const createChannel = async (data: {
       },
     },
   });
+  return channel;
 };
 
 export const updateChannel = async (
