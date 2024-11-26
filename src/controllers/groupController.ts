@@ -27,6 +27,7 @@ export const getGroup = catchAsync(
 export const createGroup = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { name, privacy, creatorId, groupSize } = req.body;
+
     const group = await groupService.createGroup({
       name,
       privacy,
@@ -42,6 +43,7 @@ export const createGroup = catchAsync(
 
 export const updateGroup = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+
     const groupId = parseInt(req.params.id);
     const group = await groupService.updateGroup(groupId, req.body);
     res.status(200).json({
@@ -49,6 +51,7 @@ export const updateGroup = catchAsync(
       data: { data: group },
     });
   }
+
 );
 
 export const deleteGroup = catchAsync(

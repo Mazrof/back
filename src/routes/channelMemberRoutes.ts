@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import {
   addChannelMember,
   deleteChannelMember,
@@ -14,10 +14,11 @@ const router = express.Router({
 router
   .route('')
   .get(getChannelMembers) // Anyone can access
-  .post(addChannelMember)
-  .delete(deleteChannelMember); // Based on permissions or the user itself
+  .post(addChannelMember);
 
-router.route('/:id').patch(updateChannelMember); // Admins only (role, messaging, downloading)
-// .delete(deleteChannelMember); // Based on permissions or the user itself
+router
+  .route('/:id')
+  .patch(updateChannelMember) // Admins only (role, messaging, downloading)
+  .delete(deleteChannelMember); // Based on permissions or the user itself
 
 export default router;

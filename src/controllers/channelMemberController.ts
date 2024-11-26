@@ -1,11 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import { catchAsync } from '../utility';
 import * as channelService from '../services/channelMemberService';
+import { CommunityRole } from '@prisma/client';
 
 export const getChannelMembers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const channelId = parseInt(req.params.channelId);
-    const members = await channelService.getChannelMembers(channelId);
+    const channelId: number = parseInt(req.params.channelId);
+    const members: {
+      userId: number;
+      channelId: number;
+      active: boolean;
+      hasDownloadPermissions: boolean;
+      role: CommunityRole;
+      users: { username: string };
+    }[] = await channelService.getChannelMembers(channelId);
 
     return res.status(200).json({
       status: 'success',
@@ -19,8 +27,8 @@ export const getChannelMembers = catchAsync(
 
 export const addChannelMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const memberId = parseInt(req.body.userId);
-    const channelId = parseInt(req.params.channelId);
+    const memberId: number = parseInt(req.body.userId);
+    const channelId: number = parseInt(req.params.channelId);
 
     const member = await channelService.addChannelMember(memberId, channelId);
 
@@ -35,9 +43,9 @@ export const addChannelMember = catchAsync(
 
 export const updateChannelMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const userId = parseInt(req.body.userId);
-    const channelId = parseInt(req.params.channelId);
-    const memberId = parseInt(req.params.id);
+    const userId: number = parseInt(req.body.userId);
+    const channelId: number = parseInt(req.params.channelId);
+    const memberId: number = parseInt(req.params.id);
     const updates = req.body;
 
     const member = await channelService.updateChannelMember(
@@ -58,8 +66,8 @@ export const updateChannelMember = catchAsync(
 
 export const deleteChannelMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const memberId = parseInt(req.body.userId);
-    const channelId = parseInt(req.params.channelId);
+    const memberId: number = parseInt(req.body.userId);
+    const channelId: number = parseInt(req.params.channelId);
 
     await channelService.deleteChannelMember(channelId, memberId);
 
