@@ -20,7 +20,7 @@ export const getChannelMembers = catchAsync(
       status: 'success',
       results: members.length,
       data: {
-        data: members,
+        members,
       },
     });
   }
@@ -41,7 +41,7 @@ export const addChannelMember = catchAsync(
     return res.status(201).json({
       status: 'success',
       data: {
-        data: member,
+        member,
       },
     });
   }
@@ -63,7 +63,7 @@ export const updateChannelMember = catchAsync(
     return res.status(200).json({
       status: 'success',
       data: {
-        data: member,
+        member,
       },
     });
   }
@@ -83,7 +83,7 @@ export const inviteChannelMember = catchAsync(
     return res.status(201).json({
       status: 'success',
       data: {
-        data: member,
+        member,
       },
     });
   }

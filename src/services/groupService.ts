@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import * as groupRepository from '../repositories';
 import * as groupMemberRepository from '../repositories';
+import * as groupMemberService from '../services';
 import { CommunityRole } from '@prisma/client';
 
 function generateInviteToken(): string {
@@ -33,6 +34,7 @@ export const createGroup = async (data: {
   privacy: boolean;
   creatorId: number;
   groupSize: number;
+  admins: [];
 }) => {
   const token: string = generateInviteToken();
   const invitationLink: string = crypto
@@ -51,6 +53,15 @@ export const createGroup = async (data: {
     userId: data.creatorId,
     role: CommunityRole.admin,
   });
+
+  for (const admin of data.admins) {
+    await groupMemberService.addGroupMember(
+      data.creatorId,
+      group.id,
+      admin,
+      CommunityRole.admin
+    );
+  }
   return group;
 };
 
