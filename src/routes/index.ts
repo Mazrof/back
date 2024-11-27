@@ -16,3 +16,4 @@ router.use('/v1/profile', profileRouter);
 router.use('/v1/stories', storiesRouter);
 router.use('/v1/search', searchRouter);
 export default router;
+export * from './chatRoutes';
