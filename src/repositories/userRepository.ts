@@ -14,17 +14,16 @@ export const findUserByEmail = async (email: string): Promise<Users | null> => {
 export const findUserByUsername = async (username: string): Promise<Users | null> => {
   return await prisma.users.findUnique({ where: { username } });
 }
-export const storeOAuthUser = async (user: OAuthUser): Promise<Users|null> => {
-  let existingUser = await prisma.users.findFirst({
-    where: {
-      providerId: user.providerId,
-      providerType: Social[user.provider as keyof typeof Social],
-    },
-  });
-  if (existingUser) {
-    console.log("USER ALREADY EXISTS")
-    return existingUser;
-  }
+
+export const findUserByProvider= async (providerId: string, providerType: Social): Promise<Users | null> => {
+  return await prisma.users.findFirst({ where: { providerId, providerType } });
+}
+
+export const findUserById = async (id: number): Promise<Users | null> => {
+  return await prisma.users.findUnique({ where: { id } });
+}
+
+export const storeOAuthUser = async (user: OAuthUser): Promise<Users> => {
   const providerType = Social[user.provider as keyof typeof Social];
   if (!providerType) {
     throw new Error(`Invalid providerType: ${user.provider}`)

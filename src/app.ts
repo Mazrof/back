@@ -10,13 +10,37 @@ import { globalErrorHandler } from './middlewares/error_handlers/error_handler';
 import apiRoutes from './routes';
 import passport from 'passport';
 import session from 'express-session';
+import RedisStore from "connect-redis";
+import Redis from "ioredis";
 
+const redisClient = new Redis();
 export default async (app: Application) => {
+
+  const sessionMiddleware = session({
+    store: new RedisStore({ client: redisClient }),
+    secret: process.env.SESSION_SECRET || "default_secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 1000 * 60 * 60, // 1 hour
+    },
+  });
+  app.use(sessionMiddleware);
+  app.use(passport.initialize());
+  app.use(passport.session());
   // Serve static files from the 'public' directory
   app.use(express.static(path.join(__dirname, '../public')));
 
   // Implement CORS
-  app.use(cors());
+  app.use(cors({
+    origin: 'http://localhost:3000', // Adjust based on your front-end domain
+    credentials: true, // Allow cookies to be sent
+  }));
+  app.use(cookieParser());
+  // Session middleware
+  
   app.options('*', cors()); // Preflight for all routes
 
   // Rate limiting middleware
@@ -48,12 +72,37 @@ export default async (app: Application) => {
     console.log('hello world');
     res.status(200).json({ msg: 'hello world, MAZROF COMMUNITY' });
   });
-  app.use(session({ secret: 'your-secret-key', resave: false, saveUninitialized: false}));
-
-app.use(passport.initialize());
-app.use(passport.session());
   // API routes
   app.use('/api', apiRoutes);
+
+  app.get('/debug/redis', async (req: Request, res: Response) => {
+    try {
+      //redisClient.flushdb();
+      const keys = await redisClient.keys('*');
+      const data = await Promise.all(
+        keys.map(async (key) => {
+          const type = await redisClient.type(key); // Get the key type
+  
+          let value;
+          if (type === 'hash') {
+            value = await redisClient.hgetall(key); // Fetch hash data
+          } else if (type === 'string') {
+            value = await redisClient.get(key); // Fetch string data
+          } else {
+            value = `Type ${type} not handled in debug`;
+          }
+  
+          return { key, type, value };
+        })
+      );
+  
+      res.json({ keys: data });
+    } catch (error) {
+      res.status(500).json({ error: 'Error fetching Redis data', details: error });
+    }
+  });
+  
+  
 
   // Handle all undefined routes
   app.all('*', (req: Request, res: Response, next: NextFunction) => {

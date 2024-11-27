@@ -1,96 +1,43 @@
-import { Request, Response } from 'express';
-import { signupUser,loginUser } from '../services/authService';
-import crypto from 'crypto';
-import { loginSchema, signupSchema } from '../schemas/authSchema'; 
-import { catchAsync } from '../utility'; 
-import {  SignupControllerResponse } from './controllerTypes/authTypes';
-import passport from 'passport';
-import logger from '../utility/logger';
-import { signToken } from '../utility/jwt';
-import { OAuthUser } from '../repositories/repositoriesTypes/authTypes';
-import { storeOAuthUser } from '../repositories/userRepository';
-import { sendVerificationCode, verifyCode } from '../services/emailService';
-import { sendVerificationCodeSMS } from '../services/smsService';
+declare module 'express-session' {
+  interface SessionData {
+    user?: { id: number; username: string };
+  }
+}
 
-export const signupController = catchAsync(async (req: Request, res: Response) => {
-  // Validate the input fields
-  const validatedData = signupSchema.parse(req.body); // Zod validation
-  await signupUser(validatedData);
-  res.status(201).json({ status: 'success'});
+import { Request, Response } from "express";
+import { registerUser, authenticateUser } from "../services/authService";
+import { catchAsync } from "../utility";
+import { signupSchema } from "../schemas/authSchema";
+import { sendVerificationCode, verifyCode } from "../services/emailService";
+import { sendVerificationCodeSMS } from "../services/smsService";
+import crypto from "crypto";
+export const signup = catchAsync(async (req: Request, res: Response) => {
+
+    const validatedData = signupSchema.parse(req.body); // Zod validation
+    const user = await registerUser(validatedData);
+    res.status(201).json({ message: "User registered", user: { id: user.id, username: user.username } });
+
 });
 
-export const loginController = catchAsync(async (req: Request, res: Response) => {
-  // Validate the input fields
-  const validatedData = loginSchema.parse(req.body); // Zod validation
-  const tokens = await loginUser(validatedData);
-  const response : SignupControllerResponse= {access_token: tokens.access_token, refresh_token: tokens.refresh_token, user:tokens.user};
-  res.status(201).json({ status: 'success', data: response });
+export const login = catchAsync(async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+
+    const user = await authenticateUser(email, password);
+    if (!user) return res.status(401).json({ message: "Invalid credentials" });
+
+    req.session.user = { id: user.id, username: user.username }; // Store user in session
+    res.json({ message: "Login successful", user: { id: user.id, username: user.username } });
+
 });
 
-export const OAuthController = passport.authenticate("google", { scope: ["profile", "email"] });
+export const whoami = catchAsync(async(req: Request, res: Response) => {
+  const user = req.session.user;
+  if (!user) return res.status(401).json({ message: "Unauthorized" });
+  res.json({ user });
+});
 
 
-export const OAuthCallbackController = [
-  passport.authenticate('google', { failureRedirect: '/login' }),
-  async (req: Request, res: Response) => {
-    if (!req.user) {
-      return res.status(401).json({ status: 'fail', message: 'Unauthorized' });
-    }
-    const user = req.user as OAuthUser;
-    const saved_user = await storeOAuthUser(user);
-
-    const access_token = signToken(
-      {
-        id: saved_user?.id,
-      },
-      '15m' // Expires in 15 minutes
-    );
-    const refresh_token = signToken(
-      {
-        id: saved_user?.id,
-      },
-      '7d' 
-    );
-
-    const response = { access_token, refresh_token,user:saved_user };
-    res.json({ status: 'success', data: response });
-  },
-];
-
-export const githubOAuthController = passport.authenticate('github', { scope: ["profile", "email"] });
-
-export const githubOAuthCallbackController = [
-  passport.authenticate('github', { failureRedirect: '/login' }),
-  async (req: Request, res: Response) => {
-    if (!req.user) {
-      return res.status(401).json({ status: 'fail', message: 'Unauthorized' });
-    }
-    const user = req.user as OAuthUser;
-    const saved_user = await storeOAuthUser(user);
-
-    const access_token = signToken(
-      {
-        id: saved_user?.id,
-      },
-      '15m' // Expires in 15 minutes
-    );
-    const refresh_token = signToken(
-      {
-        id: saved_user?.id,
-      },
-      '7d' // Expires in 7 days
-    );
-    if (!saved_user) {
-      return res.status(401).json({ status: 'fail', message: 'Unauthorized' });
-    }
-    saved_user.password='********';
-    saved_user.providerId=null;
-    const response = { access_token, refresh_token,user:saved_user };
-    res.json({ status: 'success', data: response });
-  },
-];
-
- export const sendVerificationCodeController = catchAsync(async (req: Request, res: Response) => {
+export const sendVerificationCodeController = catchAsync(async (req: Request, res: Response) => {
   const { email } = req.body;
 
   if (!email) {
@@ -154,3 +101,4 @@ export const VerifyCodeSMSController = catchAsync(async (req: Request, res: Resp
     res.status(400).json({ message: 'Invalid code' });
   }
 });
+
