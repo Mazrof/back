@@ -1,4 +1,4 @@
-import { ChannelRole, ParticipiantTypes, PrismaClient } from '@prisma/client';
+import { CommunityRole, ParticipiantTypes, PrismaClient } from '@prisma/client';
 import { faker } from '@faker-js/faker';
 
 const prisma = new PrismaClient();
@@ -70,7 +70,7 @@ async function seedChannels(count: number) {
     try {
       await prisma.channels.create({
         data: {
-          community_id: faker.number.int({
+          communityId: faker.number.int({
             min: Math.ceil((communities.length - 1) / 2),
             max: communities.length - 1,
           }),
@@ -349,7 +349,7 @@ async function seedChannelSubscriptions(count: number) {
   const users = await prisma.users.findMany();
   const channels = await prisma.channels.findMany();
 
-  const roles: ChannelRole[] = ['admin', 'member'];
+  const roles: CommunityRole[] = ['admin', 'member'];
 
   for (let i = 0; i < count; i++) {
     try {
@@ -358,9 +358,9 @@ async function seedChannelSubscriptions(count: number) {
       const channelId =
         channels[faker.number.int({ min: 0, max: channels.length - 1 })].id;
       const hasDownloadPermissions = faker.datatype.boolean(); // Random download permission
-      const role: ChannelRole =
+      const role: CommunityRole =
         roles[faker.number.int({ min: 0, max: roles.length - 1 })];
-      const status = faker.datatype.boolean(); // Random status (active or inactive)
+      const active = faker.datatype.boolean(); // Random status (active or inactive)
 
       await prisma.channelSubscriptions.create({
         data: {
@@ -368,7 +368,7 @@ async function seedChannelSubscriptions(count: number) {
           channelId,
           hasDownloadPermissions,
           role,
-          status,
+          active,
         },
       });
     } catch (err) {
@@ -382,7 +382,7 @@ async function seedGroupMemberships(count: number) {
   const groups = await prisma.groups.findMany();
 
   // Define possible roles for group memberships
-  const roles = ['admin', 'member', 'moderator']; // Adjust as needed
+  const roles: CommunityRole = ['admin', 'member']; // Adjust as needed
 
   for (let i = 0; i < count; i++) {
     try {
@@ -390,7 +390,8 @@ async function seedGroupMemberships(count: number) {
         users[faker.number.int({ min: 0, max: users.length - 1 })].id;
       const groupId =
         groups[faker.number.int({ min: 0, max: groups.length - 1 })].id;
-      const role = roles[faker.number.int({ min: 0, max: roles.length - 1 })]; // Random role
+      const role: CommunityRole =
+        roles[faker.number.int({ min: 0, max: roles.length - 1 })]; // Random role
       const hasDownloadPermissions = faker.datatype.boolean(); // Random download permission
       const hasMessagePermissions = faker.datatype.boolean(); // Random message permission
       const addToGroupPermission = faker.datatype.boolean(); // Random add-to-group permission
