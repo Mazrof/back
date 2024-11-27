@@ -1,4 +1,5 @@
 import * as channelMemberRepository from '../repositories/channelMemberRepository';
+import * as userRepository from '../repositories/adminRepository';
 import { AppError } from '../utility';
 import { UpdateChannelMemberData } from '../types';
 import { CommunityRole } from '@prisma/client';
@@ -11,8 +12,14 @@ const findChannel = async (channelId: number) => {
     throw new AppError('this is no channel with this id', 404);
   }
 };
-
+const checkUser = async (userId: number) => {
+  const user = await userRepository.findUserById(userId);
+  if (!user) {
+    throw new AppError('this is no user with this id', 404);
+  }
+};
 const checkMember = async (userId: number, channelId: number) => {
+  await checkUser(userId);
   const existingMember = await channelMemberRepository.findExistingMember(
     userId,
     channelId
@@ -58,6 +65,7 @@ export const addChannelMember = async (
   await findChannel(channelId);
   // Check if the member already exists in the channel
   await checkMember(userId, channelId);
+  console.log(userId);
   // Create a new channel membership for the member
   return await channelMemberRepository.addChannelMember({
     channelId,

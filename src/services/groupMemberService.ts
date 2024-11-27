@@ -4,6 +4,7 @@ import * as groupRepository from '../repositories/groupRepository';
 import { CommunityRole } from '@prisma/client';
 import { AppError } from '../utility';
 import { UpdateGroupMemberData } from '../types';
+import * as userRepository from '../repositories/adminRepository';
 
 const checkCapacity = async (groupId: number) => {
   const full: boolean = await groupMemberRepository.getMembersCount(groupId);
@@ -29,7 +30,17 @@ const checkAdmin = async (adminId: number, groupId: number) => {
   }
 };
 
+const checkUser = async (userId: number) => {
+  const user = await userRepository.findUserById(userId);
+  if (!user) {
+    throw new AppError('this is no user with this id', 404);
+  }
+};
+
 const checkMember = async (userId: number, groupId: number) => {
+
+  await checkUser(userId);
+
   const existingMember = await groupMemberRepository.findExistingMember(
     userId,
     groupId

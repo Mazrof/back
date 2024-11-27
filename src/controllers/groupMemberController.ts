@@ -21,7 +21,7 @@ export const getGroupMembers = catchAsync(
       status: 'success',
       results: members.length,
       data: {
-        data: members,
+        members,
       },
     });
   }
@@ -29,9 +29,9 @@ export const getGroupMembers = catchAsync(
 
 export const addGroupMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const adminId : number = parseInt(req.body.userId);
-    const groupId : number = parseInt(req.params.groupId);
-    const memberId : number = parseInt(req.body.memberId);
+    const adminId: number = parseInt(req.body.userId);
+    const groupId: number = parseInt(req.params.groupId);
+    const memberId: number = parseInt(req.body.memberId);
     const role: CommunityRole = req.body.role;
 
     const member = await groupMemberService.addGroupMember(
@@ -44,7 +44,7 @@ export const addGroupMember = catchAsync(
     return res.status(201).json({
       status: 'success',
       data: {
-        data: member,
+        member,
       },
     });
   }
@@ -64,7 +64,7 @@ export const inviteGroupMember = catchAsync(
     return res.status(201).json({
       status: 'success',
       data: {
-        data: member,
+        member,
       },
     });
   }
@@ -86,7 +86,7 @@ export const updateGroupMember = catchAsync(
     return res.status(200).json({
       status: 'success',
       data: {
-        data: member,
+        member,
       },
     });
   }
@@ -94,9 +94,9 @@ export const updateGroupMember = catchAsync(
 
 export const deleteGroupMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const userId : number = parseInt(req.body.userId);
-    const groupId : number = parseInt(req.params.groupId);
-    const memberId : number = parseInt(req.params.id);
+    const userId: number = parseInt(req.body.userId);
+    const groupId: number = parseInt(req.params.groupId);
+    const memberId: number = parseInt(req.params.id);
 
     await groupMemberService.deleteGroupMember(userId, groupId, memberId);
 
