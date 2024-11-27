@@ -8,6 +8,7 @@ import {
   Privacy,
   Social,
 } from '@prisma/client';
+import { NewMessages } from '../sockets/listeners/chatListeners';
 
 interface Participant {
   communityId: undefined;
@@ -198,7 +199,10 @@ export const insertParticipantDate = async (
   return insertData;
 };
 
-export const insertMessageRecipient = async (userId: number, message: any) => {
+export const insertMessageRecipient = async (
+  userId: number,
+  message: Messages
+) => {
   return prisma.messageReadReceipts.create({
     data: {
       userId,

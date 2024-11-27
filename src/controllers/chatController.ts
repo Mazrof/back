@@ -4,7 +4,6 @@ import {
   getMessagesService,
   getUserParticipants,
 } from '../services';
-import { ParticipiantTypes } from '@prisma/client';
 
 export const getUserChats = catchAsync(async (req, res) => {
   //TODO: ADD AUTH remove call(1)

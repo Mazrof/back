@@ -21,10 +21,10 @@ import { Messages, MessageStatus } from '@prisma/client';
 import { Chat } from '../chat';
 import { io } from '../../server';
 import logger from '../../utility/logger';
-import { updateProfile } from '../../controllers/profileController';
-import client from '../../prisma/client';
+
 export interface NewMessages extends Messages {
-  messageMentions: any[];
+  messageMentions: (number | { userId: number })[];
+  inputMessageMentions?: number[];
   receiverId?: number;
 }
 export const handleNewMessage = async (
@@ -57,11 +57,12 @@ export const handleNewMessage = async (
       1
     ))!.participants!.id;
   }
-  message.messageMentions = (message.messageMentions || []).map(
+  message.messageMentions = (message.inputMessageMentions || []).map(
     (mention: number) => ({
       userId: mention,
     })
   );
+  message.inputMessageMentions = undefined;
   message.receiverId = undefined;
   let createdMessage = await createMessage({
     ...message,
@@ -79,12 +80,10 @@ export const handleNewMessage = async (
       content: message.content,
     });
   }
-  console.log('HI');
   const roomSockets = io.sockets.adapter.rooms.get(
     message.participantId.toString()
   );
   const messageReadReceipts = [];
-  console.log(roomSockets);
   if (roomSockets) {
     for (const socketId of roomSockets) {
       const userId = Chat.getInstance().getUserUsingSocketId(
@@ -124,7 +123,6 @@ export const handleDeleteMessage = async (
   const message = await getMessageById(data.id);
   if (!message) {
     if (callback) callback({ message: 'message is not found' });
-    console.log('message not found');
     return;
   }
   console.log('deleted message', message);
@@ -225,7 +223,6 @@ const notifyParticipants = (
   insertedData: { participantId: number }[],
   socket: Socket
 ) => {
-  console.log(insertedData);
   insertedData.forEach((userRecipient) => {
     //TODO:TEST THIS AFTER AUTH
     socket.broadcast
