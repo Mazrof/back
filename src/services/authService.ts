@@ -26,6 +26,7 @@ export const signupUser = async (data: SignupInput):Promise<SignupServiceRespons
         username: data.username,
         password: hashedPassword,
         phone: data.phone,
+        public_key: "",
       };
       
       const user = await createUser(userData);

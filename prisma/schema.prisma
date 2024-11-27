@@ -279,7 +279,7 @@ model Users {
   lastSeenVisibility    Boolean?               @default(true) @map("last_seen_visibility")
   groupAddPermission    Boolean?               @default(true) @map("group_add_permission")
   private_key           String?
-  public_key            String?
+  public_key            String
   bannedUsers           BannedUsers[]
   channelSubscriptions  ChannelSubscriptions[]
   communities           Communities[]
