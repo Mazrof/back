@@ -25,6 +25,7 @@ import express from "express";
 import { login, whoami ,signup, sendVerificationCodeController, verifyCodeController, sendVerificationCodeSmSController} from "../controllers/authController";
 import { isAuthenticated } from "../middlewares/authMiddleware";
 import passport from "../services/oauth";
+import { AppError } from "../utility";
 
 const router = express.Router();
 
@@ -61,5 +62,14 @@ router.get(
   router.post('/send-code', sendVerificationCodeController);
 router.post('/verify-code',verifyCodeController);
 router.post('/send-code-sms',sendVerificationCodeSmSController);
+
+router.post("/logout", (req, res) => {
+    req.logout((err) => {
+      if (err) throw new AppError("Failed to logout", 500);
+      res.clearCookie("connect.sid");
+      res.status(200).json({ status: "success", data: { message: "Logged out" } });
+    });
+  });
+  
 
 export default router;
