@@ -42,7 +42,6 @@ class Chat {
     }
 }
 exports.Chat = Chat;
-//TODO: to create group or channel ==> create partitcipant also ask omar
 //TODO: error handling
 //TODO: UNIT TEST
 // io.use((socket, next) => {
@@ -53,4 +52,11 @@ exports.Chat = Chat;
 //   } else {
 //     next(new Error("Authentication error")); // Reject connection
 //   }
+// });
+// io.use((socket: Socket, next: Function) => {
+//   const token = socket.handshake.headers['token'];
+//   if (isValidToken(token)) { // isValidToken is a function to validate your token
+//     return next();
+//   }
+//   return next(new Error('Authentication error'));
 // });

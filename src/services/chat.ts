@@ -1,16 +1,15 @@
 import { prisma, Schemas } from '../prisma/client';
 import {
+  $Enums,
   Messages,
   MessageStatus,
   ParticipiantTypes,
   Prisma,
   Privacy,
   Social,
-  Users,
 } from '@prisma/client';
 
 interface Participant {
-  type: string;
   communityId: undefined;
   personalChatId: undefined;
   messages: undefined;
@@ -18,11 +17,15 @@ interface Participant {
   user1: { id: number } | undefined;
   user2: { id: number } | undefined;
   lastMessage: Messages | undefined;
-  channel: object | undefined;
+  channel: object | undefined | null;
   group: object | undefined;
-  communities: { channels: object[]; groups: object[] } | null | undefined;
+  communities:
+    | { channels: object | null; groups: object | null }
+    | null
+    | undefined;
   id: number;
   secondUser?: { id: number };
+  type: $Enums.ParticipiantTypes | string;
 }
 export const createMessage = async (data: any) => {
   return prisma.messages.create({
@@ -61,6 +64,7 @@ export const getParticipantIdsOfUserPersonalChats = async (userId: number) => {
     },
   });
   // Flatten to get only participant IDs
+  console.log(personalChats);
   return personalChats.flatMap((chat) => chat.participants!.id);
 };
 export const getParticipantIdsOfUserGroups = async (userId: number) => {
@@ -155,7 +159,6 @@ export const insertParticipantDate = async (
 ) => {
   const missingMessages = await prisma.messages.findMany({
     where: {
-      //TODO: TEST THIS
       senderId: {
         not: userId,
       },
@@ -375,10 +378,8 @@ export const getUserParticipants = async (userId: number) => {
         {
           communities: {
             groups: {
-              some: {
-                groupMemberships: {
-                  some: { userId },
-                },
+              groupMemberships: {
+                some: { userId },
               },
             },
           },
@@ -386,10 +387,8 @@ export const getUserParticipants = async (userId: number) => {
         {
           communities: {
             channels: {
-              some: {
-                channelSubscriptions: {
-                  some: { userId },
-                },
+              channelSubscriptions: {
+                some: { userId },
               },
             },
           },
@@ -459,10 +458,10 @@ export const getUserParticipants = async (userId: number) => {
   }));
   results.forEach((participant) => {
     if (participant.type !== 'personalChat') {
-      if (participant.communities!.channels.length) {
+      if (participant.communities!.channels) {
         participant.channel = {
           ...participant.communities,
-          ...participant.communities?.channels[0],
+          ...participant.communities?.channels,
           groups: undefined,
           channels: undefined,
         };
@@ -471,7 +470,7 @@ export const getUserParticipants = async (userId: number) => {
       } else {
         participant.group = {
           ...participant.communities,
-          ...participant.communities?.groups[0],
+          ...participant.communities?.groups,
           groups: undefined,
           channels: undefined,
         };
@@ -482,7 +481,7 @@ export const getUserParticipants = async (userId: number) => {
       // personal chat
       participant.group = undefined;
       participant.channel = undefined;
-      console.log(participant);
+      console.log(participant, 'hi');
       if (participant!.user1!.id === userId) {
         participant.secondUser = participant.user2;
       }
@@ -494,7 +493,6 @@ export const getUserParticipants = async (userId: number) => {
     }
     participant.communities = undefined;
   });
-
   results.sort((p1, p2) => {
     if (!p1.lastMessage) return 1;
     if (!p2.lastMessage) return -1;
@@ -576,10 +574,8 @@ export const canSeeMessages = async (
         {
           communities: {
             groups: {
-              some: {
-                groupMemberships: {
-                  some: { userId },
-                },
+              groupMemberships: {
+                some: { userId },
               },
             },
           },
@@ -587,10 +583,8 @@ export const canSeeMessages = async (
         {
           communities: {
             channels: {
-              some: {
-                channelSubscriptions: {
-                  some: { userId },
-                },
+              channelSubscriptions: {
+                some: { userId },
               },
             },
           },

@@ -8,13 +8,12 @@ import { ParticipiantTypes } from '@prisma/client';
 
 export const getUserChats = catchAsync(async (req, res) => {
   //TODO: ADD AUTH remove call(1)
-  const data = await getUserParticipants(2);
+  const data = await getUserParticipants(1);
   res.status(200).json(data);
 });
 
 export const getMessages = catchAsync(async (req, res) => {
   //TODO: ADD AUTH
-  //TODO: CHANGE THIS
   const userId = 1;
   const participantId = parseInt(req.params.id, 10);
   const page = Number(req.query.page || 1);

@@ -141,7 +141,7 @@ export const handleEditMessage = async (
   data: Messages,
   callback?: (err: object) => void
 ) => {
-  //TODO: what if the message isn't the user message
+  //TODO: what if the message isn't the user message (auth)
   logger.info(`message with id ${data.id} is being edited`);
   const message = await getMessageById(data.id);
   if (!message) {
@@ -191,7 +191,7 @@ export const handleOpenContext = async (data: { participantId: number }) => {
 
 export const handleNewConnection = async (socket: Socket) => {
   //TODO: DELETE THIS
-  const userId = 2;
+  const userId = 1;
   //mark user as active now
   await updateUserProfile(userId, { activeNow: true, lastSeen: null });
   logger.info(`User ${userId} connected`);
@@ -234,7 +234,7 @@ const notifyParticipants = (
   });
 };
 
-const setupSocketEventHandlers = (socket: Socket) => {
+export const setupSocketEventHandlers = (socket: Socket) => {
   socket.on(
     'message:sent',
     async (message: NewMessages, callback: (arg: object) => void) => {

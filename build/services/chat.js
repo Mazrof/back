@@ -38,6 +38,7 @@ const getParticipantIdsOfUserPersonalChats = (userId) => __awaiter(void 0, void 
         },
     });
     // Flatten to get only participant IDs
+    console.log(personalChats);
     return personalChats.flatMap((chat) => chat.participants.id);
 });
 exports.getParticipantIdsOfUserPersonalChats = getParticipantIdsOfUserPersonalChats;
@@ -124,7 +125,6 @@ exports.markMessagesAsRead = markMessagesAsRead;
 const insertParticipantDate = (userId, participantIds) => __awaiter(void 0, void 0, void 0, function* () {
     const missingMessages = yield client_1.prisma.messages.findMany({
         where: {
-            //TODO: TEST THIS
             senderId: {
                 not: userId,
             },
@@ -334,10 +334,8 @@ const getUserParticipants = (userId) => __awaiter(void 0, void 0, void 0, functi
                 {
                     communities: {
                         groups: {
-                            some: {
-                                groupMemberships: {
-                                    some: { userId },
-                                },
+                            groupMemberships: {
+                                some: { userId },
                             },
                         },
                     },
@@ -345,10 +343,8 @@ const getUserParticipants = (userId) => __awaiter(void 0, void 0, void 0, functi
                 {
                     communities: {
                         channels: {
-                            some: {
-                                channelSubscriptions: {
-                                    some: { userId },
-                                },
+                            channelSubscriptions: {
+                                some: { userId },
                             },
                         },
                     },
@@ -408,13 +404,13 @@ const getUserParticipants = (userId) => __awaiter(void 0, void 0, void 0, functi
     results.forEach((participant) => {
         var _a, _b;
         if (participant.type !== 'personalChat') {
-            if (participant.communities.channels.length) {
-                participant.channel = Object.assign(Object.assign(Object.assign({}, participant.communities), (_a = participant.communities) === null || _a === void 0 ? void 0 : _a.channels[0]), { groups: undefined, channels: undefined });
+            if (participant.communities.channels) {
+                participant.channel = Object.assign(Object.assign(Object.assign({}, participant.communities), (_a = participant.communities) === null || _a === void 0 ? void 0 : _a.channels), { groups: undefined, channels: undefined });
                 participant.group = undefined;
                 participant.type = 'channel';
             }
             else {
-                participant.group = Object.assign(Object.assign(Object.assign({}, participant.communities), (_b = participant.communities) === null || _b === void 0 ? void 0 : _b.groups[0]), { groups: undefined, channels: undefined });
+                participant.group = Object.assign(Object.assign(Object.assign({}, participant.communities), (_b = participant.communities) === null || _b === void 0 ? void 0 : _b.groups), { groups: undefined, channels: undefined });
                 participant.type = 'group';
                 participant.channel = undefined;
             }
@@ -423,7 +419,7 @@ const getUserParticipants = (userId) => __awaiter(void 0, void 0, void 0, functi
             // personal chat
             participant.group = undefined;
             participant.channel = undefined;
-            console.log(participant);
+            console.log(participant, 'hi');
             if (participant.user1.id === userId) {
                 participant.secondUser = participant.user2;
             }
@@ -508,10 +504,8 @@ const canSeeMessages = (userId, participantId) => __awaiter(void 0, void 0, void
                 {
                     communities: {
                         groups: {
-                            some: {
-                                groupMemberships: {
-                                    some: { userId },
-                                },
+                            groupMemberships: {
+                                some: { userId },
                             },
                         },
                     },
@@ -519,10 +513,8 @@ const canSeeMessages = (userId, participantId) => __awaiter(void 0, void 0, void
                 {
                     communities: {
                         channels: {
-                            some: {
-                                channelSubscriptions: {
-                                    some: { userId },
-                                },
+                            channelSubscriptions: {
+                                some: { userId },
                             },
                         },
                     },
