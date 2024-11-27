@@ -35,5 +35,5 @@ export const authenticateUser = async (email: string, password: string) => {
   if (user && (await bcrypt.compare(password, user.password))) {
     return user;
   }
-  return null;
+  throw new AppError('Invalid credentials', HTTPERROR.UNAUTHORIZED);
 };

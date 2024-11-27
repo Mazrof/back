@@ -25,7 +25,7 @@ export const login = catchAsync(async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
     const user = await authenticateUser(email, password);
-    if (!user) return res.status(401).json({ message: "Invalid credentials" });
+    if (!user) throw new AppError("Invalid credentials", 401);
     console.log(user)
     if ("bannedUsers" in user) {
       req.session.user = { id: user.id, userType: 'Admin' }; // Store user in session
