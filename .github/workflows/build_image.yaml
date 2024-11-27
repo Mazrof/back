@@ -1,15 +1,13 @@
 name: push workflow
 
 on:
-  workflow_run:
-    workflows: ["main workflow"]
-    types:
-      - success
+  push:
+    branches:
+    - 'main'
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
