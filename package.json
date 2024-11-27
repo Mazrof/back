@@ -9,7 +9,7 @@
     "build":"tsc",
     "start:run": "nodemon build/server.js",
     "start-dev": "concurrently npm:start:*",
-    "migrate-db": "npx prisma migrate dev --name fix_names",
+    "migrate-db": "npx prisma migrate dev --name edit_channel",
     "prisma-studio": "npx prisma studio",
     "kill-port-3000": "lsof -ti :3000 | xargs kill -9 || true",
     "pull_db": "npx prisma db pull",

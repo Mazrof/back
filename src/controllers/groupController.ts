@@ -8,7 +8,9 @@ export const getAllGroups = catchAsync(
     res.status(200).json({
       status: 'success',
       results: groups.length,
-      data: { data: groups },
+      data: {
+        groups,
+      },
     });
   }
 );
@@ -19,23 +21,30 @@ export const getGroup = catchAsync(
     const group = await groupService.findGroupById(id);
     res.status(200).json({
       status: 'success',
-      data: { data: group },
+      data: {
+        group,
+      },
     });
   }
 );
 
 export const createGroup = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, privacy, creatorId, groupSize } = req.body;
+    const { name, privacy, creatorId, groupSize, admins } = req.body;
+
     const group = await groupService.createGroup({
       name,
       privacy,
       creatorId,
       groupSize,
+      admins
     });
+
     res.status(201).json({
       status: 'success',
-      data: { data: group },
+      data: {
+        group,
+      },
     });
   }
 );
@@ -46,7 +55,9 @@ export const updateGroup = catchAsync(
     const group = await groupService.updateGroup(groupId, req.body);
     res.status(200).json({
       status: 'success',
-      data: { data: group },
+      data: {
+        group,
+      },
     });
   }
 );
@@ -73,7 +84,7 @@ export const applyContentFilter = catchAsync(
     return res.status(200).json({
       status: 'success',
       data: {
-        data: group,
+        group,
       },
     });
   }

@@ -1,5 +1,4 @@
 import prisma from '../prisma/client';
-import { Users } from '@prisma/client';
 
 //Fetch all users with selected fields
 export const getAllUsers = async (): Promise<
@@ -71,7 +70,7 @@ export const updateUserStatus = async (
     select: {
       id: true,
       username: true,
-      status: status,
+      status: true,
     },
   });
 };
