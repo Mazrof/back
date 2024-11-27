@@ -1,14 +1,23 @@
 import prisma from '../prisma/client';
-import { Users } from '@prisma/client';
+import { Users,Admins } from '@prisma/client';
 import { OAuthUser } from './repositoriesTypes/authTypes';
 import { Social } from "@prisma/client";
+import { AppError } from '../utility';
 // should take Omit<Users, 'id'> as the parameter type
 export const createUser = async (user: any): Promise<Users> => {
   return await prisma.users.create({ data: user });
 };
 
-export const findUserByEmail = async (email: string): Promise<Users | null> => {
-  return await prisma.users.findUnique({ where: { email } });
+export const findUserByEmail = async (email: string): Promise<Users | null|Admins> => {
+  const normal_user=await prisma.users.findUnique({ where: { email } });
+  if(normal_user){
+    return normal_user;
+  }
+  const admin_user=await prisma.admins.findUnique({ where: { email } ,include: {
+    bannedUsers: true,
+  },});
+  return admin_user;
+
 };
 
 export const findUserByUsername = async (username: string): Promise<Users | null> => {
@@ -26,7 +35,7 @@ export const findUserById = async (id: number): Promise<Users | null> => {
 export const storeOAuthUser = async (user: OAuthUser): Promise<Users> => {
   const providerType = Social[user.provider as keyof typeof Social];
   if (!providerType) {
-    throw new Error(`Invalid providerType: ${user.provider}`)
+    throw new AppError('Invalid provider', 400);
   }
   const newUser = await prisma.users.create({
     data: {

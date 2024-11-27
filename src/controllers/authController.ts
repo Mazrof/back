@@ -1,21 +1,23 @@
 declare module 'express-session' {
   interface SessionData {
-    user?: { id: number; username: string };
+    user?: { id: number; userType: string };
   }
 }
-
+import { Users,Admins } from '@prisma/client';
 import { Request, Response } from "express";
 import { registerUser, authenticateUser } from "../services/authService";
-import { catchAsync } from "../utility";
+import { AppError, catchAsync } from "../utility";
 import { signupSchema } from "../schemas/authSchema";
 import { sendVerificationCode, verifyCode } from "../services/emailService";
 import { sendVerificationCodeSMS } from "../services/smsService";
 import crypto from "crypto";
+import { stat } from 'fs';
+import { date } from 'zod';
 export const signup = catchAsync(async (req: Request, res: Response) => {
 
     const validatedData = signupSchema.parse(req.body); // Zod validation
     const user = await registerUser(validatedData);
-    res.status(201).json({ message: "User registered", user: { id: user.id, username: user.username } });
+    res.status(201).json({ status: "success", data:{user: { id: user.id, username: user.username }} });
 
 });
 
@@ -24,16 +26,24 @@ export const login = catchAsync(async (req: Request, res: Response) => {
 
     const user = await authenticateUser(email, password);
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
+    console.log(user)
+    if ("bannedUsers" in user) {
+      req.session.user = { id: user.id, userType: 'Admin' }; // Store user in session
+      res.status(200).json({status: "success", data:{user: { id: user.id, user_type: 'Admin' } }});
 
-    req.session.user = { id: user.id, username: user.username }; // Store user in session
-    res.json({ message: "Login successful", user: { id: user.id, username: user.username } });
+    }
+    else {
+      req.session.user = { id: user.id , userType: 'user'}; // Store user in session
+      res.status(200).json({status: "success", data:{user: { id: user.id, user_type: 'user' } }});
+    }
+    
 
 });
 
 export const whoami = catchAsync(async(req: Request, res: Response) => {
   const user = req.session.user;
-  if (!user) return res.status(401).json({ message: "Unauthorized" });
-  res.json({ user });
+  if (!user) throw new AppError("User not logged in", 401);
+  res.status(200).json({ status: "success", data: { user } });
 });
 
 
@@ -41,8 +51,8 @@ export const sendVerificationCodeController = catchAsync(async (req: Request, re
   const { email } = req.body;
 
   if (!email) {
-    return res.status(400).json({ message: 'Email is required' });
-  }
+    throw new AppError('Email is required', 400);
+    }
 
   // Generate a random 6-digit code
   const code = crypto.randomInt(100000, 999999).toString();
@@ -50,22 +60,20 @@ export const sendVerificationCodeController = catchAsync(async (req: Request, re
 
   try {
     await sendVerificationCode(email, code);
-    res.status(200).json({ message: 'Verification code sent' });
+    res.status(200).json({status: "success",data: {message: 'Verification code sent'}});
   } catch (error) {
-    res.status(500).json({ message: 'Failed to send email' });
-  }
+    throw new AppError('Failed to send email', 500);}
 });
 export const verifyCodeController = catchAsync(async (req: Request, res: Response) => {
   const { email, code } = req.body;
 
   if (!email || !code) {
-    return res.status(400).json({ message: 'Email and code are required' });
-  }
+    throw new AppError('Email and code are required', 400);}
 
   if (verifyCode(email, code)) {
-    res.status(200).json({ message: 'Code is valid' });
+    res.status(200).json({status: "success",data: {message: 'Code is valid'}});
   } else {
-    res.status(400).json({ message: 'Invalid code' });
+    throw new AppError('Invalid code', 400);
   }
 });
 
@@ -73,7 +81,7 @@ export const sendVerificationCodeSmSController = catchAsync(async (req: Request,
   const { phoneNumber } = req.body;
 
   if (!phoneNumber) {
-    return res.status(400).json({ message: 'Phone number is required' });
+    throw new AppError('Phone number is required', 400);
   }
 
   // Generate a random 6-digit code
@@ -81,10 +89,9 @@ export const sendVerificationCodeSmSController = catchAsync(async (req: Request,
 
   try {
     await sendVerificationCodeSMS(phoneNumber, code);
-    res.status(200).json({ message: 'Verification code sent' });
+    res.status(200).json({status: "success",data: {message: 'Verification code sent'}});
   } catch (error) {
-    res.status(500).json({ message: 'Failed to send SMS' });
-  }
+    throw new AppError('Failed to send SMS', 500);}
 }
 );
 
@@ -92,13 +99,11 @@ export const VerifyCodeSMSController = catchAsync(async (req: Request, res: Resp
   const { phoneNumber, code } = req.body;
 
   if (!phoneNumber || !code) {
-    return res.status(400).json({ message: 'Phone number and code are required' });
-  }
+    throw new AppError('Phone number and code are required', 400);}
 
   if (verifyCode(phoneNumber, code)) {
-    res.status(200).json({ message: 'Code is valid' });
+    res.status(200).json({status: "success",data: {message: 'Code is valid'}});
   } else {
-    res.status(400).json({ message: 'Invalid code' });
-  }
+    throw new AppError('Invalid code', 400);}
 });
 

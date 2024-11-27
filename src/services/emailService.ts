@@ -1,5 +1,6 @@
 import e from 'express';
 import nodemailer from 'nodemailer';
+import { AppError } from '../utility';
 
 const verificationCodes: { [email: string]: string } = {};
 const transporter = nodemailer.createTransport({
@@ -27,7 +28,7 @@ export const sendVerificationCode = async (email: string, code: string) => {
     console.log('Verification email sent');
   } catch (error) {
     console.error('Error sending email:', error);
-    throw new Error('Failed to send email');
+    throw new AppError('Failed to send email', 500);
   }
 };
 
