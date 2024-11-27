@@ -5,12 +5,11 @@ import cors from 'cors';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
-
+import "./services/oauth"
 import { globalErrorHandler } from './middlewares/error_handlers/error_handler';
 import apiRoutes from './routes';
-import profileRouter from './routes/profileRoutes';
-import storiesRouter from './routes/storiesRoutes';
-import searchRouter from './routes/searchRoutes';
+import passport from 'passport';
+import session from 'express-session';
 
 export default async (app: Application) => {
   // Serve static files from the 'public' directory
@@ -27,6 +26,7 @@ export default async (app: Application) => {
     message: 'Too many requests from this IP, please try again later.',
   });
   app.use('/api', limiter); // Apply rate limiting to API routes
+
 
   // Compression middleware for response bodies
   app.use(compression());
@@ -48,7 +48,10 @@ export default async (app: Application) => {
     console.log('hello world');
     res.status(200).json({ msg: 'hello world, MAZROF COMMUNITY' });
   });
+  app.use(session({ secret: 'your-secret-key', resave: false, saveUninitialized: false}));
 
+app.use(passport.initialize());
+app.use(passport.session());
   // API routes
   app.use('/api', apiRoutes);
 
