@@ -14,7 +14,6 @@ passport.use(new GoogleStrategy(
     callbackURL: "http://localhost:3000/api/v1/auth/google/callback",
   },
   (accessToken, refreshToken, profile, done) => {
-    console.log(profile);
     const user:OAuthUser={
       providerId: profile.id,
       email: profile._json.email as string,
@@ -23,8 +22,7 @@ passport.use(new GoogleStrategy(
       email_verified: profile._json.email_verified as boolean,
       picture: profile._json.picture as string,
     }
-    userRepo.storeOAuthUser(user);
-    return done(null, profile);
+    return done(null, user);
   }
 ));
 
@@ -60,7 +58,6 @@ passport.use(
         picture: profile._json.avatar_url as string,
       };
       //userRepo.storeOAuthUser(user);
-      console.log(profile);
       return done(null, user);
     }
   )

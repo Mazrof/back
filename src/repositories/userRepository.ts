@@ -22,11 +22,12 @@ export const storeOAuthUser = async (user: OAuthUser): Promise<Users|null> => {
     },
   });
   if (existingUser) {
+    console.log("USER ALREADY EXISTS")
     return existingUser;
   }
   const providerType = Social[user.provider as keyof typeof Social];
   if (!providerType) {
-    throw new Error(`Invalid providerType: ${user.provider}`);
+    throw new Error(`Invalid providerType: ${user.provider}`)
   }
   const newUser = await prisma.users.create({
     data: {
@@ -41,5 +42,6 @@ export const storeOAuthUser = async (user: OAuthUser): Promise<Users|null> => {
 
     },
   });
+  console.log("USER CREATED")
   return newUser;
 };
