@@ -61,3 +61,39 @@ export const storeOAuthUser = async (user: OAuthUser): Promise<Users> => {
   return newUser;
 
 };
+export const AddUserToBlocked = async (
+  blockerId: number,
+  blockedId: number
+) => {
+  return prisma.userBlacklist.create({
+    data: {
+      blockerId: blockerId,
+      blockedId: blockedId,
+    },
+  });
+};
+
+export const RemoveUserFromBlocked = async (
+  blockerId: number,
+  blockedId: number
+) => {
+  return prisma.userBlacklist.delete({
+    where: {
+      blockerId_blockedId: {
+        blockerId: blockerId,
+        blockedId: blockedId,
+      },
+    },
+  });
+};
+
+export const GetUserBlockedList = async (blockerId: number) => {
+  return prisma.userBlacklist.findMany({
+    where: {
+      blockerId: blockerId,
+    },
+    include: {
+      blockedUser: true,
+    },
+  });
+};
