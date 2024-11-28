@@ -1,11 +1,13 @@
 import prisma from '../prisma/client';
+
 import { Users,Admins } from '@prisma/client';
 import { OAuthUser } from './repositoriesTypes/authTypes';
 import { Social } from "@prisma/client";
 import { AppError } from '../utility';
+
 // should take Omit<Users, 'id'> as the parameter type
 export const createUser = async (user: any): Promise<Users> => {
-  return await prisma.users.create({ data: user });
+  return prisma.users.create({ data: user });
 };
 
 export const findUserByEmail = async (email: string): Promise<Users | null|Admins> => {
@@ -56,4 +58,5 @@ export const storeOAuthUser = async (user: OAuthUser): Promise<Users> => {
   });
   console.log("USER CREATED")
   return newUser;
+
 };

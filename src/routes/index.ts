@@ -6,6 +6,7 @@ import channelRoutes from './channelRoutes';
 import profileRouter from './profileRoutes';
 import storiesRouter from './storiesRoutes';
 import searchRouter from './searchRoutes';
+import userRouter from './userRoutes';
 const router = express.Router();
 
 router.use('/v1/groups', groupRoutes)
@@ -15,4 +16,5 @@ router.use('/v1/auth', authRouter);
 router.use('/v1/profile', profileRouter);
 router.use('/v1/stories', storiesRouter);
 router.use('/v1/search', searchRouter);
+router.use('/v1/user', userRouter);
 export default router;

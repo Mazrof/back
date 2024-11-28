@@ -12,7 +12,9 @@ export const getAllChannels = catchAsync(
     res.status(200).json({
       status: 'success',
       results: channels.length,
-      data: { data: channels },
+      data: {
+        channels,
+      },
     });
   }
 );
@@ -28,23 +30,28 @@ export const getChannel = catchAsync(
 
     res.status(200).json({
       status: 'success',
-      data: { data: channel },
+      data: {
+        channel,
+      },
     });
   }
 );
 
 export const createChannel = catchAsync(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const { name, privacy, creatorId, canAddComments } = req.body;
+    const { name, privacy, creatorId, canAddComments, admins } = req.body;
     const channel = await channelService.createChannel({
       name,
       privacy,
       creatorId,
       canAddComments,
+      admins
     });
     res.status(201).json({
       status: 'success',
-      data: { data: channel },
+      data: {
+        channel,
+      },
     });
   }
 );
@@ -60,7 +67,9 @@ export const updateChannel = catchAsync(
 
     res.status(200).json({
       status: 'success',
-      data: { data: channel },
+      data: {
+        channel,
+      },
     });
   }
 );

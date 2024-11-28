@@ -4,16 +4,35 @@ import {
   ref,
   uploadBytes,
 } from 'firebase/storage';
+
+const Blob = require('node-blob');
 import { storage } from '../config';
 
 export const uploadFileToFirebase = async (
   messageContent: string
 ): Promise<string> => {
-  const randomName = `file_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-  const stringBlob = new Blob([messageContent], { type: 'text/plain' });
-  const storageRef = ref(storage, `uploads/${randomName}.txt`);
-  await uploadBytes(storageRef, stringBlob);
-  return await getDownloadURL(storageRef);
+  try {
+    const randomName = `file_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+    console.log('Generated file name:', randomName);
+
+    // Convert the string into a Buffer
+    const fileBuffer = Buffer.from(messageContent, 'utf-8');
+    console.log('Buffer created successfully.');
+
+    const storageRef = ref(storage, `uploads/${randomName}.txt`);
+    console.log('Storage reference created:', storageRef);
+
+    await uploadBytes(storageRef, fileBuffer);
+    console.log('File uploaded successfully.');
+
+    const downloadURL = await getDownloadURL(storageRef);
+    console.log('Download URL obtained:', downloadURL);
+
+    return downloadURL;
+  } catch (error) {
+    console.error('Error in uploadFileToFirebase:', error);
+    throw error; // Re-throw for higher-level handling
+  }
 };
 
 export const deleteFileFromFirebase = async (
