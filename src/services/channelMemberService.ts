@@ -1,52 +1,93 @@
 import * as channelMemberRepository from '../repositories/channelMemberRepository';
 import { AppError } from '../utility';
-import { UpdateChannelMemberData, ChannelRole } from '../types';
+import { UpdateChannelMemberData } from '../types';
+import { CommunityRole } from '@prisma/client';
+import * as channelRepository from '../repositories/channelRepository';
+import crypto from 'crypto';
 
-export const getChannelMembers = async (channelId: number) => {
-  return await channelMemberRepository.findChannelMembers(channelId);
+const findChannel = async (channelId: number) => {
+  const channel = await channelRepository.findChannelById(channelId);
+  if (!channel) {
+    throw new AppError('this is no channel with this id', 404);
+  }
 };
 
-export const addChannelMember = async (memberId: number, channelId: number) => {
-  // Check if the member already exists in the channel
+const checkMember = async (userId: number, channelId: number) => {
   const existingMember = await channelMemberRepository.findExistingMember(
-    memberId,
+    userId,
     channelId
   );
   if (existingMember) {
-    if (!existingMember.status) {
+    if (!existingMember.active) {
       return await channelMemberRepository.updateChannelMemberStatus(
-        memberId,
+        userId,
         channelId,
         true
       );
     }
     throw new AppError('Member already exists in this channel', 404);
   }
+  return null;
+};
 
+const checkAdmin = async (adminId: number, channelId: number) => {
+  if (!adminId) {
+    throw new AppError('AdminId is missing', 400);
+  }
+  const user = await channelMemberRepository.findChannelMember(
+    adminId,
+    channelId
+  );
+  if (!user || !user.active || user.role !== CommunityRole.admin) {
+    throw new AppError('Not Authorized', 403);
+  }
+};
+
+export const getChannelMembers = async (channelId: number) => {
+  // Check if there is a channel
+  await findChannel(channelId);
+  return await channelMemberRepository.findChannelMembers(channelId);
+};
+
+export const addChannelMember = async (
+  userId: number,
+  channelId: number,
+  role: CommunityRole
+) => {
+  // Check if there is a channel
+  await findChannel(channelId);
+  // Check if the member already exists in the channel
+  await checkMember(userId, channelId);
   // Create a new channel membership for the member
   return await channelMemberRepository.addChannelMember({
     channelId,
-    userId: memberId,
+    userId,
+    role,
   });
 };
 
 export const updateChannelMember = async (
-  userId: number,
+  adminId: number,
   channelId: number,
-  memberId: number,
+  userId: number,
   updates: UpdateChannelMemberData
 ) => {
+  // Check if there is a channel
+  await findChannel(channelId);
+  // Check if the user is an admin in the channel
+  await checkAdmin(adminId, channelId);
+
   const user = await channelMemberRepository.findChannelMember(
     userId,
     channelId
   );
-  // TODO: DB ERR
-  if (!user || user.role !== ChannelRole.admin) {
+
+  if (!user || !user.active || user.role !== CommunityRole.admin) {
     throw new AppError('Not Authorized', 403);
   }
 
   const existingMember = await channelMemberRepository.findExistingMember(
-    memberId,
+    userId,
     channelId
   );
 
@@ -55,18 +96,19 @@ export const updateChannelMember = async (
   }
 
   const updatedData: UpdateChannelMemberData = {};
-  if (updates.role === 'admin') {
-    updatedData.role = ChannelRole.admin;
-  } else if (updates.role === 'member') {
-    updatedData.role = ChannelRole.member;
+  if (updates.role) {
+    updatedData.role =
+      updates.role === 'admin' ? CommunityRole.admin : CommunityRole.member;
   }
 
   if (updates.hasDownloadPermissions) {
     updatedData.hasDownloadPermissions = updates.hasDownloadPermissions;
   }
-
+  if (!updates.role && !updates.hasDownloadPermissions) {
+    throw new AppError('Not Data to update', 400);
+  }
   return await channelMemberRepository.updateChannelMemberData(
-    memberId,
+    userId,
     channelId,
     updatedData
   );
@@ -74,10 +116,10 @@ export const updateChannelMember = async (
 
 export const deleteChannelMember = async (
   channelId: number,
-  memberId: number
+  userId: number
 ) => {
   const existingMember = await channelMemberRepository.findExistingMember(
-    memberId,
+    userId,
     channelId
   );
 
@@ -86,8 +128,38 @@ export const deleteChannelMember = async (
   }
 
   return await channelMemberRepository.updateChannelMemberStatus(
-    memberId,
+    userId,
     channelId,
     false
   );
+};
+
+export const joinChannelByInvite = async (
+  token: string,
+  userId: number,
+  role: CommunityRole
+) => {
+  const invitationLinkHash = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+
+  const channel: { id: number } | null =
+    await channelMemberRepository.findChannelByInvitationLinkHash(
+      invitationLinkHash
+    );
+
+  if (!channel) {
+    throw new Error('Invalid or expired invitation link');
+  }
+
+  // Check if the member already exists in the group
+  await checkMember(userId, channel.id);
+
+  // Create a new group membership for the member
+  return await channelMemberRepository.addChannelMember({
+    channelId: channel.id,
+    userId,
+    role,
+  });
 };

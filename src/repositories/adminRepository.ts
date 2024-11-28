@@ -1,8 +1,17 @@
 import prisma from '../prisma/client';
-import { Users } from '@prisma/client';
 
 //Fetch all users with selected fields
-export const getAllUsers = async (): Promise<Partial<Users>[]> => {
+export const getAllUsers = async (): Promise<
+  {
+    id: number;
+    username: string;
+    email: string;
+    phone: string | null;
+    bio: string | null;
+    status: boolean | null;
+    activeNow: boolean | null;
+  }[]
+> => {
   return await prisma.users.findMany({
     select: {
       id: true,
@@ -19,7 +28,11 @@ export const getAllUsers = async (): Promise<Partial<Users>[]> => {
 // Find user by ID
 export const findUserById = async (
   id: number
-): Promise<Partial<Users> | null> => {
+): Promise<{
+  id: number;
+  username: string;
+  status: boolean | null;
+} | null> => {
   return await prisma.users.findUnique({
     where: { id },
     select: {
@@ -33,9 +46,12 @@ export const findUserById = async (
 // Find user by ID
 export const findAdminById = async (
   id: number
-): Promise<Partial<Users> | null> => {
+): Promise<{ id: number } | null> => {
   return await prisma.admins.findUnique({
     where: { id },
+    select: {
+      id: true,
+    },
   });
 };
 
@@ -43,7 +59,11 @@ export const findAdminById = async (
 export const updateUserStatus = async (
   id: number,
   status: boolean
-): Promise<Partial<Users>> => {
+): Promise<{
+  id: number;
+  username: string;
+  status: boolean | null;
+} | null> => {
   return await prisma.users.update({
     where: { id },
     data: { status },

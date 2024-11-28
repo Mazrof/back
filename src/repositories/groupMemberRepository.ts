@@ -1,15 +1,36 @@
 import prisma from '../prisma/client';
-import { UpdateCommunityMemberData } from '../types';
+import { UpdateGroupMemberData } from '../types';
+import { CommunityRole } from '@prisma/client';
+
+export const getMembersCount = async (groupId: number) => {
+  const group: { groupSize: number } | null = await prisma.groups.findUnique({
+    where: { id: groupId },
+    select: {
+      groupSize: true,
+    },
+  });
+  const count: number = await prisma.groupMemberships.count({
+    where: {
+      AND: {
+        groupId,
+        active: true,
+      },
+    },
+  });
+  return count === group?.groupSize;
+};
 
 export const findGroupMember = async (userId: number, groupId: number) => {
-  return await prisma.groupMemberships.findFirst({
+  return await prisma.groupMemberships.findUnique({
     where: {
-      userId,
-      groupId,
-      status: true,
+      userId_groupId: {
+        userId,
+        groupId,
+      },
     },
     select: {
       role: true,
+      active: true,
     },
   });
 };
@@ -18,13 +39,13 @@ export const findGroupMembers = async (groupId: number) => {
   return await prisma.groupMemberships.findMany({
     where: {
       groupId,
-      status: true,
+      active: true,
     },
     select: {
       groupId: true,
       userId: true,
       role: true,
-      status: true,
+      active: true,
       hasDownloadPermissions: true,
       hasMessagePermissions: true,
       users: {
@@ -37,15 +58,18 @@ export const findGroupMembers = async (groupId: number) => {
 };
 
 export const findExistingMember = async (memberId: number, groupId: number) => {
-  return await prisma.groupMemberships.findFirst({
+  return await prisma.groupMemberships.findUnique({
     where: {
-      AND: [{ userId: memberId }, { groupId }],
+      userId_groupId: {
+        userId: memberId,
+        groupId: groupId,
+      },
     },
     select: {
       role: true,
       hasMessagePermissions: true,
       hasDownloadPermissions: true,
-      status: true,
+      active: true,
     },
   });
 };
@@ -53,38 +77,55 @@ export const findExistingMember = async (memberId: number, groupId: number) => {
 export const addGroupMember = async (memberData: {
   groupId: number;
   userId: number;
+  role: CommunityRole;
 }) => {
-  return await prisma.groupMemberships.create({ data: memberData });
+  return await prisma.groupMemberships.create({
+    data: memberData,
+    select: {
+      groupId: true,
+      userId: true,
+      role: true,
+    },
+  });
 };
 
 export const updateGroupMemberStatus = async (
-  memberId: number,
+  userId: number,
   groupId: number,
-  status: boolean
+  active: boolean
 ) => {
   return await prisma.groupMemberships.update({
     where: {
       userId_groupId: {
-        userId: memberId,
+        userId,
         groupId,
       },
     },
-    data: { status },
+    data: { active },
   });
 };
 
 export const updateGroupMemberData = async (
-  memberId: number,
+  userId: number,
   groupId: number,
-  data: UpdateCommunityMemberData
+  data: UpdateGroupMemberData
 ) => {
   return await prisma.groupMemberships.update({
     where: {
       userId_groupId: {
-        userId: memberId,
+        userId,
         groupId,
       },
     },
     data,
+  });
+};
+
+export const findGroupByInvitationLinkHash = async (invitationLink: string) => {
+  return await prisma.groups.findUnique({
+    where: { invitationLink },
+    select: {
+      id: true,
+    },
   });
 };

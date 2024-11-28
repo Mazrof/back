@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import {
   createGroup,
   getGroup,
@@ -31,7 +31,6 @@ router
   .patch(updateGroup) // Update a group by Admins
   .delete(deleteGroup); // Delete a group by Admins
 
-// App's admins only
-router.post('/:groupId/filter', applyContentFilter);
+
 
 export default router;
