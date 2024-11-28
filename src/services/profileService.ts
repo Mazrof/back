@@ -1,6 +1,10 @@
 // src/service/profileService.ts
 import { AppError } from '../utility';
 import * as profileRepository from '../repositories/profileRepository';
+import {
+  deleteFileFromFirebase,
+  uploadFileToFirebase,
+} from '../third_party_services/Firebase';
 
 const isValidPhoneNumber = (phoneNumber: string) => {
   const phoneRegex = /^(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
@@ -13,7 +17,7 @@ const isValidEmail = (email: string) => {
 };
 
 export const getAllProfiles = async () => {
-  return await profileRepository.findAllProfiles();
+  return profileRepository.findAllProfiles();
 };
 
 export const getProfileById = async (id: number) => {
@@ -29,6 +33,9 @@ export const createProfile = async (data: any) => {
   if (data.email && !isValidEmail(data.email)) {
     throw new AppError('Invalid email format', 400);
   }
+  // if (data.photo) {
+  //   data.photo = await uploadFileToFirebase('dsdsdsd');
+  // }
   return await profileRepository.createProfile(data);
 };
 

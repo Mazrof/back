@@ -276,10 +276,10 @@ model Users {
   readReceiptsEnabled   Privacy?               @default(everyone) @map("read_receipts_enabled")
   lastSeenVisibility    Boolean?               @default(true) @map("last_seen_visibility")
   groupAddPermission    Boolean?               @default(true) @map("group_add_permission")
-  is_email_verified     Boolean?               @default(false)
-  is_phone_verified     Boolean?               @default(false)
-  private_key           String?
-  public_key            String
+  isEmailVerified       Boolean?               @default(false) @map("is_email_verified")
+  isPhoneVerified       Boolean?               @default(false) @map("is_phone_verified")
+  privateKey            String?                @map("private_key")
+  publicKey             String                 @map("public_key")
   bannedUsers           BannedUsers[]
   channelSubscriptions  ChannelSubscriptions[]
   communities           Communities[]
