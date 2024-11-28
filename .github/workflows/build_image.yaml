@@ -18,6 +18,10 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: build image
         run: docker build -t ${{ vars.DOCKER_USERNAME }}/back-app:${{ github.run_number }} .
-      - name: push image
+      - name: tag image
+        run: docker tag ${{ vars.DOCKER_USERNAME }}/back-app:${{ github.run_number }} ${{ vars.DOCKER_USERNAME }}/back-app:latest
+      - name: push image-tag
         run: docker push ${{ vars.DOCKER_USERNAME }}/back-app:${{ github.run_number }}
+      - name: push image-latest
+        run: docker push ${{ vars.DOCKER_USERNAME }}/back-app:latest
         

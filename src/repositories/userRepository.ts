@@ -64,12 +64,13 @@ export const storeOAuthUser = async (user: OAuthUser): Promise<Users> => {
       providerType,
       providerId: user.providerId,
       photo: user.picture,
-      IsEmailVerified: user.email_verified,
-      public_key: '',
+      isEmailVerified: user.email_verified,
+      publicKey: '',
     },
   });
   console.log('USER CREATED');
   return newUser;
+
 };
 export const AddUserToBlocked = async (
   blockerId: number,

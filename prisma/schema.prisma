@@ -257,6 +257,9 @@ model UserBlacklist {
 model Users {
   id                    Int                    @id @default(autoincrement())
   username              String                 @unique @db.VarChar(255)
+  //
+  isEmailVerified       Boolean?               @default(false) @map("is_email_verified")
+  isPhoneVerified       Boolean?               @default(false) @map("is_phone_verified")
   password              String
   passwordChangedAt     DateTime?              @map("password_changed_at") @db.Timestamp(6)
   email                 String                 @unique @db.VarChar(255)
@@ -276,10 +279,8 @@ model Users {
   readReceiptsEnabled   Privacy?               @default(everyone) @map("read_receipts_enabled")
   lastSeenVisibility    Boolean?               @default(true) @map("last_seen_visibility")
   groupAddPermission    Boolean?               @default(true) @map("group_add_permission")
-  IsEmailVerified       Boolean?               @default(false) @map("is_email_verified")
-  IsPhoneVerified       Boolean?               @default(false) @map("is_phone_verified")
-  private_key           String?
-  public_key            String
+  privateKey            String?                @map("private_key")
+  publicKey             String                 @map("public_key")
   bannedUsers           BannedUsers[]
   channelSubscriptions  ChannelSubscriptions[]
   communities           Communities[]
