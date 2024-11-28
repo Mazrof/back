@@ -8,9 +8,6 @@ import morgan from 'morgan';
 
 import { globalErrorHandler } from './middlewares/error_handlers/error_handler';
 import apiRoutes from './routes';
-import profileRouter from './routes/profileRoutes';
-import storiesRouter from './routes/storiesRoutes';
-import searchRouter from './routes/searchRoutes';
 
 export default async (app: Application) => {
   // Serve static files from the 'public' directory
