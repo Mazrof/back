@@ -4,9 +4,7 @@ const searchController = require('./../controllers/searchController');
 const router: Router = express.Router();
 
 // TODO: add user authentication
-router.get('/user', searchController.userSearch);
-router.get('/channel', searchController.channelSearch);
-router.get('/group', searchController.groupSearch);
+router.get('', searchController.generalSearch);
 
 // Export the router
 export default router;

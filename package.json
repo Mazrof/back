@@ -2,7 +2,7 @@
   "name": "back",
   "version": "1.0.0",
   "description": "Yes, separating database queries into a *services* folder is a common practice. This structure further decouples the *business logic* from the *data access layer*, which can lead to a cleaner, more maintainable codebase.",
-  "main": "index.js",
+  "main": "build/src/server.js",
   "scripts": {
     "start:build": "tsc -w",
     "check": "tsc --noEmit",

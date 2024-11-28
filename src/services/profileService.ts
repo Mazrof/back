@@ -17,7 +17,7 @@ const isValidEmail = (email: string) => {
 };
 
 export const getAllProfiles = async () => {
-  return await profileRepository.findAllProfiles();
+  return profileRepository.findAllProfiles();
 };
 
 export const getProfileById = async (id: number) => {

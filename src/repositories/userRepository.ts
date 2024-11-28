@@ -70,6 +70,7 @@ export const storeOAuthUser = async (user: OAuthUser): Promise<Users> => {
   });
   console.log('USER CREATED');
   return newUser;
+
 };
 export const AddUserToBlocked = async (
   blockerId: number,
@@ -103,7 +104,14 @@ export const GetUserBlockedList = async (blockerId: number) => {
       blockerId: blockerId,
     },
     include: {
-      blockedUser: true,
+      blockedUser: {
+        select: {
+          id: true,
+          username: true,
+          photo: true,
+          profilePicVisibility: true,
+        },
+      },
     },
   });
 };
