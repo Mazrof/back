@@ -50,7 +50,7 @@ const getParticipantIdsOfUserGroups = (userId) => __awaiter(void 0, void 0, void
         select: {
             groups: {
                 select: {
-                    communities: {
+                    community: {
                         select: {
                             participants: {
                                 select: {
@@ -64,7 +64,7 @@ const getParticipantIdsOfUserGroups = (userId) => __awaiter(void 0, void 0, void
         },
     });
     // Extract participant IDs step-by-step and handle nullable values
-    return memberships.flatMap((membership) => membership.groups.communities.participants.id);
+    return memberships.flatMap((membership) => membership.groups.community.participants.id);
 });
 exports.getParticipantIdsOfUserGroups = getParticipantIdsOfUserGroups;
 //TODO: ensure the groups has communities and commnites has particpinats
@@ -76,7 +76,7 @@ const getParticipantIdsOfUserChannels = (userId) => __awaiter(void 0, void 0, vo
         select: {
             channels: {
                 select: {
-                    communities: {
+                    community: {
                         select: {
                             participants: {
                                 select: {
@@ -90,7 +90,7 @@ const getParticipantIdsOfUserChannels = (userId) => __awaiter(void 0, void 0, vo
         },
     });
     // Extract participant IDs step-by-step and handle nullable values
-    return memberships.flatMap((membership) => membership.channels.communities.participants.id);
+    return memberships.flatMap((membership) => membership.channels.community.participants.id);
 });
 exports.getParticipantIdsOfUserChannels = getParticipantIdsOfUserChannels;
 const markMessagesAsRead = (userId, participantId) => __awaiter(void 0, void 0, void 0, function* () {
@@ -237,7 +237,7 @@ const getUserGroupsChannelsChats = (userId) => __awaiter(void 0, void 0, void 0,
                 include: {
                     groups: {
                         include: {
-                            communities: {
+                            community: {
                                 include: {
                                     participants: {
                                         include: {
@@ -261,7 +261,7 @@ const getUserGroupsChannelsChats = (userId) => __awaiter(void 0, void 0, void 0,
                 include: {
                     channels: {
                         include: {
-                            communities: {
+                            community: {
                                 include: {
                                     participants: {
                                         include: {

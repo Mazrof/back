@@ -76,7 +76,7 @@ export const getParticipantIdsOfUserGroups = async (userId: number) => {
     select: {
       groups: {
         select: {
-          communities: {
+          community: {
             select: {
               participants: {
                 select: {
@@ -91,7 +91,7 @@ export const getParticipantIdsOfUserGroups = async (userId: number) => {
   });
   // Extract participant IDs step-by-step and handle nullable values
   return memberships.flatMap(
-    (membership) => membership.groups.communities!.participants!.id
+    (membership) => membership.groups.community!.participants!.id
   );
 };
 //TODO: ensure the groups has communities and commnites has particpinats
@@ -104,7 +104,7 @@ export const getParticipantIdsOfUserChannels = async (userId: number) => {
     select: {
       channels: {
         select: {
-          communities: {
+          community: {
             select: {
               participants: {
                 select: {
@@ -119,7 +119,7 @@ export const getParticipantIdsOfUserChannels = async (userId: number) => {
   });
   // Extract participant IDs step-by-step and handle nullable values
   return memberships.flatMap(
-    (membership) => membership.channels.communities!.participants!.id
+    (membership) => membership.channels.community!.participants!.id
   );
 };
 export const markMessagesAsRead = async (
@@ -281,7 +281,7 @@ export const getUserGroupsChannelsChats = async (userId: number) => {
         include: {
           groups: {
             include: {
-              communities: {
+              community: {
                 include: {
                   participants: {
                     include: {
@@ -305,7 +305,7 @@ export const getUserGroupsChannelsChats = async (userId: number) => {
         include: {
           channels: {
             include: {
-              communities: {
+              community: {
                 include: {
                   participants: {
                     include: {
