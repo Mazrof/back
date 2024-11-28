@@ -8,6 +8,22 @@ export const findAllProfiles = async () => {
 export const findProfileById = async (id: number) => {
   return prisma.users.findUnique({
     where: { id },
+    select: {
+      username: true,
+      password: true,
+      email: true,
+      photo: true,
+      phone: true,
+      bio: true,
+      screenName: true,
+      autoDownloadSizeLimit: true,
+      maxLimitFileSize: true,
+      profilePicVisibility: true,
+      storyVisibility: true,
+      readReceiptsEnabled: true,
+      lastSeenVisibility: true,
+      groupAddPermission: true,
+    },
   });
 };
 

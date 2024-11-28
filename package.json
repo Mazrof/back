@@ -2,7 +2,7 @@
   "name": "back",
   "version": "1.0.0",
   "description": "Yes, separating database queries into a *services* folder is a common practice. This structure further decouples the *business logic* from the *data access layer*, which can lead to a cleaner, more maintainable codebase.",
-  "main": "index.js",
+  "main": "build/src/server.js",
   "scripts": {
     "start:build": "tsc -w",
     "check":"tsc --noEmit",
@@ -13,7 +13,7 @@
     "prisma-studio": "npx prisma studio",
     "kill-port-3000": "lsof -ti :3000 | xargs kill -9 || true",
     "pull_db": "npx prisma db pull",
-    "start": "node build/server.js",
+    "start": "node build/src/server.js",
     "container":"npm run migrate-db & npm run start" 
   },
   "dependencies": {
