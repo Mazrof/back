@@ -1,8 +1,10 @@
-import e from 'express';
+import Redis from 'ioredis';
 import nodemailer from 'nodemailer';
 import { AppError } from '../utility';
+import crypto from 'crypto';
+import { findUserByEmail, updateUserById } from '../repositories/userRepository';
+const redis = new Redis(); // Connect to Redis server
 
-const verificationCodes: { [email: string]: string } = {};
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT),
@@ -24,7 +26,10 @@ export const sendVerificationCode = async (email: string, code: string) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    verificationCodes[email] = code
+
+    // Store the code in Redis with a 10-minute expiration
+    await redis.set(`verification:${email}`, code, 'EX', 600);
+
     console.log('Verification email sent');
   } catch (error) {
     console.error('Error sending email:', error);
@@ -32,9 +37,63 @@ export const sendVerificationCode = async (email: string, code: string) => {
   }
 };
 
-export const verifyCode = (email: string, code: string) => {
-    if (!verificationCodes[email]) {
-      return false;
+export const verifyCode = async (email: string, code: string) => {
+  
+    // Retrieve the code from Redis
+    const storedCode = await redis.get(`verification:${email}`);
+    if (!storedCode) {
+      throw new AppError('Code expired', 400); 
     }
-    return verificationCodes[email] === code;
+
+    // Check if the code matches
+    const isValid = storedCode === code;
+
+    if (isValid) {
+      await redis.del(`verification:${email}`);
     }
+
+    return isValid;
+  
+};
+
+export const requestPasswordReset = async (email:string) => {
+  const user = await findUserByEmail(email);
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+  await redis.set(`passwordReset:${user.id}`, tokenHash, 'EX', 900);
+
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&id=${user.id}`;
+
+  const mailOptions = {
+    from: '"Mazroof" <no-reply@yourapp.com>',
+    to: email,
+    subject: 'Password Reset Request',
+    html: `<p>You requested a password reset. Click the link below to reset your password:</p>
+           <a href="${resetUrl}">${resetUrl}</a>
+           <p>If you did not request this, please ignore this email.</p>`,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+export const resetPassword = async (id: number, token: string, newPassword: string) => {
+  // Retrieve the stored hash
+  const storedTokenHash = await redis.get(`passwordReset:${id}`);
+  if (!storedTokenHash) {
+    throw new AppError('Token is invalid or expired', 400);
+  }
+
+  const incomingTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+  if (storedTokenHash !== incomingTokenHash) {
+    throw new AppError('Token is invalid', 400);
+  }
+
+  const hashedPassword = crypto.createHash('sha256').update(newPassword).digest('hex');
+  await updateUserById(id, { password: hashedPassword });
+  await redis.del(`passwordReset:${id}`);
+};

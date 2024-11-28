@@ -1,9 +1,9 @@
+import { requestPasswordReset, resetPassword } from './../services/emailService';
 declare module 'express-session' {
   interface SessionData {
     user?: { id: number; userType: string };
   }
 }
-import { Users,Admins } from '@prisma/client';
 import { Request, Response } from "express";
 import { registerUser, authenticateUser } from "../services/authService";
 import { AppError, catchAsync } from "../utility";
@@ -11,7 +11,7 @@ import { signupSchema } from "../schemas/authSchema";
 import { sendVerificationCode, verifyCode } from "../services/emailService";
 import { sendVerificationCodeSMS } from "../services/smsService";
 import crypto from "crypto";
-import { stat } from 'fs';
+import {findUserById, updateUserById} from "../repositories/userRepository";
 import { date } from 'zod';
 export const signup = catchAsync(async (req: Request, res: Response) => {
 
@@ -70,7 +70,8 @@ export const verifyCodeController = catchAsync(async (req: Request, res: Respons
   if (!email || !code) {
     throw new AppError('Email and code are required', 400);}
 
-  if (verifyCode(email, code)) {
+  if (await verifyCode(email, code)) {
+    await updateUserById(req.session.user!.id, { IsEmailVerified: true });
     res.status(200).json({status: "success",data: {message: 'Code is valid'}});
   } else {
     throw new AppError('Invalid code', 400);
@@ -101,9 +102,43 @@ export const VerifyCodeSMSController = catchAsync(async (req: Request, res: Resp
   if (!phoneNumber || !code) {
     throw new AppError('Phone number and code are required', 400);}
 
-  if (verifyCode(phoneNumber, code)) {
+  if (await verifyCode(phoneNumber, code)) {
+    await updateUserById(req.session.user!.id, { IsPhoneVerified: true });
     res.status(200).json({status: "success",data: {message: 'Code is valid'}});
   } else {
     throw new AppError('Invalid code', 400);}
 });
 
+
+export const logoutController = catchAsync(async(req, res) => {
+    req.logout((err) => {
+      if (err) throw new AppError("Failed to logout", 500);
+      res.clearCookie("connect.sid");
+      res.status(200).json({ status: "success", data: { message: "Logged out" } });
+    });
+  });
+
+
+  export const requestPasswordResetController = catchAsync(async (req: Request, res: Response) => {
+    const { email } = req.body;
+    if (!email) {
+      throw new AppError('Email is required', 400);
+    }
+    await requestPasswordReset(email);
+    res.status(200).json({
+      status: 'success',
+      data: { message: 'Reset link sent' },
+    });
+  });
+
+  export const resetPasswordController = catchAsync(async (req: Request, res: Response) => {
+    const { token, newPassword,userId } = req.body;
+    if (!userId || !token || !newPassword) {
+      throw new AppError('Missing required fields', 400);
+    }
+    await resetPassword(userId, token, newPassword);
+    res.status(200).json({
+      status: 'success',
+      data: {message:"Password reset successful"},
+    });
+  });

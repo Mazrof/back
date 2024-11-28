@@ -68,6 +68,7 @@ passport.use(
       callbackURL: 'http://localhost:3000/api/v1/auth/github/callback',
     },
     async (accessToken:any, refreshToken:any, profile:any, done:any) => {
+        console.log(profile);
       try {
         let user = await userRepo.findUserByProvider(profile.id, Social.github);
         if (user) {

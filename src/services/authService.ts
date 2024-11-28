@@ -37,3 +37,4 @@ export const authenticateUser = async (email: string, password: string) => {
   }
   throw new AppError('Invalid credentials', HTTPERROR.UNAUTHORIZED);
 };
+

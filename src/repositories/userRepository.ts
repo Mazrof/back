@@ -32,6 +32,10 @@ export const findUserById = async (id: number): Promise<Users | null> => {
   return await prisma.users.findUnique({ where: { id } });
 }
 
+export const updateUserById = async (id: number, data: Partial<Users>): Promise<Users> => {
+  return await prisma.users.update({ where: { id }, data });
+}
+
 export const storeOAuthUser = async (user: OAuthUser): Promise<Users> => {
   const providerType = Social[user.provider as keyof typeof Social];
   if (!providerType) {
