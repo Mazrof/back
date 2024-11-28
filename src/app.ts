@@ -5,26 +5,25 @@ import cors from 'cors';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
-import "./services/oauth"
+import './services/oauth';
 import { globalErrorHandler } from './middlewares/error_handlers/error_handler';
 import apiRoutes from './routes';
 import passport from 'passport';
 import session from 'express-session';
-import RedisStore from "connect-redis";
-import Redis from "ioredis";
+import RedisStore from 'connect-redis';
+import Redis from 'ioredis';
 import chatRoutes from './routes/chatRoutes';
 
 const redisClient = new Redis();
 export default async (app: Application) => {
-
   const sessionMiddleware = session({
     store: new RedisStore({ client: redisClient }),
-    secret: process.env.SESSION_SECRET || "default_secret",
+    secret: process.env.SESSION_SECRET || 'default_secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === 'production',
       maxAge: 1000 * 60 * 60, // 1 hour
     },
   });
@@ -35,10 +34,12 @@ export default async (app: Application) => {
   app.use(express.static(path.join(__dirname, '../public')));
 
   // Implement CORS
-  app.use(cors({
-    origin: 'http://localhost:3000', // Adjust based on your front-end domain
-    credentials: true, // Allow cookies to be sent
-  }));
+  app.use(
+    cors({
+      origin: 'http://localhost:3000', // Adjust based on your front-end domain
+      credentials: true, // Allow cookies to be sent
+    })
+  );
   app.use(cookieParser());
   // Session middleware
 
@@ -51,7 +52,6 @@ export default async (app: Application) => {
     message: 'Too many requests from this IP, please try again later.',
   });
   app.use('/api', limiter); // Apply rate limiting to API routes
-
 
   // Compression middleware for response bodies
   app.use(compression());
@@ -74,7 +74,6 @@ export default async (app: Application) => {
     res.status(200).json({ msg: 'hello world, MAZROF COMMUNITY' });
   });
   // API routes
-  app.use('/api/v1/chats', chatRoutes);
   app.use('/api', apiRoutes);
 
   app.get('/debug/redis', async (req: Request, res: Response) => {
@@ -100,11 +99,11 @@ export default async (app: Application) => {
 
       res.json({ keys: data });
     } catch (error) {
-      res.status(500).json({ error: 'Error fetching Redis data', details: error });
+      res
+        .status(500)
+        .json({ error: 'Error fetching Redis data', details: error });
     }
   });
-
-
 
   // Handle all undefined routes
   app.all('*', (req: Request, res: Response) => {
