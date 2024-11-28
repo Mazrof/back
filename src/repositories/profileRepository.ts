@@ -1,4 +1,3 @@
-// src/repository/profileRepository.ts
 import { prisma } from '../prisma/client';
 
 export const findAllProfiles = async () => {
@@ -6,6 +5,7 @@ export const findAllProfiles = async () => {
 };
 
 export const findProfileById = async (id: number) => {
+  console.log('jelo');
   return prisma.users.findUnique({
     where: { id },
     select: {
