@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import prisma from '../prisma/client';
 
 import { Users,Admins } from '@prisma/client';
@@ -6,7 +7,7 @@ import { Social } from "@prisma/client";
 import { AppError } from '../utility';
 
 // should take Omit<Users, 'id'> as the parameter type
-export const createUser = async (user: any): Promise<Users> => {
+export const createUser = async (user:any): Promise<Users> => {
   return prisma.users.create({ data: user });
 };
 

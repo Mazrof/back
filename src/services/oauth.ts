@@ -1,6 +1,6 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20'; // or passport-google-oauth2 for older version
-import { Strategy as GitHubStrategy, Profile } from 'passport-github2';
+import { Strategy as GitHubStrategy } from 'passport-github2';
 import * as userRepo from '../repositories/userRepository';
 import { OAuthUser } from '../repositories/repositoriesTypes/authTypes';
 import { Social } from '@prisma/client';
@@ -40,6 +40,7 @@ passport.use(new GoogleStrategy(
 ));
 
 // Serialize user into the session
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 passport.serializeUser((user: any, done) => {
   done(null, user.id);
 });
@@ -67,6 +68,7 @@ passport.use(
       clientSecret: GITHUB_CLIENT_SECRET,
       callbackURL: 'http://localhost:3000/api/v1/auth/github/callback',
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async (accessToken:any, refreshToken:any, profile:any, done:any) => {
         console.log(profile);
       try {

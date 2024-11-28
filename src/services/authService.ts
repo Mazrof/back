@@ -1,7 +1,7 @@
 import {createUser,findUserByEmail} from '../repositories/userRepository';
 import bcrypt from "bcryptjs";
 import { AppError } from '../utility';
-import { LoginInput, SignupInput } from '../schemas/authSchema';
+import { SignupInput } from '../schemas/authSchema';
 import * as userRepo from '../repositories/userRepository';
 import { HTTPERROR } from '../constants/HTTPERROR';
 

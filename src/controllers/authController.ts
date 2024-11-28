@@ -11,8 +11,7 @@ import { signupSchema } from "../schemas/authSchema";
 import { sendVerificationCode, verifyCode } from "../services/emailService";
 import { sendVerificationCodeSMS } from "../services/smsService";
 import crypto from "crypto";
-import {findUserById, updateUserById} from "../repositories/userRepository";
-import { date } from 'zod';
+import {updateUserById} from "../repositories/userRepository";
 export const signup = catchAsync(async (req: Request, res: Response) => {
 
     const validatedData = signupSchema.parse(req.body); // Zod validation
@@ -61,7 +60,7 @@ export const sendVerificationCodeController = catchAsync(async (req: Request, re
   try {
     await sendVerificationCode(email, code);
     res.status(200).json({status: "success",data: {message: 'Verification code sent'}});
-  } catch (error) {
+  } catch {
     throw new AppError('Failed to send email', 500);}
 });
 export const verifyCodeController = catchAsync(async (req: Request, res: Response) => {
@@ -91,7 +90,7 @@ export const sendVerificationCodeSmSController = catchAsync(async (req: Request,
   try {
     await sendVerificationCodeSMS(phoneNumber, code);
     res.status(200).json({status: "success",data: {message: 'Verification code sent'}});
-  } catch (error) {
+  } catch {
     throw new AppError('Failed to send SMS', 500);}
 }
 );
