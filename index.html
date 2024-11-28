@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google OAuth Test</title>
+</head>
+<body>
+    <h1>Google OAuth Test</h1>
+    <p>Click the button below to sign in with Google:</p>
+    <a href="http://localhost:3000/api/v1/auth/github">
+        <button>Sign in with Google</button>
+    </a>
+
+    <!-- Script to handle the OAuth callback -->
+    <script>
+        // Check if we received tokens in the URL
+        const params = new URLSearchParams(window.location.search);
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+
+        if (accessToken || refreshToken) {
+            document.body.innerHTML += `
+                <h2>Authentication Successful!</h2>
+                <p>Access Token: ${accessToken || "N/A"}</p>
+                <p>Refresh Token: ${refreshToken || "N/A"}</p>
+            `;
+        }
+    </script>
+</body>
+</html>

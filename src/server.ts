@@ -5,11 +5,12 @@ config()
 import App from './app';
 import http from 'http';
 import { Server } from 'socket.io';
-// import chat from './sockets/chat';
+import { Chat } from './sockets/chat';
 const PORT = 3000;
 
 process.on('uncaughtException', (err: Error) => {
   console.log('ERROR 🔥: ', err);
+  io.emit('server:shutdown', { message: 'Server encountered an issue' });
   process.exit(1);
 });
 
@@ -22,19 +23,23 @@ const startServer = () => {
     },
     maxHttpBufferSize: 10e6,
   });
-  // chat(io);
+  Chat.getInstance(io);
   App(app);
   server.listen(PORT, () => {
     console.log(`Server run on port ${PORT}`);
   });
-  return server;
+  return { server, io };
 };
 
-export const server = startServer();
+export const { server, io } = startServer();
 
 process.on('unhandledRejection', (err: Error) => {
   console.log('ERROR 🔥: ', err.name, err.message);
+  io.emit('server:shutdown', {
+    message: 'Server is shutting down for maintenance',
+  });
   console.log('Shutting down ...');
+  console.log(err);
   // process.exit(1);//will abort all running requests
   server.close(() => {
     process.exit(1);

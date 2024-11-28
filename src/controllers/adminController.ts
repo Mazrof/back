@@ -22,7 +22,9 @@ export const getAllUsers = catchAsync(
     return res.status(200).json({
       status: 'success',
       results: users.length,
-      data: { users },
+      data: {
+        users,
+      },
     });
   }
 );
@@ -43,7 +45,9 @@ export const banUser = catchAsync(
     } | null = await userService.toggleUserStatus(userId, adminId);
     return res.status(200).json({
       status: 'success',
-      data: { user },
+      data: {
+        user,
+      },
     });
   }
 );

@@ -1,4 +1,11 @@
 import * as channelRepository from '../repositories';
+import crypto from 'crypto';
+import * as channelMemberService from '../services';
+import { CommunityRole } from '@prisma/client';
+
+function generateInviteToken(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
 
 export const findAllChannels = async () => {
   return await channelRepository.findAllChannels();
@@ -13,8 +20,36 @@ export const createChannel = async (data: {
   privacy: boolean;
   creatorId: number;
   canAddComments: boolean;
+  admins: [];
 }) => {
-  return await channelRepository.createChannel(data);
+  const token: string = generateInviteToken();
+  const invitationLink: string = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+  const channel: {
+    id: number;
+    canAddComments: boolean;
+    community: { name: string; privacy: boolean };
+  } = await channelRepository.createChannel({
+    ...data,
+    invitationLink,
+  });
+
+  await channelMemberService.addChannelMember(
+    data.creatorId,
+    channel.id,
+    CommunityRole.admin
+  );
+
+  for (const admin of data.admins) {
+    await channelMemberService.addChannelMember(
+      admin,
+      channel.id,
+      CommunityRole.admin
+    );
+  }
+  return channel;
 };
 
 export const updateChannel = async (
