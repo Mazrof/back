@@ -1,20 +1,16 @@
-import bcrypt from 'bcryptjs';
-import { createUser } from '../repositories/userRepository';
-import { signToken } from '../utility/jwt';
+import {createUser,findUserByEmail} from '../repositories/userRepository';
+import bcrypt from "bcryptjs";
 import { AppError } from '../utility';
-import { LoginInput, SignupInput } from '../schemas/authSchema';
+import { SignupInput } from '../schemas/authSchema';
 import * as userRepo from '../repositories/userRepository';
 import { HTTPERROR } from '../constants/HTTPERROR';
-import { LoginServiceResponse, SignupServiceResponse } from './servicesTypes/authServiceTypes';
 
-
-export const signupUser = async (data: SignupInput):Promise<SignupServiceResponse> => {
-    const { email } = data;
-  
+export const registerUser = async (data:SignupInput) => {
+  const { email } = data;
     // Check for duplicate email
     const existingUser = await userRepo.findUserByEmail(email);
+    console.log(existingUser)
     if (existingUser) {
-
       throw new AppError('Email already in use', HTTPERROR.CONFLICT); 
     }
     const existingUsername = await userRepo.findUserByUsername(data.username);
@@ -26,30 +22,19 @@ export const signupUser = async (data: SignupInput):Promise<SignupServiceRespons
         email,
         username: data.username,
         password: hashedPassword,
+        phone: data.phone,
+        public_key: "",
       };
-      
-      const user = await createUser(userData);
-  
-      const access_token = signToken({ id: user.id }, '15m'); // Expires in 15 minutes
-      const refresh_token = signToken({ id: user.id }, '7d'); // Expires in 7 days
-    
-      return { access_token, refresh_token };
-  };
+      console.log(userData);
+      const user = await createUser(userData)
+      return user;
+};
 
-  export const loginUser = async (data: LoginInput):Promise<LoginServiceResponse> => {
-    const user = await userRepo.findUserByEmail(data.email);
-  
-    if (!user) {
-      throw new AppError('User not found', HTTPERROR.NOT_FOUND);
-    }
+export const authenticateUser = async (email: string, password: string) => {
+  const user = await findUserByEmail(email);
+  if (user && (await bcrypt.compare(password, user.password))) {
+    return user;
+  }
+  throw new AppError('Invalid credentials', HTTPERROR.UNAUTHORIZED);
+};
 
-    const isPasswordValid = await bcrypt.compare(data.password, user.password);
-    if (!isPasswordValid) {
-      throw new AppError('Invalid email or password', HTTPERROR.UNAUTHORIZED);
-    }
-    
-    const access_token = signToken({ id: user.id }, '15m'); // Expires in 15 minutes
-    const refresh_token = signToken({ id: user.id }, '7d'); // Expires in 7 days
-    
-      return { access_token, refresh_token };
-  };
