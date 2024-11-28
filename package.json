@@ -14,7 +14,8 @@
     "kill-port-3000": "lsof -ti :3000 | xargs kill -9 || true",
     "pull_db": "npx prisma db pull",
     "start": "node build/server.js",
-    "container": "npm run migrate-db & npm run start"
+    "container":"npm run migrate-db & npm run start",
+    "start-prod": "node build/server.js"
   },
   "dependencies": {
     "@faker-js/faker": "^9.2.0",
