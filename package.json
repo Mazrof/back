@@ -7,7 +7,7 @@
     "start:build": "tsc -w",
     "check": "tsc --noEmit",
     "build": "tsc",
-    "start:run": "nodemon build/server.js",
+    "start:run": "nodemon build/src/server.js",
     "start-dev": "concurrently npm:start:*",
     "migrate-db": "npx prisma migrate dev --name edit_channel",
     "prisma-studio": "npx prisma studio",
