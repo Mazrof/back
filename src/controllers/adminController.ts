@@ -9,7 +9,8 @@ export const getAllUsers = catchAsync(
     res: Response,
     next: NextFunction
   ): Promise<Response> => {
-    const adminId: number = parseInt(req.body.adminId);
+
+    const adminId: number = req.session.user.id;
     const users: {
       id: number;
       username: string;
@@ -36,7 +37,8 @@ export const banUser = catchAsync(
     res: Response,
     next: NextFunction
   ): Promise<Response> => {
-    const adminId: number = parseInt(req.body.adminId);
+
+    const adminId: number = req.session.user.id;
     const userId: number = parseInt(req.params.userId);
     const user: {
       id: number;

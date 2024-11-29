@@ -3,10 +3,16 @@ import { catchAsync } from '../utility';
 import * as channelService from '../services/channelMemberService';
 import { CommunityRole } from '@prisma/client';
 import * as channelMemberService from '../services/channelMemberService';
+import { checkChannelMember, checkChannelMemberPermission } from '../services/channelMemberService';
 
 export const getChannelMembers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    // check that the user is a user in this channel
+    const userId: number = req.session.user.id;
     const channelId: number = parseInt(req.params.channelId);
+
+    await checkChannelMember(userId, channelId);
+
     const members: {
       userId: number;
       channelId: number;
@@ -28,8 +34,13 @@ export const getChannelMembers = catchAsync(
 
 export const addChannelMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    // check that the user is an admin in this channel
     const memberId: number = parseInt(req.body.userId);
+
+    const userId: number = req.session.user.id;
     const channelId: number = parseInt(req.params.channelId);
+    await checkChannelMemberPermission(userId, channelId);
+
     const role: CommunityRole = req.body.role;
 
     const member = await channelService.addChannelMember(
@@ -49,8 +60,11 @@ export const addChannelMember = catchAsync(
 
 export const updateChannelMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const userId: number = parseInt(req.body.userId);
+    // check that the user is an admin in this channel
+    const userId: number = req.session.user.id;
     const channelId: number = parseInt(req.params.channelId);
+
+    await checkChannelMemberPermission(userId, channelId);
     const memberId: number = parseInt(req.params.id);
 
     const member = await channelService.updateChannelMember(
@@ -91,8 +105,13 @@ export const inviteChannelMember = catchAsync(
 
 export const deleteChannelMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    // check that the user is an admin in this channel
     const memberId: number = parseInt(req.body.userId);
+
+    const userId: number = req.session.user.id;
     const channelId: number = parseInt(req.params.channelId);
+
+    await checkChannelMemberPermission(userId, channelId);
 
     await channelService.deleteChannelMember(channelId, memberId);
 
