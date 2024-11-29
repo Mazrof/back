@@ -1,135 +1,142 @@
-import * as profileService from '../services/profileService';
-import * as profileRepository from '../repositories/profileRepository';
+import * as authService from '../services/authService';
+import * as userRepository from '../repositories/userRepository';
+import bcrypt from 'bcryptjs';
 import { AppError } from '../utility';
+import { HTTPERROR } from '../constants/HTTPERROR';
 
 // Mock the repository methods
-jest.mock('../repositories/profileRepository');
+jest.mock('../repositories/userRepository');
+jest.mock('bcryptjs');
 
-describe('Profile Service', () => {
-  it('should fetch all profiles', async () => {
-    // Mocking the repository method
-    (profileRepository.findAllProfiles as jest.Mock).mockResolvedValue([
-      { id: 1, name: 'John Doe' },
-    ]);
-
-    // Calling the service method
-    const profiles = await profileService.getAllProfiles();
-
-    // Assertion
-    expect(profiles).toEqual([{ id: 1, name: 'John Doe' }]);
-  });
-
-  it('should retrieve a profile by ID', async () => {
-    (profileRepository.findProfileById as jest.Mock).mockResolvedValue({
-      id: 1,
-      name: 'John Doe',
-    });
-
-    const profile = await profileService.getProfileById(1);
-    expect(profile).toEqual({ id: 1, name: 'John Doe' });
-  });
-
-  it('should throw error if profile ID not found', async () => {
-    (profileRepository.findProfileById as jest.Mock).mockResolvedValue(null);
-    await expect(profileService.getProfileById(99)).rejects.toThrowError(
-      AppError
-    );
-  });
-
-  it('should create a profile with valid data', async () => {
+describe('Auth Service', () => {
+  // Test: Register a user with valid data
+  it('should register a user with valid data', async () => {
     const data = {
-      name: 'Jane Doe',
       email: 'jane@example.com',
-      phone: '+123444567890',
-    };
-    (profileRepository.createProfile as jest.Mock).mockResolvedValue({
-      id: 2,
-      ...data,
-    });
-
-    const profile = await profileService.createProfile(data);
-    expect(profile).toEqual({ id: 2, ...data });
-  });
-
-  it('should fail to create a profile with an invalid phone number', async () => {
-    const data = {
-      name: 'Jane Doe',
-      email: 'jane@example.com',
-      phone: '+123444567', // Invalid phone number
-    };
-
-    await expect(profileService.createProfile(data)).rejects.toEqual(
-      new AppError('Invalid phone number', 400)
-    );
-  });
-
-  it('should fail to create a profile with an invalid email', async () => {
-    const data = {
-      name: 'Jane Doe',
-      email: 'janeexample.com', // Invalid email
+      username: 'janedoe',
+      password: 'securePassword123',
       phone: '+123444567890',
     };
 
-    await expect(profileService.createProfile(data)).rejects.toEqual(
-      new AppError('Invalid email format', 400)
-    );
-  });
+    // Mock repository methods
+    (userRepository.findUserByEmail as jest.Mock).mockResolvedValue(null); // No user found
+    (userRepository.findUserByUsername as jest.Mock).mockResolvedValue(null); // No username found
+    (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword'); // Mocking bcrypt hash
 
-  it('should update a profile', async () => {
-    const data = { name: 'Updated Name' };
-    (profileRepository.updateProfileById as jest.Mock).mockResolvedValue({
+    // Mock user creation
+    (userRepository.createUser as jest.Mock).mockResolvedValue({
       id: 1,
       ...data,
     });
 
-    const updatedProfile = await profileService.updateProfile(1, data);
-    expect(updatedProfile).toEqual({ id: 1, ...data });
-  });
-
-  it('should fail to update a profile with an invalid phone number', async () => {
-    const data = {
-      name: 'Jane Doe',
-      email: 'jane@example.com',
-      phone: '+123444567', // Invalid phone number
-    };
-    (profileRepository.updateProfileById as jest.Mock).mockResolvedValue({
+    const user = await authService.registerUser(data);
+    expect(user).toEqual({
       id: 1,
-      ...data,
-    });
-
-    await expect(profileService.updateProfile(1, data)).rejects.toEqual(
-      new AppError('Invalid phone number', 400)
-    );
-  });
-
-  it('should fail to update a profile with an invalid email', async () => {
-    const data = {
-      name: 'Jane Doe',
-      email: 'janeexample.com', // Invalid email
+      email: 'jane@example.com',
+      username: 'janedoe',
       phone: '+123444567890',
-    };
-    (profileRepository.updateProfileById as jest.Mock).mockResolvedValue({
-      id: 1,
-      ...data,
+      public_key: '',
     });
-
-    await expect(profileService.updateProfile(1, data)).rejects.toEqual(
-      new AppError('Invalid email format', 400)
-    );
   });
 
-  it('should fail to get the updated user profile if no profile is found', async () => {
+  // Test: Fail to register a user with existing email
+  it('should fail to register a user with an existing email', async () => {
     const data = {
-      name: 'Jane Doe',
       email: 'jane@example.com',
+      username: 'janedoe',
+      password: 'securePassword123',
       phone: '+123444567890',
     };
 
-    // Simulate no profile found
-    (profileRepository.updateProfileById as jest.Mock).mockResolvedValue(null);
+    // Mock repository methods
+    (userRepository.findUserByEmail as jest.Mock).mockResolvedValue({
+      id: 1,
+      email: 'jane@example.com',
+      username: 'janedoe',
+      phone: '+123444567890',
+    });
 
-    await expect(profileService.updateProfile(50, data)).rejects.toEqual(
-      new AppError('No profile found with that ID', 404)
+    await expect(authService.registerUser(data)).rejects.toEqual(
+      new AppError('Email already in use', HTTPERROR.CONFLICT)
+    );
+  });
+
+  // Test: Fail to register a user with existing username
+  it('should fail to register a user with an existing username', async () => {
+    const data = {
+      email: 'jane@example.com',
+      username: 'janedoe',
+      password: 'securePassword123',
+      phone: '+123444567890',
+    };
+
+    // Mock repository methods
+    (userRepository.findUserByEmail as jest.Mock).mockResolvedValue(null); // No user found
+    (userRepository.findUserByUsername as jest.Mock).mockResolvedValue({
+      id: 1,
+      email: 'another@example.com',
+      username: 'janedoe',
+      phone: '+123444567890',
+    }); // Username already exists
+
+    await expect(authService.registerUser(data)).rejects.toEqual(
+      new AppError('Username already in use', HTTPERROR.CONFLICT)
+    );
+  });
+
+  // Test: Authenticate a user with valid credentials
+  it('should authenticate a user with valid credentials', async () => {
+    const email = 'jane@example.com';
+    const password = 'securePassword123';
+
+    const user = {
+      id: 1,
+      email: 'jane@example.com',
+      username: 'janedoe',
+      password: 'hashedPassword',
+      phone: '+123444567890',
+    };
+
+    // Mock repository methods
+    (userRepository.findUserByEmail as jest.Mock).mockResolvedValue(user);
+    (bcrypt.compare as jest.Mock).mockResolvedValue(true); // Password match
+
+    const authenticatedUser = await authService.authenticateUser(email, password);
+    expect(authenticatedUser).toEqual(user);
+  });
+
+  // Test: Fail to authenticate a user with invalid credentials
+  it('should fail to authenticate a user with invalid credentials', async () => {
+    const email = 'jane@example.com';
+    const password = 'wrongPassword';
+
+    const user = {
+      id: 1,
+      email: 'jane@example.com',
+      username: 'janedoe',
+      password: 'hashedPassword',
+      phone: '+123444567890',
+    };
+
+    // Mock repository methods
+    (userRepository.findUserByEmail as jest.Mock).mockResolvedValue(user);
+    (bcrypt.compare as jest.Mock).mockResolvedValue(false); // Password mismatch
+
+    await expect(authService.authenticateUser(email, password)).rejects.toEqual(
+      new AppError('Invalid credentials', HTTPERROR.UNAUTHORIZED)
+    );
+  });
+
+  // Test: Fail to authenticate a user with non-existing email
+  it('should fail to authenticate a user with a non-existing email', async () => {
+    const email = 'nonexistent@example.com';
+    const password = 'somePassword';
+
+    // Mock repository methods
+    (userRepository.findUserByEmail as jest.Mock).mockResolvedValue(null); // No user found
+
+    await expect(authService.authenticateUser(email, password)).rejects.toEqual(
+      new AppError('Invalid credentials', HTTPERROR.UNAUTHORIZED)
     );
   });
 });
