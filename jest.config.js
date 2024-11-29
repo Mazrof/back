@@ -16,5 +16,6 @@ module.exports = {
     '/node_modules/',
     'src/prisma/client.ts',
     'src/utility/appError',
+    'build',
   ],
 };
