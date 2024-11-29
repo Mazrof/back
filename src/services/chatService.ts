@@ -9,6 +9,7 @@ import {
   Social,
 } from '@prisma/client';
 import { NewMessages } from '../sockets/listeners/chatListeners';
+import logger from '../utility/logger';
 
 interface Participant {
   communityId: undefined;
@@ -65,7 +66,6 @@ export const getParticipantIdsOfUserPersonalChats = async (userId: number) => {
     },
   });
   // Flatten to get only participant IDs
-  console.log(personalChats);
   return personalChats.flatMap((chat) => chat.participants!.id);
 };
 export const getParticipantIdsOfUserGroups = async (userId: number) => {
@@ -94,7 +94,6 @@ export const getParticipantIdsOfUserGroups = async (userId: number) => {
     (membership) => membership.groups.community!.participants!.id
   );
 };
-//TODO: ensure the groups has communities and commnites has particpinats
 
 export const getParticipantIdsOfUserChannels = async (userId: number) => {
   const memberships = await prisma.channelSubscriptions.findMany({
@@ -150,6 +149,13 @@ export const markMessagesAsRead = async (
       participantId: participantId,
       messageId: { in: messageIds },
       readAt: { not: null },
+    },
+    include: {
+      messages: {
+        select: {
+          senderId: true,
+        },
+      },
     },
   });
 };
@@ -208,7 +214,7 @@ export const insertMessageRecipient = async (
       userId,
       participantId: message.participantId,
       messageId: message.id,
-      deliveredAt: new Date(new Date().getTime() + 2 * 60 * 60),
+      deliveredAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
       readAt: null,
     },
   });
@@ -246,7 +252,7 @@ export const updateMessageById = async (
 
 export const createPersonalChat = async (user1Id: number, user2Id: number) => {
   if (user1Id > user2Id) [user1Id, user2Id] = [user2Id, user1Id];
-  console.log('creating personal chat between', user1Id, 'and', user2Id);
+  logger.info('creating personal chat between', user1Id, 'and', user2Id);
   // if this pair was exists before return it existing
   const personalChat = await prisma.personalChat.findFirst({
     where: {
@@ -485,7 +491,6 @@ export const getUserParticipants = async (userId: number) => {
       // personal chat
       participant.group = undefined;
       participant.channel = undefined;
-      console.log(participant, 'hi');
       if (participant!.user1!.id === userId) {
         participant.secondUser = participant.user2;
       }
@@ -532,7 +537,6 @@ export const getMessagesService = async (
   });
   messages.forEach((msg) => {
     if (msg.senderId !== senderId) {
-      //TODO: CHECK THIS MENTIONS
       msg.messageMentions = [];
       msg.messageReadReceipts = [];
     }
@@ -598,11 +602,4 @@ export const canSeeMessages = async (
   });
   return participant.length !== 0;
 };
-
-//TODO: MOVE THIS TO ANOTHER FILE
-export const updateUserProfile = async (
-  userId: number,
-  userInfo: Prisma.UsersUpdateInput
-) => {
-  return prisma.users.update({ where: { id: userId }, data: { ...userInfo } });
-};
+//TODO: HOW CAN ADD MESSAGES IN CHANNLES

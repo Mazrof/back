@@ -23,4 +23,3 @@ router.use('/v1/user', userRouter);
 router.use('/v1/chats', chatRoutes);
 
 export default router;
-
