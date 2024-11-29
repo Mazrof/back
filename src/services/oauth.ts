@@ -17,7 +17,8 @@ passport.use(new GoogleStrategy(
   async (accessToken, refreshToken, profile, done) => {
     try{
       let user = await userRepo.findUserByProvider(profile.id,Social.google);
-      if (user) {
+      let userWithEmail = await userRepo.findUserByEmail(profile._json.email as string);
+      if (user || userWithEmail) {
         return done(null, user);
       }
       const userToInsert:OAuthUser={
