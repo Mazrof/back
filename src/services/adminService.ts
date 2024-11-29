@@ -1,6 +1,14 @@
 import * as userRepository from '../repositories/adminRepository';
 import { AppError } from '../utility';
 
+const checkAdmin = async (adminId: number) => {
+  const admin: { id: number } | null =
+    await userRepository.findAdminById(adminId);
+
+  if (!admin) {
+    throw new AppError('Not Authorized', 403);
+  }
+};
 // Fetch all users
 export const getAllUsers = async (
   adminId: number
@@ -15,12 +23,9 @@ export const getAllUsers = async (
     activeNow: boolean | null;
   }[]
 > => {
-  const admin: { id: number } | null =
-    await userRepository.findAdminById(adminId);
-  // check the authorization
-  if (!admin) {
-    throw new AppError('Not Authorized', 403);
-  }
+
+  // check Admin
+  await checkAdmin(adminId);
 
   const users: {
     id: number;
@@ -48,13 +53,10 @@ export const toggleUserStatus = async (
   username: string;
   status: boolean | null;
 } | null> => {
-  const admin: { id: number } | null =
-    await userRepository.findAdminById(adminId);
 
-  if (!admin) {
-    throw new AppError('Not Authorized', 403);
-  }
-
+  // check Admin
+  await checkAdmin(adminId);
+  console.log(adminId);
   const user: {
     id: number;
     username: string;

@@ -12,7 +12,6 @@ import passport from 'passport';
 import session from 'express-session';
 import RedisStore from 'connect-redis';
 import Redis from 'ioredis';
-import chatRoutes from './routes/chatRoutes';
 
 const redisClient = new Redis();
 export default async (app: Application) => {
@@ -24,7 +23,7 @@ export default async (app: Application) => {
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 1000 * 60 * 60, // 1 hour
+      maxAge: 1000 * 2 * 60 * 60, // 2 hour
     },
   });
   app.use(sessionMiddleware);

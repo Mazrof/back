@@ -51,8 +51,10 @@ export const createGroup = catchAsync(
 
 export const updateGroup = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    // check that the user is an admin in this group
+    const adminId: number = req.session.user.id;
     const groupId = parseInt(req.params.id);
-    const group = await groupService.updateGroup(groupId, req.body);
+    const group = await groupService.updateGroup(groupId, adminId, req.body);
     res.status(200).json({
       status: 'success',
       data: {
@@ -64,8 +66,10 @@ export const updateGroup = catchAsync(
 
 export const deleteGroup = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = parseInt(req.params.id);
-    await groupService.deleteGroup(id);
+    // check that the user is an admin in this group
+    const adminId: number = req.session.user.id;
+    const channelId = parseInt(req.params.id);
+    await groupService.deleteGroup(channelId, adminId);
     res.status(204).json({
       status: 'success',
       data: null,

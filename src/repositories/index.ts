@@ -5,4 +5,3 @@
 export * from './groupMemberRepository';
 export * from './groupRepository';
 export * from './channelRepository';
-

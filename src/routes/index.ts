@@ -8,17 +8,19 @@ import storiesRouter from './storiesRoutes';
 import searchRouter from './searchRoutes';
 import userRouter from './userRoutes';
 import chatRoutes from './chatRoutes';
+import { isAuthenticated } from '../middlewares/authMiddleware';
 const router = express.Router();
 
-router.use('/v1/groups', groupRoutes);
-router.use('/v1/admins', adminRoutes);
-router.use('/v1/channels', channelRoutes);
 router.use('/v1/auth', authRouter);
+router.use(isAuthenticated);
+router.use('/v1/admins', adminRoutes);
+router.use('/v1/groups', groupRoutes);
+router.use('/v1/channels', channelRoutes);
 router.use('/v1/profile', profileRouter);
 router.use('/v1/stories', storiesRouter);
 router.use('/v1/search', searchRouter);
 router.use('/v1/user', userRouter);
-router.use('/api/v1/chats', chatRoutes);
+router.use('/v1/chats', chatRoutes);
 
 export default router;
-export * from './chatRoutes';
+
