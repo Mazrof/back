@@ -14,18 +14,29 @@ import RedisStore from 'connect-redis';
 import Redis from 'ioredis';
 
 const redisClient = new Redis();
+export const sessionMiddleware = session({
+  store: new RedisStore({ client: redisClient }),
+  secret: process.env.SESSION_SECRET || 'default_secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 1000 * 2 * 60 * 60, // 2 hour
+  },
+});
 export default async (app: Application) => {
-  const sessionMiddleware = session({
-    store: new RedisStore({ client: redisClient }),
-    secret: process.env.SESSION_SECRET || 'default_secret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 1000 * 2 * 60 * 60, // 2 hour
-    },
-  });
+  // const sessionMiddleware = session({
+  //   store: new RedisStore({ client: redisClient }),
+  //   secret: process.env.SESSION_SECRET || 'default_secret',
+  //   resave: false,
+  //   saveUninitialized: false,
+  //   cookie: {
+  //     httpOnly: true,
+  //     secure: process.env.NODE_ENV === 'production',
+  //     maxAge: 1000 * 2 * 60 * 60, // 2 hour
+  //   },
+  // });
   app.use(sessionMiddleware);
   app.use(passport.initialize());
   app.use(passport.session());
@@ -35,7 +46,8 @@ export default async (app: Application) => {
   // Implement CORS
   app.use(
     cors({
-      origin: 'http://localhost:3000', // Adjust based on your front-end domain
+      //TODO:should be updated
+      origin: ['http://localhost:3000'], // Adjust based on your front-end domain
       credentials: true, // Allow cookies to be sent
     })
   );
@@ -69,7 +81,6 @@ export default async (app: Application) => {
 
   // Base route
   app.get('/', (req: Request, res: Response) => {
-    console.log('hello world');
     res.status(200).json({ msg: 'hello world, MAZROF COMMUNITY' });
   });
   // API routes

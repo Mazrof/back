@@ -5,5 +5,5 @@ export * from './groupService';
 export * from './groupMemberService';
 export * from './channelMemberService';
 export * from './adminService';
-export * from './chat';
+export * from './chatService';
 // //
