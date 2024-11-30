@@ -23,7 +23,6 @@ export const getAllUsers = async (
     activeNow: boolean | null;
   }[]
 > => {
-
   // check Admin
   await checkAdmin(adminId);
 
@@ -53,10 +52,8 @@ export const toggleUserStatus = async (
   username: string;
   status: boolean | null;
 } | null> => {
-
   // check Admin
   await checkAdmin(adminId);
-  console.log(adminId);
   const user: {
     id: number;
     username: string;

@@ -5,7 +5,6 @@ import { CommunityRole } from '@prisma/client';
 import { AppError } from '../utility';
 import { UpdateGroupMemberData } from '../types';
 import * as userRepository from '../repositories/adminRepository';
-import { channel } from 'node:diagnostics_channel';
 
 export const checkGroupMemberPermission = async (
   userId: number,
@@ -16,18 +15,14 @@ export const checkGroupMemberPermission = async (
     groupId
   );
   if (!groupMember || !groupMember.active) {
-    throw new AppError('this is no user with this id', 404);
+    throw new AppError('this is no user with this id in the group', 404);
   }
   if (groupMember.role !== CommunityRole.admin) {
     throw new AppError('Not Authorized', 403);
   }
 };
 
-
-export const checkGroupMember = async (
-  userId: number,
-  groupId: number
-) => {
+export const checkGroupMember = async (userId: number, groupId: number) => {
   const groupMember = await groupMemberRepository.findExistingMember(
     userId,
     groupId
@@ -38,21 +33,21 @@ export const checkGroupMember = async (
   return groupMember;
 };
 
-const checkCapacity = async (groupId: number) => {
+export const checkCapacity = async (groupId: number) => {
   const full: boolean = await groupMemberRepository.getMembersCount(groupId);
   if (full) {
     throw new AppError('the group reaches its limit', 400);
   }
 };
 
-const findGroup = async (groupId: number) => {
+export const findGroup = async (groupId: number) => {
   const group = await groupRepository.findGroupById(groupId);
   if (!group) {
     throw new AppError('this is no group with this id', 404);
   }
 };
 
-const checkAdmin = async (adminId: number, groupId: number) => {
+export const checkAdmin = async (adminId: number, groupId: number) => {
   if (!adminId) {
     throw new AppError('AdminId is missing', 400);
   }
@@ -62,15 +57,14 @@ const checkAdmin = async (adminId: number, groupId: number) => {
   }
 };
 
-const checkUser = async (userId: number) => {
+export const checkUser = async (userId: number) => {
   const user = await userRepository.findUserById(userId);
   if (!user) {
     throw new AppError('this is no user with this id', 404);
   }
 };
 
-const checkMember = async (userId: number, groupId: number) => {
-
+export const checkMember = async (userId: number, groupId: number) => {
   await checkUser(userId);
 
   const existingMember = await groupMemberRepository.findExistingMember(

@@ -101,7 +101,10 @@ describe('Auth Service', () => {
     (userRepository.findUserByEmail as jest.Mock).mockResolvedValue(user);
     (bcrypt.compare as jest.Mock).mockResolvedValue(true); // Password match
 
-    const authenticatedUser = await authService.authenticateUser(email, password);
+    const authenticatedUser = await authService.authenticateUser(
+      email,
+      password
+    );
     expect(authenticatedUser).toEqual(user);
   });
 

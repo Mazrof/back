@@ -2,7 +2,10 @@ import Redis from 'ioredis';
 import nodemailer from 'nodemailer';
 import { AppError } from '../utility';
 import crypto from 'crypto';
-import { findUserByEmail, updateUserById } from '../repositories/userRepository';
+import {
+  findUserByEmail,
+  updateUserById,
+} from '../repositories/userRepository';
 const redis = new Redis(); // Connect to Redis server
 
 const transporter = nodemailer.createTransport({
@@ -38,31 +41,32 @@ export const sendVerificationCode = async (email: string, code: string) => {
 };
 
 export const verifyCode = async (email: string, code: string) => {
-  
-    // Retrieve the code from Redis
-    const storedCode = await redis.get(`verification:${email}`);
-    if (!storedCode) {
-      throw new AppError('Code expired', 400); 
-    }
+  // Retrieve the code from Redis
+  const storedCode = await redis.get(`verification:${email}`);
+  if (!storedCode) {
+    throw new AppError('Code expired', 400);
+  }
 
-    // Check if the code matches
-    const isValid = storedCode === code;
+  // Check if the code matches
+  const isValid = storedCode === code;
 
-    if (isValid) {
-      await redis.del(`verification:${email}`);
-    }
+  if (isValid) {
+    await redis.del(`verification:${email}`);
+  }
 
-    return isValid;
-  
+  return isValid;
 };
 
-export const requestPasswordReset = async (email:string) => {
+export const requestPasswordReset = async (email: string) => {
   const user = await findUserByEmail(email);
   if (!user) {
     throw new AppError('User not found', 404);
   }
   const resetToken = crypto.randomBytes(32).toString('hex');
-  const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+  const tokenHash = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
 
   await redis.set(`passwordReset:${user.id}`, tokenHash, 'EX', 900);
 
@@ -80,20 +84,30 @@ export const requestPasswordReset = async (email:string) => {
   await transporter.sendMail(mailOptions);
 };
 
-export const resetPassword = async (id: number, token: string, newPassword: string) => {
+export const resetPassword = async (
+  id: number,
+  token: string,
+  newPassword: string
+) => {
   // Retrieve the stored hash
   const storedTokenHash = await redis.get(`passwordReset:${id}`);
   if (!storedTokenHash) {
     throw new AppError('Token is invalid or expired', 400);
   }
 
-  const incomingTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const incomingTokenHash = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
 
   if (storedTokenHash !== incomingTokenHash) {
     throw new AppError('Token is invalid', 400);
   }
 
-  const hashedPassword = crypto.createHash('sha256').update(newPassword).digest('hex');
+  const hashedPassword = crypto
+    .createHash('sha256')
+    .update(newPassword)
+    .digest('hex');
   await updateUserById(id, { password: hashedPassword });
   await redis.del(`passwordReset:${id}`);
 };

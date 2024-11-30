@@ -4,11 +4,11 @@ import * as groupMemberRepository from '../repositories';
 import * as groupMemberService from '../services';
 import { CommunityRole } from '@prisma/client';
 
-const checkPermission = async (adminId: number, groupId: number) => {
+export const checkPermission = async (adminId: number, groupId: number) => {
   await groupMemberService.checkGroupMemberPermission(adminId, groupId);
 };
 
-function generateInviteToken(): string {
+export function generateInviteToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
 
@@ -38,7 +38,7 @@ export const createGroup = async (data: {
   privacy: boolean;
   creatorId: number;
   groupSize: number;
-  admins: [];
+  admins: number[];
 }) => {
   const token: string = generateInviteToken();
   const invitationLink: string = crypto

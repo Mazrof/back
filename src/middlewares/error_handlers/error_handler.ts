@@ -30,7 +30,7 @@ const sendErrorProd = (err: AppError, req: Request, res: Response) => {
   }
 };
 
-const hanldeZodErrors = (err: z.ZodError,req:Request,res:Response) => {
+const hanldeZodErrors = (err: z.ZodError, req: Request, res: Response) => {
   const formattedErrors = err.errors.map((error) => ({
     field: error.path.join('.'),
     message: error.message,
@@ -41,7 +41,7 @@ const hanldeZodErrors = (err: z.ZodError,req:Request,res:Response) => {
     message: 'Validation failed',
     errors: formattedErrors,
   });
-}
+};
 
 export const globalErrorHandler = (
   err: AppError,
@@ -52,7 +52,7 @@ export const globalErrorHandler = (
   logger.info(`Error handled: ${err.message}`);
   // Handle Zod validation errors
   if (err instanceof z.ZodError) {
-    hanldeZodErrors(err,req,res);
+    hanldeZodErrors(err, req, res);
   }
 
   // Handle other application errors

@@ -13,15 +13,12 @@ passport.use(
     {
       clientID: GOOGLE_CLIENT_ID,
       clientSecret: GOOGLE_CLIENT_SECRET,
-      callbackURL: `${process.env.BACKEND_URL}/api/v1/auth/google/callback`,
+      callbackURL: 'http://localhost:3000/api/v1/auth/google/callback',
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
         let user = await userRepo.findUserByProvider(profile.id, Social.google);
-        let userWithEmail = await userRepo.findUserByEmail(
-          profile._json.email as string
-        );
-        if (user || userWithEmail) {
+        if (user) {
           return done(null, user);
         }
         const userToInsert: OAuthUser = {
@@ -35,6 +32,7 @@ passport.use(
         const saved_user = await userRepo.storeOAuthUser(userToInsert);
         return done(null, saved_user);
       } catch (err) {
+        console.log('Error on google OAUTH', err);
         return done(err, false);
       }
     }
@@ -65,10 +63,11 @@ passport.use(
     {
       clientID: GITHUB_CLIENT_ID,
       clientSecret: GITHUB_CLIENT_SECRET,
-      callbackURL: `${process.env.BACKEND_URL}/api/v1/auth/github/callback`,
+      callbackURL: 'http://localhost:3000/api/v1/auth/github/callback',
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async (accessToken: any, refreshToken: any, profile: any, done: any) => {
+      console.log(profile);
       try {
         let user = await userRepo.findUserByProvider(profile.id, Social.github);
         if (user) {
@@ -85,6 +84,7 @@ passport.use(
         const saved_user = await userRepo.storeOAuthUser(userToInsert);
         return done(null, saved_user);
       } catch (err) {
+        console.log('Error on github OAUTH', err);
         return done(err, false);
       }
     }
