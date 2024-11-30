@@ -13,6 +13,8 @@ import session from 'express-session';
 import { sessionConfig } from './config/sessionConfig';
 import { corsConfig } from './config/corsConfig';
 
+export const sessionMiddleware = session(sessionConfig);
+
 export default async (app: Application) => {
 
   // Serve static files from the 'public' directory
@@ -27,7 +29,6 @@ export default async (app: Application) => {
 
   app.options('*', cors()); // Preflight for all routes
 
-  const sessionMiddleware = session(sessionConfig);
   app.use(sessionMiddleware);
   app.use(passport.initialize());
   app.use(passport.session());
