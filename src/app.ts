@@ -12,8 +12,6 @@ import passport from 'passport';
 import session from 'express-session';
 import RedisStore from 'connect-redis';
 import Redis from 'ioredis';
-import chatRoutes from './routes/chatRoutes';
-
 const redisClient = new Redis();
 export default async (app: Application) => {
   const sessionMiddleware = session({
@@ -27,23 +25,26 @@ export default async (app: Application) => {
       maxAge: 1000 * 60 * 60, // 1 hour
     },
   });
-  app.use(sessionMiddleware);
-  app.use(passport.initialize());
-  app.use(passport.session());
   // Serve static files from the 'public' directory
   app.use(express.static(path.join(__dirname, '../public')));
 
   // Implement CORS
   app.use(
     cors({
-      origin: 'http://localhost:3000', // Adjust based on your front-end domain
+      origin: `${process.env.FRONTEND_URL}`, // Adjust based on your front-end domain
       credentials: true, // Allow cookies to be sent
+      exposedHeaders: ['set-cookie'], // Allow the front-end to read the cookie
+      
     })
   );
   app.use(cookieParser());
   // Session middleware
 
   app.options('*', cors()); // Preflight for all routes
+
+  app.use(sessionMiddleware);
+  app.use(passport.initialize());
+  app.use(passport.session());
 
   // Rate limiting middleware
   const limiter = rateLimit({

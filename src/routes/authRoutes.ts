@@ -11,15 +11,19 @@ router.post("/login", login);
 router.get("/whoami", isAuthenticated, whoami);
 router.get(
     "/google",
-    passport.authenticate("google", { scope: ["profile", "email"] })
+    passport.authenticate("google", { scope: ["profile", "email"] }),
+
   );
   
   // Google OAuth callback
   router.get(
     "/google/callback",
-    passport.authenticate("google", { failureRedirect: "/" }),
+    passport.authenticate("google", {failureRedirect: `${process.env.FRONTEND_URL}/login`}),
     (req, res) => {
-      res.redirect("/");
+      console.log("google callback",req.user)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      req.session.user = { id: (req.user as any).id, userType: 'user' }; // Store user in session
+      res.redirect(`${process.env.FRONTEND_URL}`);
     }
   );
   router.get(
@@ -32,7 +36,8 @@ router.get(
     "/github/callback",
     passport.authenticate("github", { failureRedirect: "/" }),
     (req, res) => {
-      res.redirect("/");
+      req.session.user = { id: req.user.id, userType: 'user' }; // Store user in session
+      res.redirect(`${process.env.FRONTEND_URL}`);
     }
   );
 
