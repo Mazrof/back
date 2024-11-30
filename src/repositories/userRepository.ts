@@ -56,7 +56,7 @@ export const storeOAuthUser = async (user: OAuthUser): Promise<Users> => {
   if (!providerType) {
     throw new AppError('Invalid provider', 400);
   }
-  const randomEmail= Math.random().toString(36)
+  const randomEmail = Math.random().toString(36);
   const newUser = await prisma.users.create({
     data: {
       email: (user.email as string) || randomEmail,
@@ -69,9 +69,7 @@ export const storeOAuthUser = async (user: OAuthUser): Promise<Users> => {
       publicKey: '',
     },
   });
-  console.log('USER CREATED');
   return newUser;
-
 };
 export const AddUserToBlocked = async (
   blockerId: number,
