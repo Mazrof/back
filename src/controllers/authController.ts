@@ -15,6 +15,7 @@ import { sendVerificationCode, verifyCode } from '../services/emailService';
 import { sendVerificationCodeSMS } from '../services/smsService';
 import crypto from 'crypto';
 import { updateUserById } from '../repositories/userRepository';
+
 export const signup = catchAsync(async (req: Request, res: Response) => {
   const validatedData = signupSchema.parse(req.body); // Zod validation
   const user = await registerUser(validatedData);

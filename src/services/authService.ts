@@ -4,6 +4,7 @@ import { AppError } from '../utility';
 import { SignupInput } from '../schemas/authSchema';
 import * as userRepo from '../repositories/userRepository';
 import { HTTPERROR } from '../constants/HTTPERROR';
+import { Users } from '@prisma/client';
 
 export const registerUser = async (data:SignupInput) => {
   const { email } = data;
@@ -18,12 +19,12 @@ export const registerUser = async (data:SignupInput) => {
       throw new AppError('Username already in use', HTTPERROR.CONFLICT); 
     }
     const hashedPassword = await bcrypt.hash(data.password, 10);
-    const userData = {
+    const userData  = {
         email,
         username: data.username,
         password: hashedPassword,
         phone: data.phone,
-        public_key: "",
+        publicKey: "",
       };
       console.log(userData);
       const user = await createUser(userData)

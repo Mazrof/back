@@ -5,6 +5,38 @@ import { CommunityRole } from '@prisma/client';
 import { AppError } from '../utility';
 import { UpdateGroupMemberData } from '../types';
 import * as userRepository from '../repositories/adminRepository';
+import { channel } from 'node:diagnostics_channel';
+
+export const checkGroupMemberPermission = async (
+  userId: number,
+  groupId: number
+) => {
+  const groupMember = await groupMemberRepository.findExistingMember(
+    userId,
+    groupId
+  );
+  if (!groupMember || !groupMember.active) {
+    throw new AppError('this is no user with this id', 404);
+  }
+  if (groupMember.role !== CommunityRole.admin) {
+    throw new AppError('Not Authorized', 403);
+  }
+};
+
+
+export const checkGroupMember = async (
+  userId: number,
+  groupId: number
+) => {
+  const groupMember = await groupMemberRepository.findExistingMember(
+    userId,
+    groupId
+  );
+  if (!groupMember || !groupMember.active) {
+    throw new AppError('this is no user with this id', 404);
+  }
+  return groupMember;
+};
 
 const checkCapacity = async (groupId: number) => {
   const full: boolean = await groupMemberRepository.getMembersCount(groupId);

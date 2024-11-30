@@ -1,7 +1,11 @@
 import * as channelRepository from '../repositories';
 import crypto from 'crypto';
-import * as channelMemberService from '../services';
+import * as channelMemberService from '../services/channelMemberService';
 import { CommunityRole } from '@prisma/client';
+
+const checkPermission = async (adminId: number, channelId: number) => {
+  await channelMemberService.checkChannelMemberPermission(adminId, channelId);
+};
 
 function generateInviteToken(): string {
   return crypto.randomBytes(32).toString('hex');
@@ -54,11 +58,18 @@ export const createChannel = async (data: {
 
 export const updateChannel = async (
   channelId: number,
+  adminId: number,
   data: { name?: string; privacy?: boolean; canAddComments?: boolean }
 ) => {
+  // check permissions
+  await checkPermission(adminId, channelId);
+
   return await channelRepository.updateChannel(channelId, data);
 };
 
-export const deleteChannel = async (id: number) => {
-  return await channelRepository.deleteChannel(id);
+export const deleteChannel = async (channelId: number, adminId: number) => {
+  // check permissions
+  await checkPermission(adminId, channelId);
+
+  return await channelRepository.deleteChannel(channelId);
 };

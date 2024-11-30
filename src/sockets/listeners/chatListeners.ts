@@ -1,26 +1,13 @@
 import { Server, Socket } from 'socket.io';
-// import {
-//   createMessage,
-//   createPersonalChat,
-//   deleteMessage,
-//   getMessageById,
-//   getParticipantIdsOfUserChannels,
-//   getParticipantIdsOfUserGroups,
-//   getParticipantIdsOfUserPersonalChats,
-//   insertMessageRecipient,
-//   insertParticipantDate,
-//   markMessagesAsRead,
-//   updateMessageById,
-//   updateUserProfile,
-// } from '../../services';
+import { IncomingMessage } from 'node:http';
+import { io } from '../../server';
+import logger from '../../utility/logger';
 import {
   deleteFileFromFirebase,
   uploadFileToFirebase,
 } from '../../third_party_services';
 import { Messages, MessageStatus } from '@prisma/client';
-import { Chat } from '../chat';
-import { io } from '../../server';
-import logger from '../../utility/logger';
+
 import {
   createMessage,
   createPersonalChat,
@@ -33,8 +20,10 @@ import {
   insertParticipantDate,
   markMessagesAsRead,
   updateMessageById,
-  updateUserProfile,
-} from '../../services/chat';
+} from '../../services';
+import { Chat } from '../chat';
+import { updateUserById } from '../../repositories/userRepository';
+import { use } from 'passport';
 
 export interface NewMessages extends Messages {
   messageMentions: (number | { userId: number })[];
@@ -42,10 +31,12 @@ export interface NewMessages extends Messages {
   receiverId?: number;
 }
 export const handleNewMessage = async (
-  socket: Socket,
+  socket: MySocket,
   callback: (arg: object) => void,
   message: NewMessages
 ) => {
+  message.senderId = socket.user.id;
+
   if (message.status === 'drafted') {
     if (callback)
       callback({
@@ -63,12 +54,9 @@ export const handleNewMessage = async (
   }
   if (message.receiverId) {
     // if you provide a receiver id this means I will create new personal chat
-    //TODO : ADD SENDER ID FROM AUTH
-    //TODO: message.senderId = user.id
     message.participantId = (await createPersonalChat(
       message.receiverId,
-      //TODO:DELETE THIS 1
-      1
+      message.senderId
     ))!.participants!.id;
   }
   message.messageMentions = (message.inputMessageMentions || []).map(
@@ -103,43 +91,40 @@ export const handleNewMessage = async (
       const userId = Chat.getInstance().getUserUsingSocketId(
         socketId
       ) as number;
-      // const socket = io.sockets.sockets.get(socketId);
-      //TODO: GET THIS FROM AUTH
-      //TODO: TEST ON MORE THAN ONE USER
-      if (userId !== message.senderId)
+      if (userId !== message.senderId) {
         messageReadReceipts.push(
           await insertMessageRecipient(userId, createdMessage)
         );
+      }
     }
   }
-  //TODO: TEST THIS
+  console.log(messageReadReceipts, 'messages read');
   socket.broadcast
     .to(message.participantId.toString())
-    .emit('message:receive', {
-      ...createdMessage,
-      messageReadReceipts: undefined,
-    });
-  socket.emit('message:receive', createdMessage);
+    .emit('message:receive', createdMessage);
+  socket.emit('message:receive', { ...createdMessage, messageReadReceipts });
   if (message.durationInMinutes) {
     setTimeout(
       () => {
-        handleDeleteMessage(createdMessage);
+        handleDeleteMessage(socket, createdMessage);
       },
       message.durationInMinutes * 60 * 1000
     );
   }
 };
 export const handleDeleteMessage = async (
+  socket: MySocket,
   data: { id: number },
   callback?: (err: object) => void
 ) => {
-  //TODO: ADD AUTH
+  const userId = socket.user.id;
+
   const message = await getMessageById(data.id);
-  if (!message) {
+  if (!message || message.senderId !== userId) {
     if (callback) callback({ message: 'message is not found' });
     return;
   }
-  console.log('deleted message', message);
+  logger.info('deleted message', message);
   if (message!.url) await deleteFileFromFirebase(message!.url);
   await deleteMessage(message!.id);
 
@@ -149,14 +134,14 @@ export const handleDeleteMessage = async (
 };
 
 export const handleEditMessage = async (
-  socket: Socket,
+  socket: MySocket,
   data: Messages,
   callback?: (err: object) => void
 ) => {
-  //TODO: what if the message isn't the user message (auth)
+  const userId = socket.user.id;
   logger.info(`message with id ${data.id} is being edited`);
   const message = await getMessageById(data.id);
-  if (!message) {
+  if (!message || message.senderId !== userId) {
     if (callback) callback({ message: 'message is not found' });
     logger.info('message not found');
     return;
@@ -191,29 +176,41 @@ export const handleEditMessage = async (
   });
 };
 
-export const handleOpenContext = async (data: { participantId: number }) => {
-  //TODO: get the data of the user from req after auth
-  const updatedMessages = await markMessagesAsRead(1, data.participantId);
-  //TODO: RETURN THIS FOR THE SENDER ONLY MODIFY THE UPPER PART
-  io.to(data.participantId.toString()).emit(
-    'message:update-info',
-    updatedMessages
-  );
+export const handleOpenContext = async (
+  socket: MySocket,
+  data: { participantId: number }
+) => {
+  const userId = socket.user.id;
+  const updatedMessages = await markMessagesAsRead(userId, data.participantId);
+  updatedMessages.forEach((msg) => {
+    io.to(msg.messages.senderId.toString()).emit('message:update-info', {
+      ...msg,
+      messages: undefined,
+    });
+  });
 };
-
-export const handleNewConnection = async (socket: Socket) => {
-  //TODO: DELETE THIS
-  const userId = 1;
+export interface SocketRequest extends IncomingMessage {
+  session?: {
+    user: { id: number };
+    userData: object;
+  };
+}
+export interface MySocket extends Socket {
+  user?: { id: number };
+  request: SocketRequest;
+}
+export const handleNewConnection = async (socket: MySocket) => {
+  const userId = socket.user.id;
   //mark user as active now
-  await updateUserProfile(userId, { activeNow: true, lastSeen: null });
-  logger.info(`User ${userId} connected`);
+  await updateUserById(userId, { activeNow: true, lastSeen: null });
+  logger.info(`User connected: ${userId}`);
   const chatInstance = Chat.getInstance();
   chatInstance.addUser(userId, socket);
   const userParticipants = await getAllParticipantIds(userId);
-  console.log(userParticipants, 'participants');
   // Join user to all their chat rooms
+  console.log(userParticipants, 'userParticipants');
   userParticipants.forEach((chatId) => socket.join(chatId.toString()));
-  //to sync drafted messages
+  //to sync drafted messages and send his message readAt
   socket.join(userId.toString());
   // Insert participant data and notify recipients
   const insertedData = await insertParticipantDate(userId, userParticipants);
@@ -245,6 +242,23 @@ const notifyParticipants = (
   });
 };
 
+export const disconnectedHandler = async (socket: Socket) => {
+  logger.info(`User disconnected: ${socket.id.toString()}`);
+  const userId = Chat.getInstance().removeUser(socket.id);
+  await updateUserById(userId, {
+    activeNow: false,
+    lastSeen: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
+  });
+};
+export const disconnectAllUser = () => {
+  if (io)
+    io.sockets.sockets.forEach((socket) => {
+      disconnectedHandler(socket).then((r) => {
+        socket.disconnect(true);
+        logger.info(`Disconnected socket: ${socket.id}`);
+      });
+    });
+};
 export const setupSocketEventHandlers = (socket: Socket) => {
   socket.on(
     'message:sent',
@@ -261,16 +275,15 @@ export const setupSocketEventHandlers = (socket: Socket) => {
   socket.on(
     'message:delete',
     async (message: Messages, callback: (err: object) => void) => {
-      await handleDeleteMessage(message, callback);
+      await handleDeleteMessage(socket, message, callback);
     }
   );
-  socket.on('context:opened', handleOpenContext);
+  socket.on('context:opened', async (data: { participantId: number }) => {
+    await handleOpenContext(socket, data);
+  });
   socket.on('disconnect', async () => {
-    const userId = Chat.getInstance().removeUser(socket.id);
-    await updateUserProfile(userId, {
-      activeNow: false,
-      lastSeen: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
-    });
+    await disconnectedHandler(socket);
   });
 };
 //TODO: determine who can delete and post files in firebase
+//TODO: TEST WHEN MESSAGES ARE SEND BETWEEN PERSONAL CHATS AND PARTICPINAT

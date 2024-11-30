@@ -12,12 +12,38 @@ const findChannel = async (channelId: number) => {
     throw new AppError('this is no channel with this id', 404);
   }
 };
+
 const checkUser = async (userId: number) => {
   const user = await userRepository.findUserById(userId);
   if (!user) {
     throw new AppError('this is no user with this id', 404);
   }
 };
+
+export const checkChannelMemberPermission = async (
+  userId: number,
+  channelId: number
+) => {
+  const channelMember = await checkChannelMember(userId, channelId);
+  if (channelMember.role !== CommunityRole.admin) {
+    throw new AppError('Not Authorized', 403);
+  }
+};
+
+export const checkChannelMember = async (
+  userId: number,
+  channelId: number
+) => {
+  const channelMember = await channelMemberRepository.findExistingMember(
+    userId,
+    channelId
+  );
+  if (!channelMember || !channelMember.active) {
+    throw new AppError('the user is not a member of the channel' , 404);
+  }
+  return channelMember;
+};
+
 const checkMember = async (userId: number, channelId: number) => {
   await checkUser(userId);
   const existingMember = await channelMemberRepository.findExistingMember(
@@ -65,7 +91,7 @@ export const addChannelMember = async (
   await findChannel(channelId);
   // Check if the member already exists in the channel
   await checkMember(userId, channelId);
-  console.log(userId);
+
   // Create a new channel membership for the member
   return await channelMemberRepository.addChannelMember({
     channelId,

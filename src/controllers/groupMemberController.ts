@@ -2,10 +2,15 @@ import { Request, Response, NextFunction } from 'express';
 import { catchAsync } from '../utility';
 import * as groupMemberService from '../services/groupMemberService';
 import { CommunityRole } from '@prisma/client';
+import { checkGroupMember, checkGroupMemberPermission } from '../services';
 
 export const getGroupMembers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    // check that the user is a member in this group
+    const userId = req.session.user.id;
     const groupId: number = parseInt(req.params.groupId);
+
+    await checkGroupMember(userId, groupId);
 
     const members: {
       role: CommunityRole;
@@ -29,8 +34,11 @@ export const getGroupMembers = catchAsync(
 
 export const addGroupMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const adminId: number = parseInt(req.body.userId);
+    // check that the user is an admin in this group
+    const adminId: number = req.session.user.id;
     const groupId: number = parseInt(req.params.groupId);
+    await checkGroupMemberPermission(adminId, groupId);
+
     const memberId: number = parseInt(req.body.memberId);
     const role: CommunityRole = req.body.role;
 
@@ -72,8 +80,12 @@ export const inviteGroupMember = catchAsync(
 
 export const updateGroupMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const userId = parseInt(req.body.userId);
+    // check that the user is an admin in this group
+    const userId: number = req.session.user.id;
     const groupId = parseInt(req.params.groupId);
+
+    await checkGroupMemberPermission(userId, groupId);
+
     const memberId = parseInt(req.params.id);
 
     const member = await groupMemberService.updateGroupMember(
@@ -94,9 +106,14 @@ export const updateGroupMember = catchAsync(
 
 export const deleteGroupMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const userId: number = parseInt(req.body.userId);
+    // check that the user is an admin in this group
+
+    const userId: number = req.session.user.id;
     const groupId: number = parseInt(req.params.groupId);
+
+    await checkGroupMemberPermission(userId, groupId);
     const memberId: number = parseInt(req.params.id);
+
 
     await groupMemberService.deleteGroupMember(userId, groupId, memberId);
 

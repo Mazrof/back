@@ -11,7 +11,7 @@ const logger = createLogger({
     format.colorize(),
     logFormat
   ),
-  transports: [new transports.Console()],
+  // transports: [new transports.Console()],
 });
 
 logger.add(
