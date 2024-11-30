@@ -1,8 +1,13 @@
-import { getAllUsers, findUserById, findAdminById, updateUserStatus } from '../repositories/adminRepository';
-import prisma from '../prisma/client';
+import {
+  getAllUsers,
+  findUserById,
+  findAdminById,
+  updateUserStatus,
+} from '../../repositories/adminRepository';
+import prisma from '../../prisma/client';
 
 // Mock the entire prisma module
-jest.mock('../prisma/client', () => ({
+jest.mock('../../prisma/client', () => ({
   __esModule: true,
   default: {
     users: {
@@ -16,7 +21,7 @@ jest.mock('../prisma/client', () => ({
   },
 }));
 
-describe('User Service', () => {
+describe('User Repository', () => {
   // Clear all mocks before each test
   beforeEach(() => {
     jest.clearAllMocks();
@@ -164,9 +169,11 @@ describe('User Service', () => {
     });
 
     it('should return null when user not found', async () => {
-      (prisma.users.update as jest.Mock).mockRejectedValue(new Error('User not found'));
+      (prisma.users.update as jest.Mock).mockRejectedValue(
+        new Error('User not found')
+      );
 
-      const result = await updateUserStatus(999, false).catch(e => null);
+      const result = await updateUserStatus(999, false).catch((e) => null);
 
       expect(result).toBeNull();
       expect(prisma.users.update).toHaveBeenCalledTimes(1);

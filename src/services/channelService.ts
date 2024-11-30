@@ -3,11 +3,11 @@ import crypto from 'crypto';
 import * as channelMemberService from '../services/channelMemberService';
 import { CommunityRole } from '@prisma/client';
 
-const checkPermission = async (adminId: number, channelId: number) => {
+export const checkPermission = async (adminId: number, channelId: number) => {
   await channelMemberService.checkChannelMemberPermission(adminId, channelId);
 };
 
-function generateInviteToken(): string {
+export function generateInviteToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
 
@@ -24,7 +24,7 @@ export const createChannel = async (data: {
   privacy: boolean;
   creatorId: number;
   canAddComments: boolean;
-  admins: [];
+  admins: number[];
 }) => {
   const token: string = generateInviteToken();
   const invitationLink: string = crypto

@@ -99,7 +99,7 @@ export const createChannel = async (data: {
     data: {
       canAddComments: data.canAddComments,
       communityId: community.id,
-      invitationLink: data.invitationLink
+      invitationLink: data.invitationLink,
     },
     select: {
       id: true,
