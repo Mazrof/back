@@ -4,7 +4,6 @@ import * as authController from '../controllers/authController';
 import { AppError } from '../utility';
 
 jest.mock('../services/authService'); // Mock the authService module
-
 describe('Authentication Controller', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
@@ -23,20 +22,20 @@ describe('Authentication Controller', () => {
           secure: false,
           httpOnly: true,
           path: '/',
-          domain: 'localhost'
+          domain: 'localhost',
         },
         regenerate: jest.fn(),
         destroy: jest.fn(),
         reload: jest.fn(),
         save: jest.fn(),
         touch: jest.fn(),
-        resetMaxAge: jest.fn()
-      }
+        resetMaxAge: jest.fn(),
+      },
     };
     mockResponse = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
-      clearCookie: jest.fn()
+      clearCookie: jest.fn(),
     };
     mockNext = jest.fn();
   });
@@ -47,7 +46,7 @@ describe('Authentication Controller', () => {
     mockRequest.body = {
       email: 'test@example.com',
       password: 'password123',
-      username: 'testuser'
+      username: 'testuser',
     };
     (authService.registerUser as jest.Mock).mockResolvedValue(newUser);
 
@@ -64,14 +63,14 @@ describe('Authentication Controller', () => {
 
   it('should login a user successfully', async () => {
     // Mock the service method
-    const user = { 
-      id: 1, 
+    const user = {
+      id: 1,
       email: 'test@example.com',
-      user_type: 'user'
+      user_type: 'user',
     };
     mockRequest.body = {
       email: 'test@example.com',
-      password: 'password123'
+      password: 'password123',
     };
     (authService.authenticateUser as jest.Mock).mockResolvedValue(user);
 
@@ -84,14 +83,13 @@ describe('Authentication Controller', () => {
 
     // Assert the response
     expect(mockResponse.status).toHaveBeenCalledWith(200);
-    
   });
 
   it('should handle login with invalid credentials', async () => {
     // Mock the service method
     mockRequest.body = {
       email: 'test@example.com',
-      password: 'wrongpassword'
+      password: 'wrongpassword',
     };
     (authService.authenticateUser as jest.Mock).mockResolvedValue(null);
 
@@ -115,7 +113,7 @@ describe('Authentication Controller', () => {
         secure: false,
         httpOnly: true,
         path: '/',
-        domain: 'localhost'
+        domain: 'localhost',
       },
       regenerate: jest.fn(),
       destroy: jest.fn(),
@@ -123,7 +121,7 @@ describe('Authentication Controller', () => {
       save: jest.fn(),
       touch: jest.fn(),
       resetMaxAge: jest.fn(),
-      user: { id: 1, userType: 'user' }
+      user: { id: 1, userType: 'user' },
     };
 
     // Call the controller method
@@ -137,13 +135,13 @@ describe('Authentication Controller', () => {
     expect(mockResponse.status).toHaveBeenCalledWith(200);
     expect(mockResponse.json).toHaveBeenCalledWith({
       status: 'success',
-      data: { user: { id: 1, userType: 'user' } }
+      data: { user: { id: 1, userType: 'user' } },
     });
   });
 
   it('should handle logout', async () => {
     // Mock logout method
-    mockRequest.logout = jest.fn().mockImplementation((done: (err ) => void) => {
+    mockRequest.logout = jest.fn().mockImplementation((done: (err) => void) => {
       done(null);
     });
 
@@ -159,7 +157,7 @@ describe('Authentication Controller', () => {
     expect(mockResponse.status).toHaveBeenCalledWith(200);
     expect(mockResponse.json).toHaveBeenCalledWith({
       status: 'success',
-      data: { message: 'Logged out' }
+      data: { message: 'Logged out' },
     });
   });
 });

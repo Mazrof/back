@@ -5,7 +5,6 @@ import { catchAsync } from '../utility';
 
 // Mock the userService
 jest.mock('../services/adminService');
-
 describe('Admin Controller', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
@@ -124,11 +123,7 @@ describe('Admin Controller', () => {
       // Mock service response
       (userService.toggleUserStatus as jest.Mock).mockResolvedValue(mockUser);
 
-      await banUser(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      await banUser(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(userService.toggleUserStatus).toHaveBeenCalledWith(2, 1);
       expect(mockResponse.status).toHaveBeenCalledWith(200);
@@ -146,11 +141,7 @@ describe('Admin Controller', () => {
         params: { userId: 'invalid' },
       };
 
-      await banUser(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      await banUser(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(userService.toggleUserStatus).toHaveBeenCalledWith(NaN, NaN);
       expect(mockNext).not.toHaveBeenCalled();
@@ -165,11 +156,7 @@ describe('Admin Controller', () => {
       const error = new Error('Service error');
       (userService.toggleUserStatus as jest.Mock).mockRejectedValue(error);
 
-      await banUser(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      await banUser(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(userService.toggleUserStatus).toHaveBeenCalledWith(2, 1);
       expect(mockNext).toHaveBeenCalledWith(error);
@@ -183,11 +170,7 @@ describe('Admin Controller', () => {
 
       (userService.toggleUserStatus as jest.Mock).mockResolvedValue(null);
 
-      await banUser(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      await banUser(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(userService.toggleUserStatus).toHaveBeenCalledWith(2, 1);
       expect(mockResponse.status).toHaveBeenCalledWith(200);

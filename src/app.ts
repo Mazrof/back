@@ -41,12 +41,11 @@ export default async (app: Application) => {
   app.use(passport.initialize());
   app.use(passport.session());
   // Serve static files from the 'public' directory
-  app.use(express.static(path.join(__dirname, '../public')));
+  app.use(express.static(path.join(__dirname, '../../public')));
 
   // Implement CORS
   app.use(
     cors({
-      //TODO:should be updated
       origin: ['http://localhost:3000'], // Adjust based on your front-end domain
       credentials: true, // Allow cookies to be sent
     })
