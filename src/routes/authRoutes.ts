@@ -12,6 +12,7 @@ import {
 } from '../controllers/authController';
 import { isAuthenticated } from '../middlewares/authMiddleware';
 import passport from '../services/oauth';
+import { OAuthSessionHandler } from '../middlewares/sessionHandler';
 
 const router = express.Router();
 
@@ -26,10 +27,10 @@ router.get(
 // Google OAuth callback
 router.get(
   '/google/callback',
-  passport.authenticate('google', { failureRedirect: '/' }),
-  (req, res) => {
-    res.redirect('/');
-  }
+  passport.authenticate('google', {
+    failureRedirect: `${process.env.FRONTEND_URL}/login`,
+  }),
+  OAuthSessionHandler
 );
 router.get(
   '/github',
@@ -39,9 +40,7 @@ router.get(
 router.get(
   '/github/callback',
   passport.authenticate('github', { failureRedirect: '/' }),
-  (req, res) => {
-    res.redirect('/');
-  }
+  OAuthSessionHandler
 );
 
 router.post('/send-code', isAuthenticated, sendVerificationCodeController);
