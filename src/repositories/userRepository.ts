@@ -70,7 +70,6 @@ export const storeOAuthUser = async (user: OAuthUser): Promise<Users> => {
   });
   console.log('USER CREATED');
   return newUser;
-
 };
 export const AddUserToBlocked = async (
   blockerId: number,

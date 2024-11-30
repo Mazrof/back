@@ -11,4 +11,3 @@ export interface UpdateChannelMemberData {
   role?: CommunityRole;
   hasDownloadPermissions?: boolean;
 }
-

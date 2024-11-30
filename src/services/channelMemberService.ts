@@ -30,16 +30,13 @@ export const checkChannelMemberPermission = async (
   }
 };
 
-export const checkChannelMember = async (
-  userId: number,
-  channelId: number
-) => {
+export const checkChannelMember = async (userId: number, channelId: number) => {
   const channelMember = await channelMemberRepository.findExistingMember(
     userId,
     channelId
   );
   if (!channelMember || !channelMember.active) {
-    throw new AppError('the user is not a member of the channel' , 404);
+    throw new AppError('the user is not a member of the channel', 404);
   }
   return channelMember;
 };
