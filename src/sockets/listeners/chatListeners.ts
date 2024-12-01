@@ -30,7 +30,6 @@ export interface NewMessages extends Messages {
   inputMessageMentions?: number[];
   receiverId?: number;
 }
-//TODO: TEST SEND MESSAGE AFTER ADDING CATCHING
 
 export const handleNewMessage = catchSocketError(
   async (
@@ -329,4 +328,3 @@ export const setupSocketEventHandlers = (socket: Socket) => {
 //TODO: TEST WHEN MESSAGES ARE SEND BETWEEN PERSONAL CHATS AND PARTICPINAT
 //TODO: Check if the message being replied to is in the conext
 //TODO:Check if the mentioned users in the context
-//TODO: TEST cors for frontend
