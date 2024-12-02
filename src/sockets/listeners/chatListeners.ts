@@ -24,11 +24,15 @@ import {
 import { Chat } from '../chat';
 import { updateUserById } from '../../repositories/userRepository';
 import { catchSocketError } from '../../utility';
+import prisma from '../../prisma/client';
+import { channel } from 'node:diagnostics_channel';
 
 export interface NewMessages extends Messages {
   messageMentions: (number | { userId: number })[];
   inputMessageMentions?: number[];
   receiverId?: number;
+  channelOrGroupId: number;
+  participantType: string;
 }
 
 export const handleNewMessage = catchSocketError(
@@ -37,6 +41,7 @@ export const handleNewMessage = catchSocketError(
     callback: (arg: object) => void,
     message: NewMessages
   ) => {
+    console.log(message);
     message.senderId = socket.user.id;
     if (message.status === 'drafted') {
       if (callback)
@@ -58,9 +63,73 @@ export const handleNewMessage = catchSocketError(
         message.receiverId,
         message.senderId
       ))!.participants!.id;
+      Chat.getInstance()
+        .getSocketsByUserId(message.senderId)
+        .forEach((socket: MySocket) => {
+          socket.join(message.participantId.toString());
+        });
+      Chat.getInstance()
+        .getSocketsByUserId(message.receiverId)
+        .forEach((socket: MySocket) => {
+          socket.join(message.participantId.toString());
+        });
     }
 
-    message.messageMentions = (message.inputMessageMentions || []).map(
+    //Check if the message replied is in this participant
+    if (message.replyTo) {
+      const repliedMsg = await getMessageById(message.replyTo);
+      if (
+        !repliedMsg ||
+        repliedMsg.participantId !== message.participantId ||
+        repliedMsg.status === 'drafted'
+      ) {
+        callback({
+          message: 'message being reply to is not found',
+        });
+        logger.info('message being reply to is not found');
+        return;
+      }
+    }
+    //Check if the users mentioned are in this participant
+    let userExistsInGroupOrChannel = [];
+    if (message.inputMessageMentions)
+      if (message.participantType === 'channel') {
+        userExistsInGroupOrChannel = await prisma.channelSubscriptions.findMany(
+          {
+            where: { channelId: message.channelOrGroupId },
+            select: {
+              userId: true,
+            },
+          }
+        );
+      } else if (message.participantType === 'group') {
+        userExistsInGroupOrChannel = await prisma.groupMemberships.findMany({
+          where: { groupId: message.channelOrGroupId },
+          select: {
+            userId: true,
+          },
+        });
+      } else {
+        callback({ message: 'you cannot add mention in personal chats' });
+      }
+    let endFunction = false;
+    console.log(userExistsInGroupOrChannel);
+    userExistsInGroupOrChannel = userExistsInGroupOrChannel.map(
+      (user) => user.userId || user.userId
+    );
+    console.log(userExistsInGroupOrChannel);
+    message.inputMessageMentions = message.inputMessageMentions || [];
+    message.inputMessageMentions.forEach((userId) => {
+      if (!userExistsInGroupOrChannel.includes(userId)) {
+        callback({
+          message: `mention with id ${userId} doesnt exists in this group or channel`,
+        });
+        endFunction = true;
+        return;
+      }
+    });
+    if (endFunction) return;
+    message.messageMentions = message.inputMessageMentions.map(
       (mention: number) => ({
         userId: mention,
       })
@@ -71,9 +140,11 @@ export const handleNewMessage = catchSocketError(
       ...message,
       content: null,
       url: null,
+      participantType: undefined,
+      channelOrGroupId: undefined,
     });
 
-    if (message.content.length > 100) {
+    if (message.content.length > 200) {
       message.url = await uploadFileToFirebase(message.content);
       createdMessage = await updateMessageById(createdMessage.id, {
         url: message.url,
@@ -89,32 +160,33 @@ export const handleNewMessage = catchSocketError(
     );
 
     const messageReadReceipts = [];
+    const userSockets = [];
     if (roomSockets) {
       for (const socketId of roomSockets) {
-        //TODO: WHEN THE USER LOGIN FROM MORE THAN DEVICE THIS CAUSES ERROR
         const userId = Chat.getInstance().getUserUsingSocketId(
           socketId
         ) as number;
-        if (userId !== message.senderId) {
+        if (userId !== message.senderId && !userSockets.includes(userId)) {
+          userSockets.push(userId);
+          socket.to(userId.toString()).emit('message:receive', createdMessage);
           messageReadReceipts.push(
             await insertMessageRecipient(userId, createdMessage)
           );
         }
       }
     }
-
-    socket.broadcast
-      .to(message.participantId.toString())
-      .emit('message:receive', createdMessage);
-    //TODO: SOLVE THIS ISSUE
-    Chat.getInstance()
-      .getSocketsByUserId(socket.user.id)
-      .forEach((socket) => {
-        socket.emit('message:receive', {
-          ...createdMessage,
-          messageReadReceipts,
-        });
-      });
+    //
+    // socket.broadcast
+    //   .to(message.participantId.toString())
+    //   .emit('message:receive', createdMessage);
+    // Chat.getInstance()
+    //   .getSocketsByUserId(socket.user.id)
+    //   .forEach((socket) => {
+    io.to(message.senderId.toString()).emit('message:receive', {
+      ...createdMessage,
+      messageReadReceipts,
+    });
+    // });
 
     if (message.durationInMinutes) {
       setTimeout(
@@ -149,8 +221,6 @@ export const handleDeleteMessage = catchSocketError(
     });
   }
 );
-
-//TODO: TEST AFTER ADDING CATCHSOCKET ERRORS
 
 export const handleEditMessage = catchSocketError(
   async (socket: MySocket, callback: (err: object) => void, data: Messages) => {
@@ -196,7 +266,6 @@ export const handleEditMessage = catchSocketError(
   }
 );
 
-//TODO: TEST AFTER ADDING CATCHSOCKET ERRORS
 export const handleOpenContext = catchSocketError(
   async (
     socket: MySocket,
@@ -228,25 +297,27 @@ export interface MySocket extends Socket {
   request: SocketRequest;
 }
 
-export const handleNewConnection = async (socket: MySocket) => {
-  const userId = socket.user.id;
-  //mark user as active now
-  await updateUserById(userId, { activeNow: true, lastSeen: null });
-  logger.info(`User connected: ${userId}`);
-  const chatInstance = Chat.getInstance();
-  chatInstance.addUser(userId, socket);
-  const userParticipants = await getAllParticipantIds(userId);
-  // Join user to all their chat rooms
-  console.log(userParticipants, 'userParticipants');
-  userParticipants.forEach((chatId) => socket.join(chatId.toString()));
-  //to sync drafted messages and send his message readAt
-  socket.join(userId.toString());
-  // Insert participant data and notify recipients
-  const insertedData = await insertParticipantDate(userId, userParticipants);
-  notifyParticipants(insertedData, socket);
-  // Set up socket event handlers
-  setupSocketEventHandlers(socket);
-};
+export const handleNewConnection = catchSocketError(
+  async (socket: MySocket, callback?: (arg: object) => void) => {
+    const userId = socket.user.id;
+    //mark user as active now
+    await updateUserById(userId, { activeNow: true, lastSeen: null });
+    logger.info(`User connected: ${userId}`);
+    const chatInstance = Chat.getInstance();
+    chatInstance.addUser(userId, socket);
+    const userParticipants = await getAllParticipantIds(userId);
+    // Join user to all their chat rooms
+    logger.info('userParticipants', userParticipants);
+    userParticipants.forEach((chatId) => socket.join(chatId.toString()));
+    //to sync drafted messages and send his message readAt
+    socket.join(userId.toString());
+    // Insert participant data and notify recipients
+    const insertedData = await insertParticipantDate(userId, userParticipants);
+    notifyParticipants(insertedData, socket);
+    // Set up socket event handlers
+    setupSocketEventHandlers(socket);
+  }
+);
 
 // Helper function to retrieve all participant IDs
 const getAllParticipantIds = async (userId: number): Promise<number[]> => {
@@ -260,15 +331,13 @@ const getAllParticipantIds = async (userId: number): Promise<number[]> => {
 
 // Notify other participants about the updated info
 const notifyParticipants = (
-  insertedData: { participantId: number }[],
+  insertedData: { participantId: number; senderId: number }[],
   socket: Socket
 ) => {
   insertedData.forEach((userRecipient) => {
-    //TODO:SEND TO THE SENDER OF THE MESSAGE ONLY
-    //TODO:TEST THIS AFTER AUTH
-    socket.broadcast
-      .to(userRecipient.participantId.toString())
-      .emit('message:update-info', [userRecipient]);
+    io.to(userRecipient.senderId.toString()).emit('message:update-info', [
+      userRecipient,
+    ]);
   });
 };
 
@@ -325,6 +394,11 @@ export const setupSocketEventHandlers = (socket: Socket) => {
   });
 };
 //TODO: determine who can delete and post files in firebase
-//TODO: TEST WHEN MESSAGES ARE SEND BETWEEN PERSONAL CHATS AND PARTICPINAT
-//TODO: Check if the message being replied to is in the conext
-//TODO:Check if the mentioned users in the context
+
+//TODO: TEST MENTIONS IN GROUP
+//TODO: WHEN THE USER REFRESH IT SHOULD DISCONNECT
+//TODO: connect more than onetime from the same tab
+//TODO: MAKE SEND MESSAGE FASTER AS POSSIBLE
+//DONE
+//MESSAGE REPLYIN
+//

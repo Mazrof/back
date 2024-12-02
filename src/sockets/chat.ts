@@ -26,8 +26,7 @@ class Chat {
     return this.socketToUserMap.get(socketId);
   }
   getSocketsByUserId(userId: number) {
-    console.log(this.onlineUsers.get(userId));
-    return this.onlineUsers.get(userId);
+    return this.onlineUsers.get(userId) || [];
   }
   setUpListeners() {
     this.io.on('connection', handleNewConnection);
@@ -66,4 +65,3 @@ export { Chat };
 
 //TODO: error handling
 //TODO: UNIT TEST
-//TODO: CHECK THE MENTION TO BE IN THE GROUP OR CHANNEL
