@@ -7,15 +7,16 @@
     "start:build": "tsc -w",
     "check": "tsc --noEmit",
     "build": "tsc",
-    "start:run": "nodemon build/server.js",
+    "start:run": "nodemon build/src/server.js",
     "start-dev": "concurrently npm:start:*",
     "migrate-db": "npx prisma migrate dev --name edit_channel",
     "prisma-studio": "npx prisma studio",
     "kill-port-3000": "lsof -ti :3000 | xargs kill -9 || true",
     "pull_db": "npx prisma db pull",
+    "push_db": "npx prisma db push --skip-generate",
     "start": "node build/src/server.js",
-    "container":"npm run migrate-db & npm run start",
-    "start-prod": "node build/server.js"
+    "container":"npm run push_db & npm run start",
+    "start-prod": "node build/src/server.js"
   },
   "dependencies": {
     "@faker-js/faker": "^9.2.0",

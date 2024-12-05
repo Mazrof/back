@@ -6,14 +6,12 @@ import {
 } from '../services';
 
 export const getUserChats = catchAsync(async (req, res) => {
-  //TODO: ADD AUTH remove call(1)
-  const data = await getUserParticipants(1);
+  const data = await getUserParticipants(req.session.user.id);
   res.status(200).json(data);
 });
 
 export const getMessages = catchAsync(async (req, res) => {
-  //TODO: ADD AUTH
-  const userId = 1;
+  const userId = req.session.user.id;
   const participantId = parseInt(req.params.id, 10);
   const page = Number(req.query.page || 1);
   const limit = Number(req.query.limit || 100);

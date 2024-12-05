@@ -1,6 +1,7 @@
 import { Server, Socket } from 'socket.io';
 
-import { handleNewConnection } from './listeners/chatListeners';
+import { handleNewConnection, MySocket } from './listeners/chatListeners';
+import { io } from '../server';
 
 type UserSocketMap = Map<number, Socket>; // Maps user ID to Socket
 type SocketUserMap = Map<string, number>;
@@ -10,6 +11,7 @@ class Chat {
   private socketToUserMap: SocketUserMap = new Map();
   private static _instance: Chat;
   private constructor(private io: Server) {
+    this.setUpAuth();
     this.setUpListeners();
   }
   addUser(userId: number, socket: Socket) {
@@ -41,25 +43,22 @@ class Chat {
     }
     return this._instance;
   }
+
+  private setUpAuth() {
+    this.io.use((socket: MySocket, next: (err?: Error) => void) => {
+      const session = socket.request.session;
+      if (session && session.user) {
+        // Attach user info to the socket object for later use
+        socket.user = { id: session.user.id, ...session.userData };
+        next();
+      } else {
+        next(new Error('Unauthorized'));
+      }
+    });
+  }
 }
 export { Chat };
 
 //TODO: error handling
 //TODO: UNIT TEST
-
-// io.use((socket, next) => {
-//   // Middleware logic, e.g., authentication
-//   const isAuthenticated = true; // Replace with your logic
-//   if (isAuthenticated) {
-//     next(); // Proceed to the event handler
-//   } else {
-//     next(new Error("Authentication error")); // Reject connection
-//   }
-// });
-// io.use((socket: Socket, next: Function) => {
-//   const token = socket.handshake.headers['token'];
-//   if (isValidToken(token)) { // isValidToken is a function to validate your token
-//     return next();
-//   }
-//   return next(new Error('Authentication error'));
-// });
+//TODO: CHECK THE MENTION TO BE IN THE GROUP OR CHANNEL

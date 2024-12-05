@@ -1,5 +1,8 @@
 import { PrismaClient, Prisma } from '@prisma/client';
-import { handleDeleteMessage } from '../sockets/listeners/chatListeners';
+import {
+  handleDeleteMessage,
+  MySocket,
+} from '../sockets/listeners/chatListeners';
 const prisma = new PrismaClient();
 
 async function testPrismaConnection() {
@@ -31,6 +34,7 @@ prisma
         id: true,
         durationInMinutes: true,
         createdAt: true,
+        senderId: true,
       },
     });
 
@@ -39,10 +43,15 @@ prisma
       const messageDeletionTime =
         message!.durationInMinutes! * 1000 * 60 + message!.createdAt!.getTime();
       if (messageDeletionTime < currentTime.getTime())
-        await handleDeleteMessage({ id: message.id });
+        await handleDeleteMessage(
+          { user: { id: message.senderId } } as MySocket,
+          { id: message.id }
+        );
       else {
         setTimeout(() => {
-          handleDeleteMessage({ id: message.id });
+          handleDeleteMessage({ user: { id: message.senderId } } as MySocket, {
+            id: message.id,
+          });
         }, messageDeletionTime - currentTime.getTime());
       }
     }

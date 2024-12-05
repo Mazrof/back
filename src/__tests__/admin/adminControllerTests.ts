@@ -1,13 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
-import { getAllUsers, banUser } from '../controllers/adminController';
-import * as userService from '../services/adminService';
-import { catchAsync } from '../utility';
+import * as userService from '../../services/adminService';
+import { getAllUsers, banUser } from '../../controllers/adminController';
+import { catchAsync } from '../../utility';
+
+jest.mock('../../server', () => ({
+  io: jest.fn(),
+}));
 
 // Mock the userService
-jest.mock('../services/adminService');
+jest.mock('../../services/adminService');
 
 describe('Admin Controller', () => {
-  let mockRequest: Partial<Request>;
+  let mockRequest;
   let mockResponse: Partial<Response>;
   let mockNext: NextFunction;
 
@@ -23,6 +27,16 @@ describe('Admin Controller', () => {
 
     // Setup mock next function
     mockNext = jest.fn();
+
+    // Mock session
+    mockRequest = {
+      session: {
+        user: {
+          id: 1, // mock admin id
+          userType: '',
+        },
+      },
+    };
   });
 
   describe('getAllUsers', () => {
@@ -33,7 +47,7 @@ describe('Admin Controller', () => {
         email: 'test1@example.com',
         phone: '1234567890',
         bio: 'Test bio 1',
-        status: true,
+        active: true,
         activeNow: true,
       },
       {
@@ -42,17 +56,12 @@ describe('Admin Controller', () => {
         email: 'test2@example.com',
         phone: null,
         bio: null,
-        status: false,
+        active: false,
         activeNow: false,
       },
     ];
 
     it('should get all users successfully', async () => {
-      // Setup mock request
-      mockRequest = {
-        body: { adminId: '1' },
-      };
-
       // Mock service response
       (userService.getAllUsers as jest.Mock).mockResolvedValue(mockUsers);
 
@@ -62,7 +71,7 @@ describe('Admin Controller', () => {
         mockNext
       );
 
-      expect(userService.getAllUsers).toHaveBeenCalledWith(1);
+      expect(userService.getAllUsers).toHaveBeenCalledWith(1); // Use mock adminId from session
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'success',
@@ -75,7 +84,11 @@ describe('Admin Controller', () => {
     it('should handle invalid adminId', async () => {
       // Setup mock request with invalid adminId
       mockRequest = {
-        body: { adminId: 'invalid' },
+        session: {
+          user: {
+            id: NaN, // Invalid adminId
+          },
+        },
       };
 
       await getAllUsers(
@@ -89,10 +102,6 @@ describe('Admin Controller', () => {
     });
 
     it('should handle service errors', async () => {
-      mockRequest = {
-        body: { adminId: '1' },
-      };
-
       const error = new Error('Service error');
       (userService.getAllUsers as jest.Mock).mockRejectedValue(error);
 
@@ -111,26 +120,26 @@ describe('Admin Controller', () => {
     const mockUser = {
       id: 1,
       username: 'testuser',
-      status: false,
+      active: false,
     };
 
     it('should toggle user status successfully', async () => {
       // Setup mock request
       mockRequest = {
-        body: { adminId: '1' },
-        params: { userId: '2' },
+        session: {
+          user: {
+            id: 1, // Admin ID
+          },
+        },
+        params: { userId: '2' }, // User to ban
       };
 
       // Mock service response
       (userService.toggleUserStatus as jest.Mock).mockResolvedValue(mockUser);
 
-      await banUser(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      await banUser(mockRequest as Request, mockResponse as Response, mockNext);
 
-      expect(userService.toggleUserStatus).toHaveBeenCalledWith(2, 1);
+      expect(userService.toggleUserStatus).toHaveBeenCalledWith(2, 1); // Pass both userId and adminId
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'success',
@@ -140,36 +149,36 @@ describe('Admin Controller', () => {
     });
 
     it('should handle invalid adminId or userId', async () => {
-      // Setup mock request with invalid IDs
+      // Setup mock request with invalid adminId or userId
       mockRequest = {
-        body: { adminId: 'invalid' },
-        params: { userId: 'invalid' },
+        session: {
+          user: {
+            id: NaN, // Invalid adminId
+          },
+        },
+        params: { userId: 'invalid' }, // Invalid userId
       };
 
-      await banUser(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      await banUser(mockRequest as Request, mockResponse as Response, mockNext);
 
-      expect(userService.toggleUserStatus).toHaveBeenCalledWith(NaN, NaN);
+      expect(userService.toggleUserStatus).toHaveBeenCalledWith(NaN, NaN); // Invalid IDs
       expect(mockNext).not.toHaveBeenCalled();
     });
 
     it('should handle service errors', async () => {
       mockRequest = {
-        body: { adminId: '1' },
+        session: {
+          user: {
+            id: 1, // Admin ID
+          },
+        },
         params: { userId: '2' },
       };
 
       const error = new Error('Service error');
       (userService.toggleUserStatus as jest.Mock).mockRejectedValue(error);
 
-      await banUser(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      await banUser(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(userService.toggleUserStatus).toHaveBeenCalledWith(2, 1);
       expect(mockNext).toHaveBeenCalledWith(error);
@@ -177,17 +186,17 @@ describe('Admin Controller', () => {
 
     it('should handle null response from service', async () => {
       mockRequest = {
-        body: { adminId: '1' },
+        session: {
+          user: {
+            id: 1, // Admin ID
+          },
+        },
         params: { userId: '2' },
       };
 
       (userService.toggleUserStatus as jest.Mock).mockResolvedValue(null);
 
-      await banUser(
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      await banUser(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(userService.toggleUserStatus).toHaveBeenCalledWith(2, 1);
       expect(mockResponse.status).toHaveBeenCalledWith(200);
