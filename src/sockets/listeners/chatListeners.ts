@@ -393,12 +393,14 @@ export const setupSocketEventHandlers = (socket: Socket) => {
     await disconnectedHandler(socket);
   });
 };
-//TODO: determine who can delete and post files in firebase
 
+//TODO: determine who can delete and post files in firebase
 //TODO: TEST MENTIONS IN GROUP
 //TODO: WHEN THE USER REFRESH IT SHOULD DISCONNECT
 //TODO: connect more than onetime from the same tab
 //TODO: MAKE SEND MESSAGE FASTER AS POSSIBLE
+
 //DONE
 //MESSAGE REPLYIN
+//mentions
 //
