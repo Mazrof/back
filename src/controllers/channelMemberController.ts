@@ -3,7 +3,10 @@ import { catchAsync } from '../utility';
 import * as channelService from '../services/channelMemberService';
 import { CommunityRole } from '@prisma/client';
 import * as channelMemberService from '../services/channelMemberService';
-import { checkChannelMember, checkChannelMemberPermission } from '../services/channelMemberService';
+import {
+  checkChannelMember,
+  checkChannelMemberPermission,
+} from '../services/channelMemberService';
 
 export const getChannelMembers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -86,7 +89,7 @@ export const updateChannelMember = catchAsync(
 export const inviteChannelMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const token: string = req.body;
-    const memberId: number = parseInt(req.body.memberId);
+    const memberId: number = req.session.user.id;
     const role = req.body.role;
 
     const member: {

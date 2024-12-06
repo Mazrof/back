@@ -61,7 +61,7 @@ export const addGroupMember = catchAsync(
 export const inviteGroupMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const token: string = req.body;
-    const memberId: number = parseInt(req.body.memberId);
+    const memberId: number = req.session.user.id;
     const role = req.body.role;
 
     const member: {
@@ -113,7 +113,6 @@ export const deleteGroupMember = catchAsync(
 
     await checkGroupMemberPermission(userId, groupId);
     const memberId: number = parseInt(req.params.id);
-
 
     await groupMemberService.deleteGroupMember(userId, groupId, memberId);
 

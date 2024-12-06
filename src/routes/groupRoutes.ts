@@ -31,6 +31,4 @@ router
   .patch(updateGroup) // Update a group by Admins
   .delete(deleteGroup); // Delete a group by Admins
 
-
-
 export default router;

@@ -69,7 +69,6 @@ export const storeOAuthUser = async (user: OAuthUser): Promise<Users> => {
       publicKey: '',
     },
   });
-  console.log('USER CREATED');
   return newUser;
 };
 export const AddUserToBlocked = async (

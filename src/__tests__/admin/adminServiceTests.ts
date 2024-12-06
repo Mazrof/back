@@ -1,9 +1,13 @@
-import { getAllUsers, toggleUserStatus } from '../services/adminService';
-import * as userRepository from '../repositories/adminRepository';
-import { AppError } from '../utility';
+import { getAllUsers, toggleUserStatus } from '../../services/adminService';
+import * as userRepository from '../../repositories/adminRepository';
+import { AppError } from '../../utility';
+
+jest.mock('../../server', () => ({
+  io: jest.fn(),
+}));
 
 // Mock the entire userRepository
-jest.mock('../repositories/adminRepository');
+jest.mock('../../repositories/adminRepository');
 
 describe('Admin Service', () => {
   // Clear all mocks before each test
@@ -87,7 +91,9 @@ describe('Admin Service', () => {
       // Mock user fetch
       (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
       // Mock status update
-      (userRepository.updateUserStatus as jest.Mock).mockResolvedValue(mockUpdatedUser);
+      (userRepository.updateUserStatus as jest.Mock).mockResolvedValue(
+        mockUpdatedUser
+      );
 
       const result = await toggleUserStatus(1, 1);
 
@@ -125,8 +131,12 @@ describe('Admin Service', () => {
       const reactivatedUser = { ...mockUser, status: true };
 
       (userRepository.findAdminById as jest.Mock).mockResolvedValue({ id: 1 });
-      (userRepository.findUserById as jest.Mock).mockResolvedValue(inactiveUser);
-      (userRepository.updateUserStatus as jest.Mock).mockResolvedValue(reactivatedUser);
+      (userRepository.findUserById as jest.Mock).mockResolvedValue(
+        inactiveUser
+      );
+      (userRepository.updateUserStatus as jest.Mock).mockResolvedValue(
+        reactivatedUser
+      );
 
       const result = await toggleUserStatus(1, 1);
 
@@ -137,7 +147,9 @@ describe('Admin Service', () => {
     it('should handle repository errors gracefully', async () => {
       (userRepository.findAdminById as jest.Mock).mockResolvedValue({ id: 1 });
       (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
-      (userRepository.updateUserStatus as jest.Mock).mockRejectedValue(new Error('Database error'));
+      (userRepository.updateUserStatus as jest.Mock).mockRejectedValue(
+        new Error('Database error')
+      );
 
       await expect(toggleUserStatus(1, 1)).rejects.toThrow('Database error');
       expect(userRepository.findAdminById).toHaveBeenCalledWith(1);
