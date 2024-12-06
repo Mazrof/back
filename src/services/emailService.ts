@@ -3,7 +3,13 @@ import nodemailer from 'nodemailer';
 import { AppError } from '../utility';
 import crypto from 'crypto';
 import { findUserByEmail, updateUserById } from '../repositories/userRepository';
-const redis = new Redis(); // Connect to Redis server
+
+// Connect to Redis with host, port, and password from environment variables
+const redis = new Redis({
+  host: process.env.REDIS_HOST || '127.0.0.1', // Default to localhost
+  port: parseInt(process.env.REDIS_PORT, 10) || 6379, // Default to port 6379
+  password: process.env.REDIS_PASSWORD || '', // Default to no password
+});
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -15,7 +21,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const sendVerificationCode = async (email: string, code: string) => {
+// Send verification code
+export const sendVerificationCode = async (email, code) => {
   const mailOptions = {
     from: '"Mazroof" <no-reply@Mazroof.com>',
     to: email,
@@ -26,7 +33,6 @@ export const sendVerificationCode = async (email: string, code: string) => {
 
   try {
     await transporter.sendMail(mailOptions);
-
     // Store the code in Redis with a 10-minute expiration
     await redis.set(`verification:${email}`, code, 'EX', 600);
 
@@ -37,30 +43,28 @@ export const sendVerificationCode = async (email: string, code: string) => {
   }
 };
 
-export const verifyCode = async (email: string, code: string) => {
-  
-    // Retrieve the code from Redis
-    const storedCode = await redis.get(`verification:${email}`);
-    if (!storedCode) {
-      throw new AppError('Code expired', 400); 
-    }
+// Verify the code
+export const verifyCode = async (email, code) => {
+  const storedCode = await redis.get(`verification:${email}`);
+  if (!storedCode) {
+    throw new AppError('Code expired', 400);
+  }
 
-    // Check if the code matches
-    const isValid = storedCode === code;
+  const isValid = storedCode === code;
+  if (isValid) {
+    await redis.del(`verification:${email}`);
+  }
 
-    if (isValid) {
-      await redis.del(`verification:${email}`);
-    }
-
-    return isValid;
-  
+  return isValid;
 };
 
-export const requestPasswordReset = async (email:string) => {
+// Request password reset
+export const requestPasswordReset = async (email) => {
   const user = await findUserByEmail(email);
   if (!user) {
     throw new AppError('User not found', 404);
   }
+
   const resetToken = crypto.randomBytes(32).toString('hex');
   const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
 
@@ -80,15 +84,14 @@ export const requestPasswordReset = async (email:string) => {
   await transporter.sendMail(mailOptions);
 };
 
-export const resetPassword = async (id: number, token: string, newPassword: string) => {
-  // Retrieve the stored hash
+// Reset password
+export const resetPassword = async (id, token, newPassword) => {
   const storedTokenHash = await redis.get(`passwordReset:${id}`);
   if (!storedTokenHash) {
     throw new AppError('Token is invalid or expired', 400);
   }
 
   const incomingTokenHash = crypto.createHash('sha256').update(token).digest('hex');
-
   if (storedTokenHash !== incomingTokenHash) {
     throw new AppError('Token is invalid', 400);
   }
