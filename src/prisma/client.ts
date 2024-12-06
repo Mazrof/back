@@ -45,13 +45,18 @@ prisma
       if (messageDeletionTime < currentTime.getTime())
         await handleDeleteMessage(
           { user: { id: message.senderId } } as MySocket,
+          undefined,
           { id: message.id }
         );
       else {
         setTimeout(() => {
-          handleDeleteMessage({ user: { id: message.senderId } } as MySocket, {
-            id: message.id,
-          });
+          handleDeleteMessage(
+            { user: { id: message.senderId } } as MySocket,
+            undefined,
+            {
+              id: message.id,
+            }
+          );
         }, messageDeletionTime - currentTime.getTime());
       }
     }
