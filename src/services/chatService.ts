@@ -605,4 +605,3 @@ export const canSeeMessages = async (
   });
   return participant.length !== 0;
 };
-//TODO: WHO CAN ADD MESSAGES IN CHANNLES

@@ -62,6 +62,3 @@ class Chat {
   }
 }
 export { Chat };
-
-//TODO: error handling
-//TODO: UNIT TEST

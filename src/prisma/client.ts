@@ -21,8 +21,6 @@ prisma
     testPrismaConnection().then(); // Test connection on startup
   })
   .then(async () => {
-    //TODO: REFACTOR THIS
-
     // delete expired messages
     const messages = await prisma.messages.findMany({
       where: {
