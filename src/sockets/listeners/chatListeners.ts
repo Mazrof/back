@@ -41,7 +41,6 @@ export const handleNewMessage = catchSocketError(
     callback: (arg: object) => void,
     message: NewMessages
   ) => {
-    console.log(message);
     message.senderId = socket.user.id;
     if (message.status === 'drafted') {
       if (callback)
@@ -113,11 +112,9 @@ export const handleNewMessage = catchSocketError(
         callback({ message: 'you cannot add mention in personal chats' });
       }
     let endFunction = false;
-    console.log(userExistsInGroupOrChannel);
     userExistsInGroupOrChannel = userExistsInGroupOrChannel.map(
       (user) => user.userId || user.userId
     );
-    console.log(userExistsInGroupOrChannel);
     message.inputMessageMentions = message.inputMessageMentions || [];
     message.inputMessageMentions.forEach((userId) => {
       if (!userExistsInGroupOrChannel.includes(userId)) {
