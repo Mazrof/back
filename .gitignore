@@ -4,3 +4,4 @@ node_modules
 build
 prisma/seed.ts
 public
+coverage

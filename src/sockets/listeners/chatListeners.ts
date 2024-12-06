@@ -113,7 +113,7 @@ export const handleNewMessage = catchSocketError(
       }
     let endFunction = false;
     userExistsInGroupOrChannel = userExistsInGroupOrChannel.map(
-      (user) => user.userId || user.userId
+      (user) => user.userId
     );
     message.inputMessageMentions = message.inputMessageMentions || [];
     message.inputMessageMentions.forEach((userId) => {
@@ -172,18 +172,10 @@ export const handleNewMessage = catchSocketError(
         }
       }
     }
-    //
-    // socket.broadcast
-    //   .to(message.participantId.toString())
-    //   .emit('message:receive', createdMessage);
-    // Chat.getInstance()
-    //   .getSocketsByUserId(socket.user.id)
-    //   .forEach((socket) => {
     io.to(message.senderId.toString()).emit('message:receive', {
       ...createdMessage,
       messageReadReceipts,
     });
-    // });
 
     if (message.durationInMinutes) {
       setTimeout(
@@ -390,14 +382,3 @@ export const setupSocketEventHandlers = (socket: Socket) => {
     await disconnectedHandler(socket);
   });
 };
-
-//TODO: determine who can delete and post files in firebase
-//TODO: TEST MENTIONS IN GROUP
-//TODO: WHEN THE USER REFRESH IT SHOULD DISCONNECT
-//TODO: connect more than onetime from the same tab
-//TODO: MAKE SEND MESSAGE FASTER AS POSSIBLE
-
-//DONE
-//MESSAGE REPLYIN
-//mentions
-//
