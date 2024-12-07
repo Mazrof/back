@@ -1,7 +1,14 @@
 import RedisStore from 'connect-redis';
 import Redis from 'ioredis';
-const redisClient = new Redis();
 
+// Redis configuration
+const redisClient = new Redis({
+  host: process.env.REDIS_HOST || '127.0.0.1', 
+  port: parseInt(process.env.REDIS_PORT, 10) || 6379, 
+  password: process.env.REDIS_PASSWORD || '',
+});
+
+// Session configuration
 export const sessionConfig = {
   store: new RedisStore({ client: redisClient }),
   secret: process.env.SESSION_SECRET || 'default_secret',
@@ -10,6 +17,6 @@ export const sessionConfig = {
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 2 * 60 * 60, // 1 hour
+    maxAge: 1000 * 60 * 60, // 1 hour
   },
 };
