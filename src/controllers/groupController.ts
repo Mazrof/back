@@ -30,14 +30,14 @@ export const getGroup = catchAsync(
 
 export const createGroup = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, privacy, creatorId, groupSize, admins } = req.body;
-
+    const { name, privacy, groupSize, admins } = req.body;
+    const creatorId: number = req.session.user.id;
     const group = await groupService.createGroup({
       name,
       privacy,
       creatorId,
       groupSize,
-      admins
+      admins,
     });
 
     res.status(201).json({
@@ -82,7 +82,7 @@ export const deleteGroup = catchAsync(
 export const applyContentFilter = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const groupId = parseInt(req.params.groupId);
-    const adminId = parseInt(req.body.adminId);
+    const adminId = req.session.user.id;
     const group = await groupService.applyGroupFilter(groupId, adminId);
 
     return res.status(200).json({
