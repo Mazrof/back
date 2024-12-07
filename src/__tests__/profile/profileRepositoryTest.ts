@@ -1,8 +1,8 @@
-import * as profileRepository from '../repositories/profileRepository';
-import { prisma } from '../prisma/client';
+import * as profileRepository from '../../repositories/profileRepository';
+import { prisma } from '../../prisma/client';
 
 // Mocking the Prisma client methods used in the repository
-jest.mock('../prisma/client', () => ({
+jest.mock('../../prisma/client', () => ({
   prisma: {
     users: {
       findMany: jest.fn(),

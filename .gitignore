@@ -4,4 +4,5 @@ node_modules
 build
 prisma/seed.ts
 public
+serviceAccountKey.json
 coverage
