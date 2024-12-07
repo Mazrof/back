@@ -4,7 +4,6 @@ import * as authController from '../controllers/authController';
 import { AppError } from '../utility';
 
 jest.mock('../services/authService'); // Mock the authService module
-
 describe('Authentication Controller', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;

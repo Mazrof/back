@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { Socket } from 'socket.io';
 import logger from './logger';
+import { MySocket, NewMessages } from '../sockets/listeners/chatListeners';
 
 export const catchAsync = (
   fn: (arg0: Request, arg1: Response, arg2: NextFunction) => any
@@ -9,15 +10,18 @@ export const catchAsync = (
     await fn(req, res, next).catch(next);
   };
 };
-//{ [key: string]: string | number | boolean }
-// export const catchAsyncSockets = (
-//   fn: (...args: any[]) => void,
-//   socket: Socket
-// ) => {
-//   return async (...args: any[]) => {
-//     Promise.resolve(fn(...args)).catch((error) => {
-//       logger.error('Error in event handler:', error);
-//       socket.emit('errorEvent', { message: error.message });
-//     });
-//   };
-// };
+export const catchSocketError = (fn: any) => {
+  return async (
+    socket: MySocket,
+    callback?: (arg: object) => void,
+    data?: any
+  ) => {
+    try {
+      await fn(socket, callback, data);
+    } catch (e) {
+      if (callback) callback(e);
+      console.log(e);
+      logger.error(e);
+    }
+  };
+};

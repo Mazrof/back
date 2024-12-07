@@ -43,11 +43,10 @@ router.get(
   OAuthSessionHandler
 );
 
-router.post('/send-code', isAuthenticated, sendVerificationCodeController);
-router.post('/verify-code', isAuthenticated, verifyCodeController);
+router.post('/send-code', sendVerificationCodeController);
+router.post('/verify-code', verifyCodeController);
 router.post(
   '/send-code-sms',
-  isAuthenticated,
   sendVerificationCodeSmSController
 );
 
