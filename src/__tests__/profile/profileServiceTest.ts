@@ -1,11 +1,11 @@
-import * as authService from '../services/authService';
-import * as userRepository from '../repositories/userRepository';
+import * as authService from '../../services/authService';
+import * as userRepository from '../../repositories/userRepository';
 import bcrypt from 'bcryptjs';
-import { AppError } from '../utility';
-import { HTTPERROR } from '../constants/HTTPERROR';
+import { AppError } from '../../utility';
+import { HTTPERROR } from '../../constants/HTTPERROR';
 
 // Mock the repository methods
-jest.mock('../repositories/userRepository');
+jest.mock('../../repositories/userRepository');
 jest.mock('bcryptjs');
 
 describe('Auth Service', () => {
