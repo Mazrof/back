@@ -29,3 +29,10 @@ jobs:
 
       - name: show
         run: ls -a -l
+      - name: Write Env file
+        run: |
+            echo ${{secrets.SERVICE_ACCOUNT_KEY}} >> ./serviceAccountKey.json
+      - name: Show Again
+        run: cat ./serviceAccountKey.json
+      - name: Where Am I
+        run: ls
