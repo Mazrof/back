@@ -24,6 +24,7 @@ export const createChannel = async (data: {
   privacy: boolean;
   creatorId: number;
   canAddComments: boolean;
+  imageURL: string | null;
 }) => {
   const token: string = generateInviteToken();
   const invitationLink: string = crypto
@@ -52,7 +53,12 @@ export const createChannel = async (data: {
 export const updateChannel = async (
   channelId: number,
   adminId: number,
-  data: { name?: string; privacy?: boolean; canAddComments?: boolean }
+  data: {
+    name?: string;
+    privacy?: boolean;
+    canAddComments?: boolean;
+    imageURL: string | null;
+  }
 ) => {
   // check permissions
   await checkPermission(adminId, channelId);
