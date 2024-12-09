@@ -196,11 +196,12 @@ export const insertParticipantDate = async (
       participantId: message.participantId,
       deliveredAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
       readAt: null,
+      senderId: message.senderId,
     };
   });
 
   await prisma.messageReadReceipts.createMany({
-    data: insertData,
+    data: insertData.map((d) => ({ ...d, senderId: undefined })),
   });
   return insertData;
 };
@@ -209,15 +210,17 @@ export const insertMessageRecipient = async (
   userId: number,
   message: Messages
 ) => {
-  return prisma.messageReadReceipts.create({
-    data: {
-      userId,
-      participantId: message.participantId,
-      messageId: message.id,
-      deliveredAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
-      readAt: null,
-    },
-  });
+  try {
+    return prisma.messageReadReceipts.create({
+      data: {
+        userId,
+        participantId: message.participantId,
+        messageId: message.id,
+        deliveredAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
+        readAt: null,
+      },
+    });
+  } catch (error) {}
 };
 
 export const deleteMessage = async (messageId: number) => {
@@ -602,4 +605,3 @@ export const canSeeMessages = async (
   });
   return participant.length !== 0;
 };
-//TODO: HOW CAN ADD MESSAGES IN CHANNLES

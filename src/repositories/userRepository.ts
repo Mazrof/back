@@ -108,6 +108,7 @@ export const GetUserBlockedList = async (blockerId: number) => {
           id: true,
           username: true,
           photo: true,
+          phone: true,
           profilePicVisibility: true,
         },
       },

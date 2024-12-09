@@ -3,7 +3,7 @@ import { Server, Socket } from 'socket.io';
 import { handleNewConnection, MySocket } from './listeners/chatListeners';
 import { io } from '../server';
 
-type UserSocketMap = Map<number, Socket>; // Maps user ID to Socket
+type UserSocketMap = Map<number, Socket[]>; // Maps user ID to Socket
 type SocketUserMap = Map<string, number>;
 
 class Chat {
@@ -15,17 +15,21 @@ class Chat {
     this.setUpListeners();
   }
   addUser(userId: number, socket: Socket) {
-    this.onlineUsers.set(userId, socket);
+    let userSockets = this.onlineUsers.get(userId);
+    if (!userSockets) {
+      userSockets = [] as Socket[];
+    }
+    this.onlineUsers.set(userId, [...userSockets, socket]);
     this.socketToUserMap.set(socket.id, userId);
   }
   getUserUsingSocketId(socketId: string) {
     return this.socketToUserMap.get(socketId);
   }
+  getSocketsByUserId(userId: number) {
+    return this.onlineUsers.get(userId) || [];
+  }
   setUpListeners() {
     this.io.on('connection', handleNewConnection);
-  }
-  isOnline(userId: number): boolean {
-    return this.onlineUsers.has(userId);
   }
   removeUser(socketId: string) {
     const userId = this.socketToUserMap.get(socketId);
@@ -58,7 +62,3 @@ class Chat {
   }
 }
 export { Chat };
-
-//TODO: error handling
-//TODO: UNIT TEST
-//TODO: CHECK THE MENTION TO BE IN THE GROUP OR CHANNEL
