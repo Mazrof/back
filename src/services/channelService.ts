@@ -42,7 +42,8 @@ export const createChannel = async (data: {
   await channelMemberService.addChannelMember(
     data.creatorId,
     channel.id,
-    CommunityRole.admin
+    CommunityRole.admin,
+    true
   );
 
   return channel;
