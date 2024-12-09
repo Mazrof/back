@@ -39,14 +39,13 @@ export const getChannel = catchAsync(
 
 export const createChannel = catchAsync(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const { name, privacy, canAddComments, admins } = req.body;
+    const { name, privacy, canAddComments } = req.body;
     const creatorId = req.session.user.id;
     const channel = await channelService.createChannel({
       name,
       privacy,
       creatorId,
       canAddComments,
-      admins,
     });
     res.status(201).json({
       status: 'success',

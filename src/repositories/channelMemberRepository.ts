@@ -1,6 +1,7 @@
 import prisma from '../prisma/client';
 import { UpdateChannelMemberData } from '../types';
 import { CommunityRole } from '@prisma/client';
+import { channel } from 'node:diagnostics_channel';
 
 export const findChannelMember = async (userId: number, channelId: number) => {
   return await prisma.channelSubscriptions.findUnique({
@@ -58,6 +59,7 @@ export const addChannelMember = async (memberData: {
   channelId: number;
   userId: number;
   role: CommunityRole;
+  hasDownloadPermissions: boolean;
 }) => {
   return await prisma.channelSubscriptions.create({
     data: memberData,
@@ -65,6 +67,7 @@ export const addChannelMember = async (memberData: {
       channelId: true,
       userId: true,
       role: true,
+      hasDownloadPermissions: true,
     },
   });
 };
@@ -74,6 +77,7 @@ export const updateChannelMemberStatus = async (
   channelId: number,
   active: boolean
 ) => {
+  console.log('here');
   return await prisma.channelSubscriptions.update({
     where: {
       userId_channelId: {
@@ -107,6 +111,15 @@ export const findChannelByInvitationLinkHash = async (
     where: { invitationLink },
     select: {
       id: true,
+    },
+  });
+};
+
+export const getAdminCounts = async (channelId) => {
+  return await prisma.channelSubscriptions.count({
+    where: {
+      channelId,
+      role: CommunityRole.admin,
     },
   });
 };
