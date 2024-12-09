@@ -4,7 +4,7 @@ import { AppError } from '../utility';
 import { UpdateChannelMemberData } from '../types';
 import { CommunityRole } from '@prisma/client';
 import * as channelRepository from '../repositories/channelRepository';
-import crypto from 'crypto';
+
 
 const findChannel = async (channelId: number) => {
   const channel = await channelRepository.findChannelById(channelId);
@@ -172,19 +172,11 @@ export const deleteChannelMember = async (
   return channelMember;
 };
 
-export const joinChannelByInvite = async (
-  token: string,
-  userId: number,
-  role: CommunityRole
-) => {
-  const invitationLinkHash = crypto
-    .createHash('sha256')
-    .update(token)
-    .digest('hex');
+export const joinChannelByInvite = async (token: string, userId: number) => {
 
   const channel: { id: number } | null =
     await channelMemberRepository.findChannelByInvitationLinkHash(
-      invitationLinkHash
+      token
     );
 
   if (!channel) {
@@ -192,13 +184,13 @@ export const joinChannelByInvite = async (
   }
 
   // Check if the member already exists in the group
-  await checkMember(userId, channel.id);
-
+  const member = await checkMember(userId, channel.id);
   // Create a new group membership for the member
+  if (member) return member;
   return await channelMemberRepository.addChannelMember({
     channelId: channel.id,
     userId,
-    role,
+    role: CommunityRole.member,
     hasDownloadPermissions: false,
   });
 };
