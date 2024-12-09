@@ -1,7 +1,6 @@
 import prisma from '../prisma/client';
 import { UpdateChannelMemberData } from '../types';
 import { CommunityRole } from '@prisma/client';
-import { tr } from '@faker-js/faker';
 
 export const findChannelMember = async (userId: number, channelId: number) => {
   return await prisma.channelSubscriptions.findUnique({
@@ -107,7 +106,7 @@ export const updateChannelMemberData = async (
 export const findChannelByInvitationLinkHash = async (
   invitationLink: string
 ) => {
-  return await prisma.channels.findUnique({
+  return  prisma.channels.findUnique({
     where: { invitationLink },
     select: {
       id: true,

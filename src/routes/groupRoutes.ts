@@ -8,6 +8,7 @@ import {
   applyContentFilter,
 } from '../controllers/groupController';
 import groupMemberRouter from './groupMemberRoutes';
+import { inviteGroupMember } from '../controllers/groupMemberController';
 
 const router = express.Router({
   mergeParams: true,
@@ -20,7 +21,7 @@ router
   .route('/')
   .get(getAllGroups) // Fetch all groups based on privacy
   .post(createGroup); // Create a new group
-
+router.route('/invitation').post(inviteGroupMember);
 // Use groupMembersRouter for routes related to group members
 router.use('/:groupId/members', groupMemberRouter);
 
