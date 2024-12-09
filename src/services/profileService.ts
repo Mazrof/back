@@ -21,7 +21,7 @@ export const getAllProfiles = async (): Promise<Users[]> => {
   const users: Users[] = await profileRepository.findAllProfiles();
   return await Promise.all(
     users.map(async (user) => {
-      user.photo = await getFileFromFirebase(user.photo);
+      // user.photo = await getFileFromFirebase(user.photo);
       return user;
     })
   );
@@ -29,7 +29,7 @@ export const getAllProfiles = async (): Promise<Users[]> => {
 
 export const getProfileById = async (id: number): Promise<Users | null> => {
   const user: any = await profileRepository.findProfileById(id);
-  user.photo = await getFileFromFirebase(user.photo);
+  //user.photo = await getFileFromFirebase(user.photo);
   return user;
 };
 export const createProfile = async (data: any) => {
@@ -40,7 +40,7 @@ export const createProfile = async (data: any) => {
     throw new AppError('Invalid email format', 400);
   }
   if (data.photo) {
-    data.photo = await uploadFileToFirebase(data.photo);
+    //  data.photo = await uploadFileToFirebase(data.photo);
   }
   console.log(data.photo);
   return await profileRepository.createProfile(data);
@@ -54,7 +54,7 @@ export const updateProfile = async (id: number, data: any) => {
     throw new AppError('Invalid email format', 400);
   }
   if (data.photo) {
-    data.photo = await uploadFileToFirebase(data.photo);
+    //   data.photo = await uploadFileToFirebase(data.photo);
   }
   const updatedUser = await profileRepository.updateProfileById(id, data);
   if (!updatedUser) throw new AppError('No profile found with that ID', 404);
