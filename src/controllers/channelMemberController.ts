@@ -38,8 +38,11 @@ export const addChannelMember = catchAsync(
     const userId: number = req.session.user.id;
     const channelId: number = parseInt(req.params.channelId);
     const role: CommunityRole = req.body.role;
-    if (role===CommunityRole.admin) {
-      await channelMemberService.checkChannelMemberPermission(userId, channelId);
+    if (role === CommunityRole.admin) {
+      await channelMemberService.checkChannelMemberPermission(
+        userId,
+        channelId
+      );
     }
 
     const hasDownloadPermissions = req.body.hasDownloadPermissions;

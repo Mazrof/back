@@ -274,8 +274,6 @@ export const deleteGroup = async (
   return group;
 };
 
-
-
 export const applyGroupFilter = async (
   groupId: number,
   adminId: number

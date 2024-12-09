@@ -2,7 +2,10 @@ import Redis from 'ioredis';
 import nodemailer from 'nodemailer';
 import { AppError } from '../utility';
 import crypto from 'crypto';
-import { findUserByEmail, updateUserById } from '../repositories/userRepository';
+import {
+  findUserByEmail,
+  updateUserById,
+} from '../repositories/userRepository';
 
 // Connect to Redis with host, port, and password from environment variables
 const redis = new Redis({
