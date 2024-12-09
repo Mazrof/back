@@ -64,7 +64,14 @@ describe('Group Member Service', () => {
       (groupRepository.findGroupById as jest.Mock).mockResolvedValue(null);
 
       await expect(
-        groupMemberService.addGroupMember(1, 1, 2, CommunityRole.member)
+        groupMemberService.addGroupMember(
+          1,
+          1,
+          2,
+          CommunityRole.member,
+          true,
+          true
+        )
       ).rejects.toThrow('this is no group with this id');
     });
 
@@ -108,7 +115,9 @@ describe('Group Member Service', () => {
         1,
         1,
         4,
-        CommunityRole.member
+        CommunityRole.member,
+        true,
+        true
       );
 
       // Verify all checks and method calls

@@ -4,7 +4,7 @@ import {
 } from './../services/emailService';
 declare module 'express-session' {
   interface SessionData {
-    user?: { id: number; userType: string };
+    user?: { id: number; userType: string; user: unknown };
   }
 }
 import { Request, Response } from 'express';
@@ -32,16 +32,16 @@ export const login = catchAsync(async (req: Request, res: Response) => {
   if (!user) throw new AppError('Invalid credentials', 401);
   console.log(user);
   if ('bannedUsers' in user) {
-    req.session.user = { id: user.id, userType: 'Admin' }; // Store user in session
+    req.session.user = { id: user.id, userType: 'Admin',user }; // Store user in session
     res.status(200).json({
       status: 'success',
-      data: { user: { id: user.id, user_type: 'Admin' } },
+      data: { user: { id: user.id, user_type: 'Admin',user } },
     });
   } else {
-    req.session.user = { id: user.id, userType: 'user' }; // Store user in session
+    req.session.user = { id: user.id, userType: 'user',user }; // Store user in session
     res.status(200).json({
       status: 'success',
-      data: { user: { id: user.id, user_type: 'user' } },
+      data: { user: { id: user.id, user_type: 'user',user } },
     });
   }
 });

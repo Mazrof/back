@@ -78,6 +78,7 @@ model Communities {
   name         String        @db.VarChar(255)
   privacy      Boolean       @default(true)
   creatorId    Int           @map("creator_id")
+  imageURL     String        @default("") @map("image_url")
   active       Boolean       @default(true)
   image_url    String        @default("")
   channels     Channels?

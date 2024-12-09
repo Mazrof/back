@@ -31,6 +31,7 @@ export const checkChannelMemberPermission = async (
 };
 
 export const checkChannelMember = async (userId: number, channelId: number) => {
+  await findChannel(channelId);
   const channelMember = await channelMemberRepository.findExistingMember(
     userId,
     channelId
@@ -76,24 +77,27 @@ const checkAdmin = async (adminId: number, channelId: number) => {
 export const getChannelMembers = async (channelId: number) => {
   // Check if there is a channel
   await findChannel(channelId);
+
   return await channelMemberRepository.findChannelMembers(channelId);
 };
 
 export const addChannelMember = async (
   userId: number,
   channelId: number,
-  role: CommunityRole
+  role: CommunityRole,
+  hasDownloadPermissions: boolean
 ) => {
   // Check if there is a channel
   await findChannel(channelId);
   // Check if the member already exists in the channel
-  await checkMember(userId, channelId);
-
+  const member = await checkMember(userId, channelId);
+  if (member) return member;
   // Create a new channel membership for the member
   return await channelMemberRepository.addChannelMember({
     channelId,
     userId,
     role,
+    hasDownloadPermissions,
   });
 };
 
@@ -113,10 +117,6 @@ export const updateChannelMember = async (
     channelId
   );
 
-  if (!user || !user.active || user.role !== CommunityRole.admin) {
-    throw new AppError('Not Authorized', 403);
-  }
-
   const existingMember = await channelMemberRepository.findExistingMember(
     userId,
     channelId
@@ -129,7 +129,9 @@ export const updateChannelMember = async (
   const updatedData: UpdateChannelMemberData = {};
   if (updates.role) {
     updatedData.role =
-      updates.role === 'admin' ? CommunityRole.admin : CommunityRole.member;
+      updates.role.toLowerCase() === 'admin'
+        ? CommunityRole.admin
+        : CommunityRole.member;
   }
 
   if (updates.hasDownloadPermissions) {
@@ -154,10 +156,13 @@ export const deleteChannelMember = async (
     channelId
   );
 
-  if (!existingMember) {
+  if (!existingMember || !existingMember.active) {
     throw new AppError('Member not found in this channel', 404);
   }
-
+  if (existingMember.role === CommunityRole.admin) {
+    const adminCount = await channelMemberRepository.getAdminCounts(channelId);
+    if (adminCount === 1) await channelRepository.deleteChannel(channelId);
+  }
   return await channelMemberRepository.updateChannelMemberStatus(
     userId,
     channelId,
@@ -192,5 +197,6 @@ export const joinChannelByInvite = async (
     channelId: channel.id,
     userId,
     role,
+    hasDownloadPermissions: false,
   });
 };
