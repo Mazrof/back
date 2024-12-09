@@ -68,7 +68,7 @@ export const updateChannelMember = catchAsync(
     // check that the user is an admin in this channel
     const userId: number = req.session.user.id;
     const channelId: number = parseInt(req.params.channelId);
-    console.log(userId);
+
     // await channelMemberService.checkChannelMemberPermission(userId, channelId);
     const memberId: number = parseInt(req.params.id);
 
@@ -115,7 +115,12 @@ export const deleteChannelMember = catchAsync(
     const userId: number = req.session.user.id;
     const channelId: number = parseInt(req.params.channelId);
 
-    await channelMemberService.checkChannelMemberPermission(userId, channelId);
+    if (memberId !== channelId) {
+      await channelMemberService.checkChannelMemberPermission(
+        userId,
+        channelId
+      );
+    }
 
     await channelMemberService.deleteChannelMember(channelId, memberId);
 

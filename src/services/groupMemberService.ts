@@ -208,13 +208,14 @@ export const deleteGroupMember = async (
       throw new AppError('Not Authorized', 403);
     }
   }
-  const adminCount = await groupMemberRepository.getAdminCounts(groupId);
-  if (adminCount === 1) await groupRepository.deleteGroup(groupId);
-  return await groupMemberRepository.updateGroupMemberStatus(
+  const groupMember = await groupMemberRepository.updateGroupMemberStatus(
     userId,
     groupId,
     false
   );
+  const adminCount = await groupMemberRepository.getAdminCounts(groupId);
+  if (!adminCount) await groupRepository.deleteGroup(groupId);
+  return groupMember;
 };
 
 export const joinGroupByInvite = async (
