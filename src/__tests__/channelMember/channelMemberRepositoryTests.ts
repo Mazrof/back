@@ -93,7 +93,12 @@ describe('Channel Service', () => {
 
   describe('addChannelMember', () => {
     it('should add a new channel member', async () => {
-      const mockData = { channelId: 1, userId: 2, role: CommunityRole.member };
+      const mockData = {
+        channelId: 1,
+        userId: 2,
+        role: CommunityRole.member,
+        hasDownloadPermissions: true,
+      };
       (prisma.channelSubscriptions.create as jest.Mock).mockResolvedValue(
         mockData
       );
