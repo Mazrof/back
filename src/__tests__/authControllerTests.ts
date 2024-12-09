@@ -122,7 +122,7 @@ describe('Authentication Controller', () => {
       save: jest.fn(),
       touch: jest.fn(),
       resetMaxAge: jest.fn(),
-      user: { id: 1, userType: 'user' },
+      user: { id: 1, userType: 'user' ,user:null},
     };
 
     // Call the controller method
