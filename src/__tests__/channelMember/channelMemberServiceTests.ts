@@ -64,7 +64,7 @@ describe('Channel Member Service', () => {
       (channelRepository.findChannelById as jest.Mock).mockResolvedValue(null);
 
       await expect(
-        channelMemberService.addChannelMember(1, 1, CommunityRole.member)
+        channelMemberService.addChannelMember(1, 1, CommunityRole.member, true)
       ).rejects.toThrow('this is no channel with this id');
     });
 
@@ -95,7 +95,8 @@ describe('Channel Member Service', () => {
       const result = await channelMemberService.addChannelMember(
         4,
         1,
-        CommunityRole.member
+        CommunityRole.member,
+        true
       );
 
       // Verify all checks and method calls
@@ -146,7 +147,8 @@ describe('Channel Member Service', () => {
       const result = await channelMemberService.addChannelMember(
         4,
         1,
-        CommunityRole.member
+        CommunityRole.member,
+        true
       );
 
       expect(
@@ -173,7 +175,7 @@ describe('Channel Member Service', () => {
       });
 
       await expect(
-        channelMemberService.addChannelMember(4, 1, CommunityRole.member)
+        channelMemberService.addChannelMember(4, 1, CommunityRole.member, true)
       ).rejects.toThrow('Member already exists in this channel');
     });
   });

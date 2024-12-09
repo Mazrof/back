@@ -4,7 +4,12 @@ import { catchAsync } from '../utility';
 
 export const getAllGroups = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const groups = await groupService.findAllGroups();
+    const groups: {
+      hasFilter: boolean;
+      id: number;
+      groupSize: number;
+      community: { name: string; privacy: boolean; imageURL: string };
+    }[] = await groupService.findAllGroups();
     res.status(200).json({
       status: 'success',
       results: groups.length,
@@ -37,7 +42,6 @@ export const createGroup = catchAsync(
       privacy,
       creatorId,
       groupSize,
-      admins,
     });
 
     res.status(201).json({

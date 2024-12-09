@@ -41,12 +41,18 @@ export const addGroupMember = catchAsync(
 
     const memberId: number = parseInt(req.body.memberId);
     const role: CommunityRole = req.body.role;
+    const hasDownloadPermissions: boolean =
+      req.body.hasDownloadPermissions || false;
+    const hasMessagePermissions: boolean =
+      req.body.hasMessagePermissions || false;
 
     const member = await groupMemberService.addGroupMember(
       adminId,
       groupId,
       memberId,
-      role
+      role,
+      hasDownloadPermissions,
+      hasMessagePermissions
     );
 
     return res.status(201).json({

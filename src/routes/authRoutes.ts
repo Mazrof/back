@@ -45,10 +45,7 @@ router.get(
 
 router.post('/send-code', sendVerificationCodeController);
 router.post('/verify-code', verifyCodeController);
-router.post(
-  '/send-code-sms',
-  sendVerificationCodeSmSController
-);
+router.post('/send-code-sms', sendVerificationCodeSmSController);
 
 router.post('/request-password-reset', requestPasswordResetController);
 router.post('/reset-password', resetPasswordController);
