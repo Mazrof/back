@@ -41,7 +41,7 @@ export const findGroupMembers = async (groupId: number) => {
   return await prisma.groupMemberships.findMany({
     where: {
       groupId,
-      active: true,
+      // active: true,
     },
     select: {
       groupId: true,
@@ -141,6 +141,7 @@ export const getAdminCounts = async (groupId: number) => {
     where: {
       groupId,
       role: CommunityRole.admin,
+      active: true,
     },
   });
 };

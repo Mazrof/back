@@ -1,6 +1,7 @@
 import { prisma } from '../prisma/client';
 import { AppError } from '../utility';
 import { ParticipiantTypes } from '@prisma/client';
+import { da } from '@faker-js/faker';
 
 export const findAllGroups = async (): Promise<
   {
@@ -96,7 +97,7 @@ export const findGroupById = async (
   if (!group || !group.community.active) {
     throw new AppError('No Group found with that ID', 404);
   }
-
+  delete group.community.active;
   return group;
 };
 
@@ -217,6 +218,7 @@ export const updateGroup = async (
       data: {
         name: data.name,
         privacy: data.privacy,
+        imageURL: data.imageURL,
       },
     });
   }

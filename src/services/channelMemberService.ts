@@ -56,7 +56,7 @@ const checkMember = async (userId: number, channelId: number) => {
         true
       );
     }
-    throw new AppError('Member already exists in this channel', 404);
+    throw new AppError('Member already exists in this channel', 400);
   }
   return null;
 };
@@ -159,15 +159,17 @@ export const deleteChannelMember = async (
   if (!existingMember || !existingMember.active) {
     throw new AppError('Member not found in this channel', 404);
   }
-  if (existingMember.role === CommunityRole.admin) {
-    const adminCount = await channelMemberRepository.getAdminCounts(channelId);
-    if (adminCount === 1) await channelRepository.deleteChannel(channelId);
-  }
-  return await channelMemberRepository.updateChannelMemberStatus(
+  const channelMember = await channelMemberRepository.updateChannelMemberStatus(
     userId,
     channelId,
     false
   );
+
+  if (existingMember.role === CommunityRole.admin) {
+    const adminCount = await channelMemberRepository.getAdminCounts(channelId);
+    if (!adminCount) await channelRepository.deleteChannel(channelId);
+  }
+  return channelMember;
 };
 
 export const joinChannelByInvite = async (

@@ -1,7 +1,7 @@
 import prisma from '../prisma/client';
 import { UpdateChannelMemberData } from '../types';
 import { CommunityRole } from '@prisma/client';
-import { channel } from 'node:diagnostics_channel';
+import { tr } from '@faker-js/faker';
 
 export const findChannelMember = async (userId: number, channelId: number) => {
   return await prisma.channelSubscriptions.findUnique({
@@ -22,7 +22,7 @@ export const findChannelMembers = async (channelId: number) => {
   return await prisma.channelSubscriptions.findMany({
     where: {
       channelId,
-      active: true,
+      // active: true,
     },
     select: {
       channelId: true,
@@ -120,6 +120,7 @@ export const getAdminCounts = async (channelId) => {
     where: {
       channelId,
       role: CommunityRole.admin,
+      active: true,
     },
   });
 };
