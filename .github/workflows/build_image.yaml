@@ -16,6 +16,12 @@ jobs:
         with:
           username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Write Secret Account Key
+        run: |
+         echo $SERVICE_ACCOUNT_KEY >> ./serviceAccountKey.json
+        shell: bash
+        env:
+          SERVICE_ACCOUNT_KEY : ${{secrets.SERVICE_ACCOUNT_KEY}}
       - name: build image
         run: docker build -t ${{ vars.DOCKER_USERNAME }}/back-app:${{ github.run_number }} .
       - name: tag image
