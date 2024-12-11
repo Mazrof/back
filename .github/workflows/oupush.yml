@@ -26,15 +26,6 @@ jobs:
 
       - name: Build
         run: npm run check
-
-      - name: show
-        run: ls -a -l
-      - name: Write Env file
-        run: |
-         echo $SERVICE_ACCOUNT_KEY >> ./serviceAccountKey.json
-        shell: bash
-        env:
-          SERVICE_ACCOUNT_KEY : ${{secrets.SERVICE_ACCOUNT_KEY}}
       - name: Show Again
         run: cat ./serviceAccountKey.json
       - name: Where Am I
