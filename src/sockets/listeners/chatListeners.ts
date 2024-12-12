@@ -270,6 +270,7 @@ export const handleOpenContext = catchSocketError(
     data: { participantId: number }
   ) => {
     const userId = socket.user.id;
+    console.log(userId);
     const updatedMessages = await markMessagesAsRead(
       userId,
       data.participantId

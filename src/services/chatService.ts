@@ -17,6 +17,7 @@ import {
 
 interface Participant {
   communityId: undefined;
+  messagesCount?: number;
   personalChatId: undefined;
   messages: undefined;
   personalChat: undefined | object;
@@ -383,6 +384,40 @@ export const getUserGroupsChannelsChats = async (userId: number) => {
     personalChats: combinedPersonalChats,
   };
 };
+const countUnreadMessage = async (userId: number, participantId: number) => {
+  return prisma.messages.count({
+    where: {
+      senderId: {
+        not: userId,
+      },
+      status: {
+        not: MessageStatus.drafted,
+      },
+      participants: {
+        id: participantId,
+      },
+      OR: [
+        {
+          NOT: {
+            messageReadReceipts: {
+              some: {
+                userId: userId,
+              },
+            },
+          },
+        },
+        {
+          messageReadReceipts: {
+            some: {
+              userId: userId,
+              readAt: null,
+            },
+          },
+        },
+      ],
+    },
+  });
+};
 export const getUserParticipants = async (userId: number) => {
   const userParticipants = await prisma.participants.findMany({
     where: {
@@ -473,6 +508,7 @@ export const getUserParticipants = async (userId: number) => {
     channel: {} as undefined | object,
     group: {} as undefined | object,
   }));
+
   for (const participant of results) {
     if (participant.lastMessage && participant.lastMessage.url) {
       participant.lastMessage.content = await getFileFromFirebase(
@@ -481,7 +517,12 @@ export const getUserParticipants = async (userId: number) => {
       participant.lastMessage.url = undefined;
     }
   }
-
+  for (const participant of results) {
+    participant.messagesCount = await countUnreadMessage(
+      userId,
+      participant.id
+    );
+  }
   results.forEach((participant) => {
     if (participant.type !== 'personalChat') {
       if (participant.communities!.channels) {
@@ -525,6 +566,7 @@ export const getUserParticipants = async (userId: number) => {
       p2.lastMessage.createdAt!.getTime() - p1.lastMessage.createdAt!.getTime()
     );
   });
+
   return results;
 };
 
