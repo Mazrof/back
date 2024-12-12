@@ -43,13 +43,9 @@ router.get(
   OAuthSessionHandler
 );
 
-router.post('/send-code', isAuthenticated, sendVerificationCodeController);
-router.post('/verify-code', isAuthenticated, verifyCodeController);
-router.post(
-  '/send-code-sms',
-  isAuthenticated,
-  sendVerificationCodeSmSController
-);
+router.post('/send-code', sendVerificationCodeController);
+router.post('/verify-code', verifyCodeController);
+router.post('/send-code-sms', sendVerificationCodeSmSController);
 
 router.post('/request-password-reset', requestPasswordResetController);
 router.post('/reset-password', resetPasswordController);

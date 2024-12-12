@@ -62,7 +62,12 @@ describe('Group Service', () => {
 
   describe('findGroupMember', () => {
     it('should find a specific group member', async () => {
-      const mockMember = { role: CommunityRole.admin, active: true };
+      const mockMember = {
+        role: CommunityRole.admin,
+        active: true,
+        hasDownloadPermissions: true,
+        hasMessagePermissions: true,
+      };
       (prisma.groupMemberships.findUnique as jest.Mock).mockResolvedValue(
         mockMember
       );
@@ -71,7 +76,12 @@ describe('Group Service', () => {
       expect(result).toEqual(mockMember);
       expect(prisma.groupMemberships.findUnique).toHaveBeenCalledWith({
         where: { userId_groupId: { userId: 1, groupId: 2 } },
-        select: { role: true, active: true },
+        select: {
+          role: true,
+          active: true,
+          hasDownloadPermissions: true,
+          hasMessagePermissions: true,
+        },
       });
     });
   });
@@ -129,14 +139,26 @@ describe('Group Service', () => {
 
   describe('addGroupMember', () => {
     it('should add a new group member', async () => {
-      const mockData = { groupId: 1, userId: 2, role: CommunityRole.member };
+      const mockData = {
+        groupId: 1,
+        userId: 2,
+        role: CommunityRole.member,
+        hasMessagePermissions: true,
+        hasDownloadPermissions: true,
+      };
       (prisma.groupMemberships.create as jest.Mock).mockResolvedValue(mockData);
 
       const result = await addGroupMember(mockData);
       expect(result).toEqual(mockData);
       expect(prisma.groupMemberships.create).toHaveBeenCalledWith({
         data: mockData,
-        select: { groupId: true, userId: true, role: true },
+        select: {
+          groupId: true,
+          userId: true,
+          role: true,
+          hasDownloadPermissions: true,
+          hasMessagePermissions: true,
+        },
       });
     });
   });

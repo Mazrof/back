@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import * as profileService from '../services/profileService';
-import * as profileController from '../controllers/profileController';
-import { AppError } from '../utility';
+import * as profileService from '../../services/profileService';
+import * as profileController from '../../controllers/profileController';
+import { AppError } from '../../utility';
 
-jest.mock('../services/profileService'); // Mock the profileService module
+jest.mock('../../services/profileService'); // Mock the profileService module
 
 describe('Profile Controller', () => {
   let mockRequest: Partial<Request>;

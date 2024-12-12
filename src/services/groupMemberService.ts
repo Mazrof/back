@@ -10,6 +10,7 @@ export const checkGroupMemberPermission = async (
   userId: number,
   groupId: number
 ) => {
+  await findGroup(groupId);
   const groupMember = await groupMemberRepository.findExistingMember(
     userId,
     groupId
@@ -23,6 +24,7 @@ export const checkGroupMemberPermission = async (
 };
 
 export const checkGroupMember = async (userId: number, groupId: number) => {
+  await findGroup(groupId);
   const groupMember = await groupMemberRepository.findExistingMember(
     userId,
     groupId
@@ -95,7 +97,9 @@ export const addGroupMember = async (
   adminId: number,
   groupId: number,
   userId: number,
-  role: CommunityRole
+  role: CommunityRole,
+  hasDownloadPermissions: boolean,
+  hasMessagePermissions: boolean
 ) => {
   // Check if there is a group
   await findGroup(groupId);
@@ -104,8 +108,10 @@ export const addGroupMember = async (
   await checkAdmin(adminId, groupId);
 
   // Check if the member already exists in the group
-  await checkMember(userId, groupId);
-
+  const member = await checkMember(userId, groupId);
+  if (member) {
+    return member;
+  }
   // check the group size
   await checkCapacity(groupId);
   // Create a new group membership for the member
@@ -113,6 +119,25 @@ export const addGroupMember = async (
     groupId,
     userId,
     role,
+    hasDownloadPermissions,
+    hasMessagePermissions,
+  });
+};
+
+export const addGroupCreator = async (
+  groupId: number,
+  userId: number,
+  role: CommunityRole
+) => {
+  // Check if the user is not admin
+  await checkUser(userId);
+  // Create a new group membership for the member
+  return await groupMemberRepository.addGroupMember({
+    groupId,
+    userId,
+    role,
+    hasDownloadPermissions: true,
+    hasMessagePermissions: true,
   });
 };
 
@@ -173,7 +198,7 @@ export const deleteGroupMember = async (
     userId,
     groupId
   );
-  if (!existingMember) {
+  if (!existingMember || !existingMember.active) {
     throw new AppError('Member not found in this group', 404);
   }
 
@@ -183,12 +208,14 @@ export const deleteGroupMember = async (
       throw new AppError('Not Authorized', 403);
     }
   }
-
-  return await groupMemberRepository.updateGroupMemberStatus(
+  const groupMember = await groupMemberRepository.updateGroupMemberStatus(
     userId,
     groupId,
     false
   );
+  const adminCount = await groupMemberRepository.getAdminCounts(groupId);
+  if (!adminCount) await groupRepository.deleteGroup(groupId);
+  return groupMember;
 };
 
 export const joinGroupByInvite = async (
@@ -218,5 +245,7 @@ export const joinGroupByInvite = async (
     groupId: group.id,
     userId,
     role,
+    hasDownloadPermissions: false,
+    hasMessagePermissions: false,
   });
 };

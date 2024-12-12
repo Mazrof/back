@@ -7,6 +7,7 @@ import {
   updateChannel,
 } from '../controllers/channelController';
 import channelMemberRouter from './channelMemberRoutes';
+import { inviteChannelMember } from '../controllers/channelMemberController';
 
 const router = express.Router({
   mergeParams: true,
@@ -19,6 +20,8 @@ router
   .route('/')
   .get(getAllChannels) // Fetch all Channels based on privacy
   .post(createChannel); // Create a new Channel
+
+router.route('/invitation').post(inviteChannelMember);
 
 // Use ChannelMembersRouter for routes related to Channel members
 router.use('/:channelId/members', channelMemberRouter);

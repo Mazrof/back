@@ -2,16 +2,24 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export const findProfilesByUsername = async (username: string) => {
+export const findProfilesByUsername = async (query: string) => {
   return prisma.$queryRaw`
         SELECT id,
                username               AS name,
+               email,
                photo,
+               phone,
                screen_name            AS screenName,
                profile_pic_visibility AS profilePicVisibility
         FROM users
-        WHERE LOWER(username) LIKE LOWER(${`%${username}%`});
-    `;
+        WHERE LOWER(username) LIKE LOWER(${`%${query}%`})
+           OR LOWER(email) LIKE LOWER(${`%${query}%`})
+           OR (phone LIKE ${`${query}%`})
+        ORDER BY CASE
+                     WHEN LOWER(username) LIKE LOWER(${`${query}%`}) THEN 1
+                     WHEN LOWER(email) LIKE LOWER(${`${query}%`}) THEN 2
+                     ELSE 3
+                     END`;
 };
 
 export const findGroupByGroupName = async (groupName: string) => {

@@ -24,7 +24,7 @@ export const createChannel = async (data: {
   privacy: boolean;
   creatorId: number;
   canAddComments: boolean;
-  admins: number[];
+  imageURL: string | null;
 }) => {
   const token: string = generateInviteToken();
   const invitationLink: string = crypto
@@ -43,23 +43,22 @@ export const createChannel = async (data: {
   await channelMemberService.addChannelMember(
     data.creatorId,
     channel.id,
-    CommunityRole.admin
+    CommunityRole.admin,
+    true
   );
 
-  for (const admin of data.admins) {
-    await channelMemberService.addChannelMember(
-      admin,
-      channel.id,
-      CommunityRole.admin
-    );
-  }
   return channel;
 };
 
 export const updateChannel = async (
   channelId: number,
   adminId: number,
-  data: { name?: string; privacy?: boolean; canAddComments?: boolean }
+  data: {
+    name?: string;
+    privacy?: boolean;
+    canAddComments?: boolean;
+    imageURL: string | null;
+  }
 ) => {
   // check permissions
   await checkPermission(adminId, channelId);
