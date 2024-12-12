@@ -115,14 +115,15 @@ model Groups {
   @@map("groups")
 }
 
-model Media {
-  id         Int          @id @default(autoincrement())
-  mediaType  String?      @map("media_type") @db.VarChar(50)
-  mediaUrl   String?      @map("media_url")
-  storyMedia StoryMedia[]
-
-  @@map("media")
-}
+//
+// model Media {
+//   id         Int          @id @default(autoincrement())
+//   mediaType  String?      @map("media_type") @db.VarChar(50)
+//   mediaUrl   String?      @map("media_url")
+//   storyMedia StoryMedia[]
+//
+//   @@map("media")
+// }
 
 model MessageMentions {
   userId    Int      @map("user_id")
@@ -219,7 +220,8 @@ model Stories {
   createdAt  DateTime?    @default(now()) @map("created_at") @db.Timestamp(6)
   users      Users?       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   storyViews StoryViews[]
-  storyMedia StoryMedia[]
+  // storyMedia StoryMedia[]
+  mediaUrl   String?
 
   @@map("stories")
 }
@@ -234,15 +236,16 @@ model StoryViews {
   @@map("story_views")
 }
 
-model StoryMedia {
-  storyId Int     @map("story_id")
-  mediaId Int     @map("media_id")
-  media   Media   @relation(fields: [mediaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  stories Stories @relation(fields: [storyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@id([storyId, mediaId])
-  @@map("storymedia")
-}
+//
+// model StoryMedia {
+//   storyId Int     @map("story_id")
+//   mediaId Int     @map("media_id")
+//   media   Media   @relation(fields: [mediaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+//   stories Stories @relation(fields: [storyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+//
+//   @@id([storyId, mediaId])
+//   @@map("storymedia")
+// }
 
 model UserBlacklist {
   blockerId   Int   @map("blocker_id")
@@ -274,7 +277,7 @@ model Users {
   profilePicVisibility  Privacy?               @default(everyone) @map("profile_pic_visibility")
   storyVisibility       Privacy?               @default(everyone) @map("story_visibility")
   readReceiptsEnabled   Privacy?               @default(everyone) @map("read_receipts_enabled")
-  lastSeenVisibility    Boolean?               @default(true) @map("last_seen_visibility")
+  lastSeenVisibility    Privacy?               @default(everyone) @map("last_seen_visibility")
   groupAddPermission    Boolean?               @default(true) @map("group_add_permission")
   isEmailVerified       Boolean?               @default(false) @map("is_email_verified")
   isPhoneVerified       Boolean?               @default(false) @map("is_phone_verified")

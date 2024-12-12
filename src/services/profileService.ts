@@ -33,9 +33,9 @@ export const createProfile = async (data: any) => {
   if (data.email && !isValidEmail(data.email)) {
     throw new AppError('Invalid email format', 400);
   }
-  // if (data.photo) {
-  //   data.photo = await uploadFileToFirebase('dsdsdsd');
-  // }
+  if (data.photo) {
+    data.photo = await uploadFileToFirebase('dsdsdsd');
+  }
   return await profileRepository.createProfile(data);
 };
 

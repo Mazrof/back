@@ -25,7 +25,6 @@ import { Chat } from '../chat';
 import { updateUserById } from '../../repositories/userRepository';
 import { catchSocketError } from '../../utility';
 import prisma from '../../prisma/client';
-import { channel } from 'node:diagnostics_channel';
 
 export interface NewMessages extends Messages {
   messageMentions: (number | { userId: number })[];
@@ -165,7 +164,11 @@ export const handleNewMessage = catchSocketError(
         ) as number;
         if (userId !== message.senderId && !userSockets.includes(userId)) {
           userSockets.push(userId);
-          socket.to(userId.toString()).emit('message:receive', createdMessage);
+          socket.to(userId.toString()).emit('message:receive', {
+            ...createdMessage,
+            content: message.content,
+            url: undefined,
+          });
           messageReadReceipts.push(
             await insertMessageRecipient(userId, createdMessage)
           );
@@ -174,7 +177,9 @@ export const handleNewMessage = catchSocketError(
     }
     io.to(message.senderId.toString()).emit('message:receive', {
       ...createdMessage,
+      content: message.content,
       messageReadReceipts,
+      url: undefined,
     });
 
     if (message.durationInMinutes) {
@@ -225,16 +230,15 @@ export const handleEditMessage = catchSocketError(
       return;
     }
     let url;
-    if (data.content) {
-      if (message.url) {
-        await deleteFileFromFirebase(message.url);
-      }
-      if (data.content.length > 100) {
-        url = await uploadFileToFirebase(data.content);
-        data.content = null; // to avoid saving it in db
-      } else {
-        url = null;
-      }
+    if (message.url) {
+      await deleteFileFromFirebase(message.url);
+    }
+    const contentToBeSent = data.content;
+    if (data.content.length > 100) {
+      url = await uploadFileToFirebase(data.content);
+      data.content = null; // to avoid saving it in db
+    } else {
+      url = null;
     }
     const { content } = data;
     const updatedMessage = await updateMessageById(data.id, {
@@ -245,12 +249,16 @@ export const handleEditMessage = catchSocketError(
       io.to(updatedMessage.senderId.toString()).emit('message:edited', {
         ...updatedMessage,
         messageReadReceipts: undefined,
+        url: undefined,
+        content: contentToBeSent,
       });
       return;
     }
     io.to(updatedMessage.participantId.toString()).emit('message:edited', {
       ...updatedMessage,
       messageReadReceipts: undefined,
+      url: undefined,
+      content: contentToBeSent,
     });
   }
 );
@@ -308,6 +316,13 @@ export const handleNewConnection = catchSocketError(
   }
 );
 
+const handleCreateCall = catchSocketError(
+  async (
+    socket: MySocket,
+    callback: (arg: object) => void,
+    callDetails: object
+  ) => {}
+);
 // Helper function to retrieve all participant IDs
 const getAllParticipantIds = async (userId: number): Promise<number[]> => {
   const [personalChatIds, groupIds, channelIds] = await Promise.all([
@@ -350,6 +365,9 @@ export const disconnectAllUser = () => {
       });
     });
 };
+//todo delete this
+// const users = {}; // Store userID -> socketID mapping
+
 export const setupSocketEventHandlers = (socket: Socket) => {
   socket.on(
     'message:sent',
@@ -378,7 +396,34 @@ export const setupSocketEventHandlers = (socket: Socket) => {
       await handleOpenContext(socket, callback, data);
     }
   );
-  socket.on('disconnect', async () => {
-    await disconnectedHandler(socket);
-  });
+
+  // socket.on('register', (userId) => {
+  //   users[userId] = socket.id;
+  //   console.log(`User registered: ${userId} -> ${socket.id}`);
+  // });
+  //
+  // // Forward WebRTC offers, answers, and ICE candidates
+  // socket.on('call-user', ({ to, offer }) => {
+  //   const targetSocketId = users[to];
+  //   if (targetSocketId) {
+  //     io.to(targetSocketId).emit('call-made', { offer, from: socket.id });
+  //   }
+  // });
+  //
+  // socket.on('answer-call', ({ to, answer }) => {
+  //   io.to(to).emit('call-answered', { answer });
+  // });
+  //
+  // socket.on('ice-candidate', ({ to, candidate }) => {
+  //   io.to(to).emit('ice-candidate', { candidate });
+  // });
+  //
+  // // Handle disconnect
+  // socket.on('disconnect', () => {
+  //   const userId = Object.keys(users).find((key) => users[key] === socket.id);
+  //   if (userId) {
+  //     delete users[userId];
+  //     console.log(`User disconnected: ${userId}`);
+  //   }
+  // });
 };
