@@ -7,7 +7,11 @@ import {
 import { getFileFromFirebase } from '../third_party_services';
 
 export const getUserChats = catchAsync(async (req, res) => {
-  const data = await getUserParticipants(req.session.user.id);
+  let data = await getUserParticipants(req.session.user.id);
+  console.log(req.query, 'params');
+  if (req.query.type) {
+    data = data.filter((participant) => participant.type === req.query.type);
+  }
   res.status(200).json(data);
 });
 
