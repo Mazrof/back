@@ -5,56 +5,81 @@ export const uploadFileToFirebase = async (
 ): Promise<string> => {
   try {
     const randomName = `file_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+    console.log('Generated file name:', randomName);
+
+    // Convert the string into a Buffer
     const fileBuffer = Buffer.from(messageContent, 'utf-8');
+    console.log('Buffer created successfully.');
+
     const file = bucket.file(`uploads/${randomName}.txt`);
     await file.save(fileBuffer);
+    console.log('Storage reference created:');
     const [downloadUrl] = await file.getSignedUrl({
       action: 'read',
-      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30), // Expiration date for the URL after 30 days
     });
+    console.log('Download URL obtained:', downloadUrl);
+
     return downloadUrl;
   } catch (error) {
     console.error('Error in uploadFileToFirebase:', error);
-    throw error;
+    throw error; // Re-throw for higher-level handling
   }
 };
-
 export async function deleteFileFromFirebase(fileURL: string) {
   try {
     if (!fileURL) {
       throw new Error('No URL provided');
     }
+
+    // Parse the URL to extract the file path
     const url = new URL(fileURL);
     let path = decodeURIComponent(url.pathname.split('/uploads/')[1]); // Adjust based on your URL structure
+
+    // Ensure that the extracted path is valid
     if (!path) {
       throw new Error('Invalid file path extracted from URL');
     }
     path = 'uploads/' + path;
+    // Get a reference to the file in Firebase Storage
     const file = bucket.file(path);
+
+    // Delete the file
     await file.delete();
+    console.log(`File ${path} deleted successfully.`);
   } catch (error) {
     console.error('Error deleting file:', error);
     throw error;
   }
 }
-
 export async function getFileFromFirebase(fileURL: string): Promise<string> {
   try {
     if (!fileURL) {
-      return null;
+      throw new Error('No URL provided');
     }
+
+    // Parse the URL to extract the file path
     const url = new URL(fileURL);
     let path = decodeURIComponent(url.pathname.split('/uploads/')[1]); // Adjust based on your URL structure
+
+    // Ensure that the extracted path is valid
     if (!path) {
       throw new Error('Invalid file path extracted from URL');
     }
     path = 'uploads/' + path;
+
+    // Get a reference to the file in Firebase Storage
     const file = bucket.file(path);
+
+    // Download the file content
     const [fileBuffer] = await file.download();
+    console.log(`File ${path} downloaded successfully.`);
+
+    // Convert the Buffer to a string (assuming UTF-8 encoding)
     const fileContent = fileBuffer.toString('utf-8');
     return fileContent;
   } catch (error) {
     console.error('Error getting file from Firebase:', error);
-    return null;
+    throw error;
   }
 }

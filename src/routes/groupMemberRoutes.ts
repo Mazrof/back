@@ -12,7 +12,7 @@ const router: Router = express.Router({
 });
 
 // Routes for group members
-router.route('/invitation').post(inviteGroupMember);
+
 router
   .route('')
   .get(getGroupMembers) // Anyone can access

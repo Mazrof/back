@@ -66,7 +66,7 @@ export const addGroupMember = catchAsync(
 
 export const inviteGroupMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const token: string = req.body;
+    const token: string = req.body.token;
     const memberId: number = req.session.user.id;
     const role = req.body.role;
 

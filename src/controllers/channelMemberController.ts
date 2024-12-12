@@ -90,14 +90,13 @@ export const updateChannelMember = catchAsync(
 
 export const inviteChannelMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const token: string = req.body;
+    const token: string = req.body.token;
     const memberId: number = req.session.user.id;
-    const role = req.body.role;
 
     const member: {
       userId: number;
       channelId: number;
-    } = await channelMemberService.joinChannelByInvite(token, memberId, role);
+    } = await channelMemberService.joinChannelByInvite(token, memberId);
 
     return res.status(201).json({
       status: 'success',

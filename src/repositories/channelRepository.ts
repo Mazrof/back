@@ -12,6 +12,7 @@ export const findAllChannels = async () => {
     select: {
       id: true,
       canAddComments: true,
+      invitationLink: true,
       community: {
         select: {
           name: true,
@@ -41,6 +42,7 @@ export const findChannelById = async (
     select: {
       id: true,
       canAddComments: true,
+      invitationLink: true,
       community: {
         select: {
           name: true,
@@ -51,7 +53,6 @@ export const findChannelById = async (
       },
     },
   });
-  console.log(channel);
   if (!channel || !channel.community.active) {
     throw new AppError('No channel found with that ID', 404);
   }
@@ -109,6 +110,7 @@ export const createChannel = async (data: {
     select: {
       id: true,
       canAddComments: true,
+      invitationLink: true,
       community: {
         select: {
           name: true,

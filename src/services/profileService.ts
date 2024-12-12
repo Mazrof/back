@@ -42,7 +42,6 @@ export const createProfile = async (data: any) => {
   if (data.photo) {
     //  data.photo = await uploadFileToFirebase(data.photo);
   }
-  console.log(data.photo);
   return await profileRepository.createProfile(data);
 };
 
