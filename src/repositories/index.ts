@@ -2,6 +2,7 @@
 
 //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> NO BUSINESS LOGIC HERE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-export * from './groupMemberRepository';
+export * from './channelMemberRepository';
 export * from './groupRepository';
 export * from './channelRepository';
+export * from './adminRepository';

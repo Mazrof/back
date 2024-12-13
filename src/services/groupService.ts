@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import * as groupRepository from '../repositories';
 import * as groupMemberService from '../services';
 import { CommunityRole } from '@prisma/client';
-import { AppError } from '../utility';
+import { checkAdmin } from '../services';
 
 export const checkPermission = async (adminId: number, groupId: number) => {
   await groupMemberService.checkGroupMemberPermission(adminId, groupId);
@@ -99,5 +99,6 @@ export const applyGroupFilter = async (
   adminId: number;
   groupId: number;
 } | null> => {
+  await checkAdmin(adminId);
   return await groupRepository.applyGroupFilter(groupId, adminId);
 };

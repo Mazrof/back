@@ -16,7 +16,7 @@ export const checkGroupMemberPermission = async (
     groupId
   );
   if (!groupMember || !groupMember.active) {
-    throw new AppError('this is no user with this id in the group', 404);
+    throw new AppError('this is no user with this id in the group', 403);
   }
   if (groupMember.role !== CommunityRole.admin) {
     throw new AppError('Not Authorized', 403);
@@ -30,7 +30,7 @@ export const checkGroupMember = async (userId: number, groupId: number) => {
     groupId
   );
   if (!groupMember || !groupMember.active) {
-    throw new AppError('this is no user with this id', 404);
+    throw new AppError('this is no user with this id in the group', 403);
   }
   return groupMember;
 };
@@ -49,7 +49,7 @@ export const findGroup = async (groupId: number) => {
   }
 };
 
-export const checkAdmin = async (adminId: number, groupId: number) => {
+export const checkGroupAdmin = async (adminId: number, groupId: number) => {
   if (!adminId) {
     throw new AppError('AdminId is missing', 400);
   }
@@ -105,7 +105,7 @@ export const addGroupMember = async (
   await findGroup(groupId);
 
   // Check if the user is an admin in the group
-  await checkAdmin(adminId, groupId);
+  await checkGroupAdmin(adminId, groupId);
 
   // Check if the member already exists in the group
   const member = await checkMember(userId, groupId);
@@ -150,7 +150,7 @@ export const updateGroupMember = async (
   // Check if there is a group
   await findGroup(groupId);
   // Check if the user is an admin in the group
-  await checkAdmin(adminId, groupId);
+  await checkGroupAdmin(adminId, groupId);
 
   const existingMember = await groupMemberRepository.findExistingMember(
     userId,
