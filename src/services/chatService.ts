@@ -31,7 +31,11 @@ interface Participant {
     | null
     | undefined;
   id: number;
-  secondUser?: { id: number };
+  secondUser?: {
+    id: number;
+    lastSeenVisibility?: Privacy;
+    profilePicVisibility?: Privacy;
+  };
   type: $Enums.ParticipiantTypes | string;
 }
 export const createMessage = async (data: any) => {
@@ -468,6 +472,8 @@ export const getUserParticipants = async (userId: number) => {
               publicKey: true,
               lastSeen: true,
               activeNow: true,
+              profilePicVisibility: true,
+              lastSeenVisibility: true,
             },
           },
           users2: {
@@ -480,6 +486,8 @@ export const getUserParticipants = async (userId: number) => {
               publicKey: true,
               lastSeen: true,
               activeNow: true,
+              profilePicVisibility: true,
+              lastSeenVisibility: true,
             },
           },
         },
@@ -554,6 +562,7 @@ export const getUserParticipants = async (userId: number) => {
       if (participant!.user2!.id === userId) {
         participant.secondUser = participant.user1;
       }
+
       participant.user1 = undefined;
       participant.user2 = undefined;
     }
