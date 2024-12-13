@@ -3,24 +3,24 @@ import { Server, Socket } from 'socket.io';
 import {
   disconnectedHandler,
   setupSocketEventHandlers,
-} from '../sockets/listeners/chatListeners';
-import logger from '../utility/logger';
-import { updateUserById } from '../repositories/userRepository';
-import { Chat } from '../sockets/chat';
+} from '../../sockets/listeners/chatListeners';
+import logger from '../../utility/logger';
+import { updateUserById } from '../../repositories/userRepository';
+import { Chat } from '../../sockets/chat';
 
 const mockSocket: Partial<Socket<DefaultEventsMap, DefaultEventsMap>> = {
   on: jest.fn(),
   emit: jest.fn(),
 };
-jest.mock('../server', () => ({ io: jest.fn() }));
+jest.mock('../../server', () => ({ io: jest.fn() }));
 
-jest.mock('../utility/logger');
-jest.mock('../services/userService');
-jest.mock('../sockets/chat');
-jest.mock('../repositories/userRepository');
+jest.mock('../../utility/logger');
+jest.mock('../../services/userService');
+jest.mock('../../sockets/chat');
+jest.mock('../../repositories/userRepository');
 
-jest.mock('../config/firebase');
-jest.mock('../services/chatService');
+jest.mock('../../config/firebase');
+jest.mock('../../services/chatService');
 
 describe('setupSocketEventHandlers', () => {
   beforeEach(() => {
