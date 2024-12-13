@@ -6,7 +6,6 @@ const prisma = {
   participants: {
     findMany: jest.fn(),
   },
-  $co,
 };
 
 jest.mock('@prisma/client', () => ({
