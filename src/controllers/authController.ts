@@ -83,7 +83,6 @@ export const verifyCodeController = catchAsync(
     }
 
     if (await verifyCode(email, code)) {
-      await updateUserById(req.session.user!.id, { isEmailVerified: true });
       res
         .status(200)
         .json({ status: 'success', data: { message: 'Code is valid' } });
@@ -125,7 +124,6 @@ export const VerifyCodeSMSController = catchAsync(
     }
 
     if (await verifyCode(phoneNumber, code)) {
-      await updateUserById(req.session.user!.id, { isPhoneVerified: true });
       res
         .status(200)
         .json({ status: 'success', data: { message: 'Code is valid' } });
