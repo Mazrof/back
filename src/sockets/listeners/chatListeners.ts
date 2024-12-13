@@ -317,13 +317,13 @@ export const handleNewConnection = catchSocketError(
   }
 );
 
-const handleCreateCall = catchSocketError(
-  async (
-    socket: MySocket,
-    callback: (arg: object) => void,
-    callDetails: object
-  ) => {}
-);
+// const handleCreateCall = catchSocketError(
+//   async (
+//     socket: MySocket,
+//     callback: (arg: object) => void,
+//     callDetails: object
+//   ) => {}
+// );
 // Helper function to retrieve all participant IDs
 const getAllParticipantIds = async (userId: number): Promise<number[]> => {
   const [personalChatIds, groupIds, channelIds] = await Promise.all([
@@ -366,8 +366,6 @@ export const disconnectAllUser = () => {
       });
     });
 };
-//todo delete this
-// const users = {}; // Store userID -> socketID mapping
 
 export const setupSocketEventHandlers = (socket: Socket) => {
   socket.on(
@@ -397,34 +395,59 @@ export const setupSocketEventHandlers = (socket: Socket) => {
       await handleOpenContext(socket, callback, data);
     }
   );
+  socket.on('disconnect', async () => {
+    await disconnectedHandler(socket);
+  });
+  //One to One voice call setup
+  socket.on('call-user', ({ targetId, offer }) => {
+    io.to(targetId).emit('incoming-call', { from: socket.id, offer });
+  });
+  socket.on('answer-call', ({ callerId, answer }) => {
+    io.to(callerId).emit('call-answered', { from: socket.id, answer });
+  });
+  socket.on('ice-candidate', ({ targetId, candidate }) => {
+    io.to(targetId).emit('ice-candidate', { from: socket.id, candidate });
+  });
 
-  // socket.on('register', (userId) => {
-  //   users[userId] = socket.id;
-  //   console.log(`User registered: ${userId} -> ${socket.id}`);
-  // });
-  //
-  // // Forward WebRTC offers, answers, and ICE candidates
-  // socket.on('call-user', ({ to, offer }) => {
-  //   const targetSocketId = users[to];
-  //   if (targetSocketId) {
-  //     io.to(targetSocketId).emit('call-made', { offer, from: socket.id });
-  //   }
-  // });
-  //
-  // socket.on('answer-call', ({ to, answer }) => {
-  //   io.to(to).emit('call-answered', { answer });
-  // });
-  //
-  // socket.on('ice-candidate', ({ to, candidate }) => {
-  //   io.to(to).emit('ice-candidate', { candidate });
-  // });
-  //
-  // // Handle disconnect
-  // socket.on('disconnect', () => {
-  //   const userId = Object.keys(users).find((key) => users[key] === socket.id);
-  //   if (userId) {
-  //     delete users[userId];
-  //     console.log(`User disconnected: ${userId}`);
-  //   }
-  // });
+  //Group voice call setup
+  socket.on('start-room', ({ roomId, participinatId }) => {
+    socket.join(roomId);
+    //TODO:I may need to store the current rooms
+    io.to(participinatId.toString()).emit('room-created', {
+      roomId,
+      from: socket.id,
+    });
+  });
+  socket.on('join-room', ({ roomId }) => {
+    if (roomId) {
+      socket.join(roomId);
+      io.to(roomId).emit('user-joined', {
+        userId: socket.id,
+      });
+    }
+  });
+  socket.on('offer', ({ roomId, offer, to }) => {
+    if (roomId) {
+      socket.to(roomId).emit('offer', { from: socket.id, offer, to });
+    }
+  });
+
+  socket.on('answer', ({ roomId, answer, to }) => {
+    if (roomId) {
+      socket.to(roomId).emit('answer', { from: socket.id, answer, to });
+    }
+  });
+
+  socket.on('group-ice-candidate', ({ roomId, candidate }) => {
+    if (roomId) {
+      socket.to(roomId).emit('ice-candidate', { from: socket.id, candidate });
+    }
+  });
+
+  socket.on('leave-room', ({ roomId }) => {
+    if (roomId) {
+      socket.leave(roomId);
+      io.to(roomId).emit('user-left', { userId: socket.id });
+    }
+  });
 };
