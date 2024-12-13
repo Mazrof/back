@@ -291,6 +291,7 @@ export interface SocketRequest extends IncomingMessage {
   };
 }
 export interface MySocket extends Socket {
+  userRooms?: string[];
   user?: { id: number };
   request: SocketRequest;
 }
@@ -314,6 +315,16 @@ export const handleNewConnection = catchSocketError(
     notifyParticipants(insertedData, socket);
     // Set up socket event handlers
     setupSocketEventHandlers(socket);
+    const rooms = Array.from(socket.rooms);
+    socket.userRooms = rooms;
+    console.log(rooms, 'rooms');
+    rooms.forEach((room) => {
+      socket.broadcast.to(room).emit('user:connected', {
+        socketId: socket.id,
+        userId: socket.user.id,
+        connected: true,
+      });
+    });
   }
 );
 
@@ -348,7 +359,17 @@ const notifyParticipants = (
 
 export const disconnectedHandler = catchSocketError(
   async (socket: MySocket) => {
-    logger.info(`User disconnected: ${socket.id.toString()}`);
+    logger.info(`User disconnected: ${socket.user.id.toString()}`);
+    const rooms = Array.from(socket.userRooms);
+    console.log(rooms);
+    rooms.forEach((room) => {
+      socket.broadcast.to(room).emit('user:disconnected', {
+        socketId: socket.id,
+        userId: socket.user.id,
+        connected: false,
+      });
+    });
+
     const userId = Chat.getInstance().removeUser(socket.id);
     await updateUserById(userId, {
       activeNow: false,
@@ -396,6 +417,7 @@ export const setupSocketEventHandlers = (socket: Socket) => {
     }
   );
   socket.on('disconnect', async () => {
+    console.log(socket.rooms, 'disconnected');
     await disconnectedHandler(socket);
   });
   //One to One voice call setup
