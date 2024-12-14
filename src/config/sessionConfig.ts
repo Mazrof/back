@@ -17,6 +17,6 @@ export const sessionConfig = {
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 60 * 60, // 1 hour
+    maxAge: 1000 * 60 * 60*10, // 10 hour
   },
 };

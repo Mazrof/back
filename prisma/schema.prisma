@@ -260,6 +260,7 @@ model Users {
   isPhoneVerified       Boolean?               @default(false) @map("is_phone_verified")
   privateKey            String?                @map("private_key")
   publicKey             String                 @map("public_key")
+  fcmtokens             String[]               @default([]) 
   lastSeenVisibility    Privacy?               @default(everyone) @map("last_seen_visibility")
   bannedUsers           BannedUsers[]
   channelSubscriptions  ChannelSubscriptions[]
@@ -276,6 +277,7 @@ model Users {
   blockedByUsers        UserBlacklist[]        @relation("UserBlacklist_BlockedIdToUsers")
   blockerUsers          UserBlacklist[]        @relation("UserBlacklist_BlockerIdToUsers")
   voiceCalls            VoiceCalls[]
+  
 
   @@map("users")
 }

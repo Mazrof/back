@@ -11,3 +11,12 @@ export interface UpdateChannelMemberData {
   role?: CommunityRole;
   hasDownloadPermissions?: boolean;
 }
+
+export interface FCMNotification {
+
+  title: string;
+  body: string;
+  image?: string;
+
+}
+

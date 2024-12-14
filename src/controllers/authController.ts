@@ -14,7 +14,6 @@ import { signupSchema } from '../schemas/authSchema';
 import { sendVerificationCode, verifyCode } from '../services/emailService';
 import { sendVerificationCodeSMS } from '../services/smsService';
 import crypto from 'crypto';
-import { updateUserById } from '../repositories/userRepository';
 
 export const signup = catchAsync(async (req: Request, res: Response) => {
   const validatedData = signupSchema.parse(req.body); // Zod validation
@@ -29,8 +28,8 @@ export const login = catchAsync(async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   const user = await authenticateUser(email, password);
+  user.password = undefined;
   if (!user) throw new AppError('Invalid credentials', 401);
-  console.log(user);
   if ('bannedUsers' in user) {
     req.session.user = { id: user.id, userType: 'Admin',user }; // Store user in session
     res.status(200).json({
@@ -83,7 +82,6 @@ export const verifyCodeController = catchAsync(
     }
 
     if (await verifyCode(email, code)) {
-      await updateUserById(req.session.user!.id, { isEmailVerified: true });
       res
         .status(200)
         .json({ status: 'success', data: { message: 'Code is valid' } });
@@ -125,7 +123,6 @@ export const VerifyCodeSMSController = catchAsync(
     }
 
     if (await verifyCode(phoneNumber, code)) {
-      await updateUserById(req.session.user!.id, { isPhoneVerified: true });
       res
         .status(200)
         .json({ status: 'success', data: { message: 'Code is valid' } });
@@ -172,3 +169,4 @@ export const resetPasswordController = catchAsync(
     });
   }
 );
+

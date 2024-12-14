@@ -1,4 +1,4 @@
-import express, { Request, Response, Application } from 'express';
+import  { Request, Response, Application } from 'express';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import cors from 'cors';
@@ -12,11 +12,12 @@ import passport from 'passport';
 import session from 'express-session';
 import { sessionConfig } from './config/sessionConfig';
 import { corsConfig } from './config/corsConfig';
+import express from "express";
 
 export const sessionMiddleware = session(sessionConfig);
 
 export default async (app: Application) => {
-  // Serve static files from the 'public' directory
+  // Serve static files from the 'public' director
   app.use(express.static(path.join(__dirname, '../public')));
 
   // Implement CORS
@@ -57,6 +58,7 @@ export default async (app: Application) => {
   app.get('/', (req: Request, res: Response) => {
     res.status(200).json({ msg: 'hello world, MAZROF COMMUNITY' });
   });
+
   // API routes
   app.use('/api', apiRoutes);
 
