@@ -1,7 +1,14 @@
 import { prisma } from '../prisma/client';
 import { use } from 'passport';
 
-export const createStory = async (userId, content, expiryDate, media) => {
+export const createStory = async (
+  userId,
+  content,
+  expiryDate,
+  media,
+  mediaType,
+  color
+) => {
   try {
     const story = await prisma.stories.create({
       data: {
@@ -9,6 +16,8 @@ export const createStory = async (userId, content, expiryDate, media) => {
         content,
         expiryDate,
         mediaUrl: media,
+        mediaType,
+        color,
       },
     });
   } catch (error) {
@@ -27,6 +36,8 @@ export const findStoryById = async (id: number) => {
       mediaUrl: true,
       createdAt: true,
       expiryDate: true,
+      mediaType: true,
+      color: true,
     },
   });
 };
@@ -66,6 +77,8 @@ export const findStoriesByUserId = async (userId: number) => {
       mediaUrl: true,
       createdAt: true,
       expiryDate: true,
+      mediaType: true,
+      color: true,
     },
     orderBy: {
       createdAt: 'asc',
@@ -89,4 +102,29 @@ export const checkStoryExpiry = async (story) => {
     return false;
   }
   return true;
+};
+
+export const findUserPersonalChats = async (userId: number) => {
+  const chats = await prisma.personalChat.findMany({
+    where: {
+      OR: [{ user1Id: userId }, { user2Id: userId }],
+    },
+  });
+  return chats.map((chat) => ({
+    chatId: chat.id,
+    otherUserId: chat.user1Id === userId ? chat.user2Id : chat.user1Id,
+  }));
+};
+
+export const findProfileByIdMinimal = async (id: number) => {
+  return prisma.users.findUnique({
+    where: { id },
+    select: {
+      username: true,
+      screenName: true,
+      photo: true,
+      profilePicVisibility: true,
+      storyVisibility: true,
+    },
+  });
 };
