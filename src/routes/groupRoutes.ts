@@ -5,6 +5,7 @@ import {
   deleteGroup,
   getAllGroups,
   updateGroup,
+  applyContentFilter,
 } from '../controllers/groupController';
 import groupMemberRouter from './groupMemberRoutes';
 import { inviteGroupMember } from '../controllers/groupMemberController';

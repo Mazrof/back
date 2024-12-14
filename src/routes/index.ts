@@ -8,9 +8,7 @@ import storiesRouter from './storiesRoutes';
 import searchRouter from './searchRoutes';
 import userRouter from './userRoutes';
 import chatRoutes from './chatRoutes';
-import notifactionsRouter from './notificationsRoutes';
 import { isAuthenticated } from '../middlewares/authMiddleware';
-
 const router = express.Router();
 
 router.use('/v1/auth', authRouter);
@@ -23,6 +21,5 @@ router.use('/v1/stories', storiesRouter);
 router.use('/v1/search', searchRouter);
 router.use('/v1/user', userRouter);
 router.use('/v1/chats', chatRoutes);
-router.use('/v1/notifications', notifactionsRouter);
 
 export default router;
