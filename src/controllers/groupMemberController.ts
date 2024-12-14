@@ -41,12 +41,18 @@ export const addGroupMember = catchAsync(
 
     const memberId: number = parseInt(req.body.memberId);
     const role: CommunityRole = req.body.role;
+    const hasDownloadPermissions: boolean =
+      req.body.hasDownloadPermissions || false;
+    const hasMessagePermissions: boolean =
+      req.body.hasMessagePermissions || false;
 
     const member = await groupMemberService.addGroupMember(
       adminId,
       groupId,
       memberId,
-      role
+      role,
+      hasDownloadPermissions,
+      hasMessagePermissions
     );
 
     return res.status(201).json({
@@ -60,7 +66,7 @@ export const addGroupMember = catchAsync(
 
 export const inviteGroupMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const token: string = req.body;
+    const token: string = req.body.token;
     const memberId: number = req.session.user.id;
     const role = req.body.role;
 

@@ -31,7 +31,8 @@ const startServer = () => {
   let server = http.createServer(app);
   const io = new Server(server, {
     cors: {
-      origin: '*',
+      origin: [`${process.env.FRONTEND_URL}`, 'http://localhost:3000'], // Adjust based on your front-end domain
+      credentials: true, // Allow cookies to be sent
     },
     maxHttpBufferSize: 10e6,
   });

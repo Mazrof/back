@@ -17,15 +17,15 @@ import express from "express";
 export const sessionMiddleware = session(sessionConfig);
 
 export default async (app: Application) => {
-  // Serve static files from the 'public' director
-  app.use(express.static(path.join(__dirname, '../public')));
+  // Serve static files from the 'public' directory
+  app.use(express.static(path.join(__dirname, '../../public')));
 
   // Implement CORS
   app.use(cors(corsConfig));
   app.use(cookieParser());
   // Session middleware
 
-  app.options('*', cors()); // Preflight for all routes
+  app.options(process.env.FRONTEND_URL, cors()); // Preflight for all routes
 
   app.use(sessionMiddleware);
   app.use(passport.initialize());

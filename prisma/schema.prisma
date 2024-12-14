@@ -78,6 +78,7 @@ model Communities {
   name         String        @db.VarChar(255)
   privacy      Boolean       @default(true)
   creatorId    Int           @map("creator_id")
+  imageURL     String        @default("") @map("image_url")
   active       Boolean       @default(true)
   channels     Channels?
   users        Users         @relation(fields: [creatorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -114,6 +115,16 @@ model Groups {
 
   @@map("groups")
 }
+
+//
+// model Media {
+//   id         Int          @id @default(autoincrement())
+//   mediaType  String?      @map("media_type") @db.VarChar(50)
+//   mediaUrl   String?      @map("media_url")
+//   storyMedia StoryMedia[]
+//
+//   @@map("media")
+// }
 
 model MessageMentions {
   userId    Int      @map("user_id")
@@ -212,6 +223,7 @@ model Stories {
   users      Users?       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   storyViews StoryViews[]
 
+  // storyMedia StoryMedia[]
   @@map("stories")
 }
 
@@ -224,6 +236,17 @@ model StoryViews {
   @@id([userId, storyId])
   @@map("story_views")
 }
+
+//
+// model StoryMedia {
+//   storyId Int     @map("story_id")
+//   mediaId Int     @map("media_id")
+//   media   Media   @relation(fields: [mediaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+//   stories Stories @relation(fields: [storyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+//
+//   @@id([storyId, mediaId])
+//   @@map("storymedia")
+// }
 
 model UserBlacklist {
   blockerId   Int   @map("blocker_id")

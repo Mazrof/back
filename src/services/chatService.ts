@@ -10,9 +10,14 @@ import {
 } from '@prisma/client';
 import { NewMessages } from '../sockets/listeners/chatListeners';
 import logger from '../utility/logger';
+import {
+  getFileFromFirebase,
+  uploadFileToFirebase,
+} from '../third_party_services';
 
 interface Participant {
   communityId: undefined;
+  messagesCount?: number;
   personalChatId: undefined;
   messages: undefined;
   personalChat: undefined | object;
@@ -196,11 +201,12 @@ export const insertParticipantDate = async (
       participantId: message.participantId,
       deliveredAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
       readAt: null,
+      senderId: message.senderId,
     };
   });
 
   await prisma.messageReadReceipts.createMany({
-    data: insertData,
+    data: insertData.map((d) => ({ ...d, senderId: undefined })),
   });
   return insertData;
 };
@@ -209,15 +215,17 @@ export const insertMessageRecipient = async (
   userId: number,
   message: Messages
 ) => {
-  return prisma.messageReadReceipts.create({
-    data: {
-      userId,
-      participantId: message.participantId,
-      messageId: message.id,
-      deliveredAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
-      readAt: null,
-    },
-  });
+  try {
+    return prisma.messageReadReceipts.create({
+      data: {
+        userId,
+        participantId: message.participantId,
+        messageId: message.id,
+        deliveredAt: new Date(new Date().getTime() + 2 * 60 * 60 * 1000),
+        readAt: null,
+      },
+    });
+  } catch (error) {}
 };
 
 export const deleteMessage = async (messageId: number) => {
@@ -376,6 +384,40 @@ export const getUserGroupsChannelsChats = async (userId: number) => {
     personalChats: combinedPersonalChats,
   };
 };
+const countUnreadMessage = async (userId: number, participantId: number) => {
+  return prisma.messages.count({
+    where: {
+      senderId: {
+        not: userId,
+      },
+      status: {
+        not: MessageStatus.drafted,
+      },
+      participants: {
+        id: participantId,
+      },
+      OR: [
+        {
+          NOT: {
+            messageReadReceipts: {
+              some: {
+                userId: userId,
+              },
+            },
+          },
+        },
+        {
+          messageReadReceipts: {
+            some: {
+              userId: userId,
+              readAt: null,
+            },
+          },
+        },
+      ],
+    },
+  });
+};
 export const getUserParticipants = async (userId: number) => {
   const userParticipants = await prisma.participants.findMany({
     where: {
@@ -466,6 +508,21 @@ export const getUserParticipants = async (userId: number) => {
     channel: {} as undefined | object,
     group: {} as undefined | object,
   }));
+
+  for (const participant of results) {
+    if (participant.lastMessage && participant.lastMessage.url) {
+      participant.lastMessage.content = await getFileFromFirebase(
+        participant.lastMessage.url
+      );
+      participant.lastMessage.url = undefined;
+    }
+  }
+  for (const participant of results) {
+    participant.messagesCount = await countUnreadMessage(
+      userId,
+      participant.id
+    );
+  }
   results.forEach((participant) => {
     if (participant.type !== 'personalChat') {
       if (participant.communities!.channels) {
@@ -509,6 +566,7 @@ export const getUserParticipants = async (userId: number) => {
       p2.lastMessage.createdAt!.getTime() - p1.lastMessage.createdAt!.getTime()
     );
   });
+
   return results;
 };
 
@@ -541,6 +599,13 @@ export const getMessagesService = async (
       msg.messageReadReceipts = [];
     }
   });
+  for (const message of messages) {
+    if (message.url) {
+      console.log(message.url);
+      message.content = await getFileFromFirebase(message.url);
+      message.url = undefined;
+    }
+  }
   if (skip !== 0) return messages;
   let draftedMessage = await prisma.messages.findFirst({
     where: {
@@ -553,7 +618,6 @@ export const getMessagesService = async (
       messageMentions: true,
     },
   });
-
   if (!draftedMessage) {
     const data = {
       participantId,
@@ -562,6 +626,10 @@ export const getMessagesService = async (
       content: '',
     };
     draftedMessage = await createMessage(data);
+  }
+  if (draftedMessage.url) {
+    draftedMessage.content = await getFileFromFirebase(draftedMessage.url);
+    draftedMessage.url = undefined;
   }
 
   return [...messages, draftedMessage];
@@ -602,4 +670,3 @@ export const canSeeMessages = async (
   });
   return participant.length !== 0;
 };
-//TODO: HOW CAN ADD MESSAGES IN CHANNLES

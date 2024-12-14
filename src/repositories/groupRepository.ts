@@ -1,20 +1,21 @@
 import { prisma } from '../prisma/client';
 import { AppError } from '../utility';
 import { ParticipiantTypes } from '@prisma/client';
+import { da } from '@faker-js/faker';
 
 export const findAllGroups = async (): Promise<
   {
     hasFilter: boolean;
     id: number;
-    groupSize: number | null;
-    community: { name: string; privacy: boolean | null };
+    groupSize: number;
+    community: { name: string; privacy: boolean; imageURL: string };
   }[]
 > => {
   // Fetch the groups with their communities
   const groups: {
     id: number;
-    groupSize: number | null;
-    community: { name: string; privacy: boolean | null };
+    groupSize: number;
+    community: { name: string; privacy: boolean; imageURL: string };
   }[] = await prisma.groups.findMany({
     where: {
       community: {
@@ -28,12 +29,11 @@ export const findAllGroups = async (): Promise<
         select: {
           name: true,
           privacy: true,
+          imageURL: true,
         },
       },
     },
   });
-
-  // Check which groups have filters
   const filters: { groupId: number }[] =
     await prisma.adminGroupFilters.findMany({
       select: {
@@ -47,30 +47,35 @@ export const findAllGroups = async (): Promise<
   );
 
   // Add the filtered property to the groups
-  const groupsWithFilter: {
+  const groupsWithFilters: {
     hasFilter: boolean;
     id: number;
-    groupSize: number | null;
-    community: { name: string; privacy: boolean | null };
+    groupSize: number;
+    community: { name: string; privacy: boolean | null; imageURL: string };
   }[] = groups.map((group) => ({
     ...group,
     hasFilter: filteredGroupIds.has(group.id),
   }));
 
-  return groupsWithFilter;
+  return groupsWithFilters;
 };
 
 export const findGroupById = async (
   id: number
 ): Promise<{
   id: number;
-  community: { name: string; privacy: boolean | null };
-  groupSize: number | null;
+  community: { name: string; privacy: boolean; imageURL: string };
+  groupSize: number;
 }> => {
   const group: {
     id: number;
-    community: { name: string; privacy: boolean | null; active: boolean };
-    groupSize: number | null;
+    community: {
+      name: string;
+      privacy: boolean;
+      active: boolean;
+      imageURL: string;
+    };
+    groupSize: number;
   } | null = await prisma.groups.findUnique({
     where: {
       id,
@@ -83,6 +88,7 @@ export const findGroupById = async (
           name: true,
           privacy: true,
           active: true,
+          imageURL: true,
         },
       },
     },
@@ -91,7 +97,7 @@ export const findGroupById = async (
   if (!group || !group.community.active) {
     throw new AppError('No Group found with that ID', 404);
   }
-
+  delete group.community.active;
   return group;
 };
 
@@ -101,7 +107,12 @@ export const createGroup = async (data: {
   creatorId: number;
   groupSize: number;
   invitationLink: string;
-}) => {
+  imageURL?: string;
+}): Promise<{
+  id: number;
+  community: { name: string; privacy: boolean; imageURL: string };
+  groupSize: number;
+}> => {
   let message: string = '';
   if (!data.name) {
     message = 'Invalid Group name';
@@ -110,7 +121,7 @@ export const createGroup = async (data: {
     if (message) message += ', ';
     message += 'Invalid Creator ID';
   }
-  if (!data.groupSize || data.groupSize <= 2) {
+  if (!data.groupSize || data.groupSize < 1) {
     if (message) message += ', ';
     message += 'Invalid Group size';
   }
@@ -128,6 +139,7 @@ export const createGroup = async (data: {
       name: data.name,
       privacy: data.privacy,
       creatorId: data.creatorId,
+      imageURL: data.imageURL,
     },
   });
 
@@ -140,7 +152,7 @@ export const createGroup = async (data: {
 
   const group: {
     id: number;
-    community: { name: string; privacy: boolean };
+    community: { name: string; privacy: boolean; imageURL: string };
     groupSize: number;
   } = await prisma.groups.create({
     data: {
@@ -155,6 +167,7 @@ export const createGroup = async (data: {
         select: {
           name: true,
           privacy: true,
+          imageURL: true,
         },
       },
     },
@@ -164,13 +177,18 @@ export const createGroup = async (data: {
 
 export const updateGroup = async (
   groupId: number,
-  data: { name?: string; privacy?: boolean; groupSize?: number }
+  data: {
+    name?: string;
+    privacy?: boolean;
+    groupSize?: number;
+    imageURL?: string;
+  }
 ): Promise<{
   id: number;
-  community: { name: string; privacy: boolean | null };
-  groupSize: number | null;
+  community: { name: string; privacy: boolean; imageURL: string };
+  groupSize: number;
 }> => {
-  if (!data.name && !data.privacy && !data.groupSize) {
+  if (!data.name && !data.privacy && !data.groupSize && !data.imageURL) {
     throw new AppError('No data to update', 400);
   }
   const group: {
@@ -200,6 +218,7 @@ export const updateGroup = async (
       data: {
         name: data.name,
         privacy: data.privacy,
+        imageURL: data.imageURL,
       },
     });
   }
@@ -211,13 +230,17 @@ export const updateGroup = async (
       },
     },
   });
-  if (data.groupSize && data.groupSize >= count && data.groupSize > 2) {
-    await prisma.groups.update({
-      where: { id: groupId },
-      data: {
-        groupSize: data.groupSize,
-      },
-    });
+  if (data.groupSize) {
+    if (data.groupSize >= count /*&& data.groupSize > 2*/) {
+      await prisma.groups.update({
+        where: { id: groupId },
+        data: {
+          groupSize: data.groupSize,
+        },
+      });
+    } else {
+      throw new AppError('Invalid Group Size Limit', 400);
+    }
   }
 
   return await findGroupById(groupId);

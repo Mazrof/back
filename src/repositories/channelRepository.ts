@@ -12,10 +12,12 @@ export const findAllChannels = async () => {
     select: {
       id: true,
       canAddComments: true,
+      invitationLink: true,
       community: {
         select: {
           name: true,
           privacy: true,
+          imageURL: true,
         },
       },
     },
@@ -40,20 +42,21 @@ export const findChannelById = async (
     select: {
       id: true,
       canAddComments: true,
+      invitationLink: true,
       community: {
         select: {
           name: true,
           privacy: true,
           active: true,
+          imageURL: true,
         },
       },
     },
   });
-
   if (!channel || !channel.community.active) {
     throw new AppError('No channel found with that ID', 404);
   }
-
+  delete channel.community.active;
   return channel;
 };
 
@@ -63,6 +66,7 @@ export const createChannel = async (data: {
   creatorId: number;
   canAddComments: boolean;
   invitationLink: string;
+  imageURL: string;
 }) => {
   let message: string = '';
   if (!data.name) {
@@ -81,11 +85,13 @@ export const createChannel = async (data: {
     active: boolean;
     privacy: boolean;
     creatorId: number;
+    imageURL: string;
   } = await prisma.communities.create({
     data: {
       name: data.name,
       privacy: data.privacy,
       creatorId: data.creatorId,
+      imageURL: data.imageURL,
     },
   });
   await prisma.participants.create({
@@ -104,10 +110,12 @@ export const createChannel = async (data: {
     select: {
       id: true,
       canAddComments: true,
+      invitationLink: true,
       community: {
         select: {
           name: true,
           privacy: true,
+          imageURL: true,
         },
       },
     },
@@ -117,9 +125,14 @@ export const createChannel = async (data: {
 
 export const updateChannel = async (
   channelId: number,
-  data: { name?: string; privacy?: boolean; canAddComments?: boolean }
+  data: {
+    name?: string;
+    privacy?: boolean;
+    canAddComments?: boolean;
+    imageURL: string | null;
+  }
 ) => {
-  if (!data.name && !data.privacy && !data.canAddComments) {
+  if (!data.name && !data.privacy && !data.canAddComments && !data.imageURL) {
     throw new AppError('No data to update', 400);
   }
   const channel: {
@@ -149,6 +162,7 @@ export const updateChannel = async (
       data: {
         name: data.name,
         privacy: data.privacy,
+        imageURL: data.imageURL,
       },
     });
   }

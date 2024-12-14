@@ -1,12 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { catchAsync } from '../utility';
-import * as channelService from '../services/channelMemberService';
 import { CommunityRole } from '@prisma/client';
 import * as channelMemberService from '../services/channelMemberService';
-import {
-  checkChannelMember,
-  checkChannelMemberPermission,
-} from '../services/channelMemberService';
 
 export const getChannelMembers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -14,7 +9,7 @@ export const getChannelMembers = catchAsync(
     const userId: number = req.session.user.id;
     const channelId: number = parseInt(req.params.channelId);
 
-    await checkChannelMember(userId, channelId);
+    await channelMemberService.checkChannelMember(userId, channelId);
 
     const members: {
       userId: number;
@@ -23,7 +18,7 @@ export const getChannelMembers = catchAsync(
       hasDownloadPermissions: boolean;
       role: CommunityRole;
       users: { username: string };
-    }[] = await channelService.getChannelMembers(channelId);
+    }[] = await channelMemberService.getChannelMembers(channelId);
 
     return res.status(200).json({
       status: 'success',
@@ -42,14 +37,21 @@ export const addChannelMember = catchAsync(
 
     const userId: number = req.session.user.id;
     const channelId: number = parseInt(req.params.channelId);
-    await checkChannelMemberPermission(userId, channelId);
-
     const role: CommunityRole = req.body.role;
+    if (role === CommunityRole.admin) {
+      await channelMemberService.checkChannelMemberPermission(
+        userId,
+        channelId
+      );
+    }
 
-    const member = await channelService.addChannelMember(
+    const hasDownloadPermissions = req.body.hasDownloadPermissions;
+
+    const member = await channelMemberService.addChannelMember(
       memberId,
       channelId,
-      role
+      role,
+      hasDownloadPermissions
     );
 
     return res.status(201).json({
@@ -67,10 +69,10 @@ export const updateChannelMember = catchAsync(
     const userId: number = req.session.user.id;
     const channelId: number = parseInt(req.params.channelId);
 
-    await checkChannelMemberPermission(userId, channelId);
+    // await channelMemberService.checkChannelMemberPermission(userId, channelId);
     const memberId: number = parseInt(req.params.id);
 
-    const member = await channelService.updateChannelMember(
+    const member = await channelMemberService.updateChannelMember(
       userId,
       channelId,
       memberId,
@@ -88,14 +90,13 @@ export const updateChannelMember = catchAsync(
 
 export const inviteChannelMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const token: string = req.body;
+    const token: string = req.body.token;
     const memberId: number = req.session.user.id;
-    const role = req.body.role;
 
     const member: {
       userId: number;
       channelId: number;
-    } = await channelMemberService.joinChannelByInvite(token, memberId, role);
+    } = await channelMemberService.joinChannelByInvite(token, memberId);
 
     return res.status(201).json({
       status: 'success',
@@ -109,14 +110,18 @@ export const inviteChannelMember = catchAsync(
 export const deleteChannelMember = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     // check that the user is an admin in this channel
-    const memberId: number = parseInt(req.body.userId);
-
+    const memberId: number = parseInt(req.params.id);
     const userId: number = req.session.user.id;
     const channelId: number = parseInt(req.params.channelId);
 
-    await checkChannelMemberPermission(userId, channelId);
+    if (memberId !== channelId) {
+      await channelMemberService.checkChannelMemberPermission(
+        userId,
+        channelId
+      );
+    }
 
-    await channelService.deleteChannelMember(channelId, memberId);
+    await channelMemberService.deleteChannelMember(channelId, memberId);
 
     return res.status(204).json({
       status: 'success',

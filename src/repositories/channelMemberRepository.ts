@@ -21,7 +21,7 @@ export const findChannelMembers = async (channelId: number) => {
   return await prisma.channelSubscriptions.findMany({
     where: {
       channelId,
-      active: true,
+      // active: true,
     },
     select: {
       channelId: true,
@@ -58,6 +58,7 @@ export const addChannelMember = async (memberData: {
   channelId: number;
   userId: number;
   role: CommunityRole;
+  hasDownloadPermissions: boolean;
 }) => {
   return await prisma.channelSubscriptions.create({
     data: memberData,
@@ -65,6 +66,7 @@ export const addChannelMember = async (memberData: {
       channelId: true,
       userId: true,
       role: true,
+      hasDownloadPermissions: true,
     },
   });
 };
@@ -74,6 +76,7 @@ export const updateChannelMemberStatus = async (
   channelId: number,
   active: boolean
 ) => {
+  console.log('here');
   return await prisma.channelSubscriptions.update({
     where: {
       userId_channelId: {
@@ -103,10 +106,20 @@ export const updateChannelMemberData = async (
 export const findChannelByInvitationLinkHash = async (
   invitationLink: string
 ) => {
-  return await prisma.channels.findUnique({
+  return  prisma.channels.findUnique({
     where: { invitationLink },
     select: {
       id: true,
+    },
+  });
+};
+
+export const getAdminCounts = async (channelId) => {
+  return await prisma.channelSubscriptions.count({
+    where: {
+      channelId,
+      role: CommunityRole.admin,
+      active: true,
     },
   });
 };

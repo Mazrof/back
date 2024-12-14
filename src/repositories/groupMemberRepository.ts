@@ -31,6 +31,8 @@ export const findGroupMember = async (userId: number, groupId: number) => {
     select: {
       role: true,
       active: true,
+      hasMessagePermissions: true,
+      hasDownloadPermissions: true,
     },
   });
 };
@@ -39,7 +41,7 @@ export const findGroupMembers = async (groupId: number) => {
   return await prisma.groupMemberships.findMany({
     where: {
       groupId,
-      active: true,
+      // active: true,
     },
     select: {
       groupId: true,
@@ -78,6 +80,8 @@ export const addGroupMember = async (memberData: {
   groupId: number;
   userId: number;
   role: CommunityRole;
+  hasDownloadPermissions: boolean;
+  hasMessagePermissions: boolean;
 }) => {
   return await prisma.groupMemberships.create({
     data: memberData,
@@ -85,6 +89,8 @@ export const addGroupMember = async (memberData: {
       groupId: true,
       userId: true,
       role: true,
+      hasDownloadPermissions: true,
+      hasMessagePermissions: true,
     },
   });
 };
@@ -126,6 +132,16 @@ export const findGroupByInvitationLinkHash = async (invitationLink: string) => {
     where: { invitationLink },
     select: {
       id: true,
+    },
+  });
+};
+
+export const getAdminCounts = async (groupId: number) => {
+  return await prisma.groupMemberships.count({
+    where: {
+      groupId,
+      role: CommunityRole.admin,
+      active: true,
     },
   });
 };

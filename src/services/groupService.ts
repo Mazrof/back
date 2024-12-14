@@ -1,23 +1,23 @@
 import crypto from 'crypto';
 import * as groupRepository from '../repositories';
-import * as groupMemberRepository from '../repositories';
 import * as groupMemberService from '../services';
 import { CommunityRole } from '@prisma/client';
+import { AppError } from '../utility';
 
 export const checkPermission = async (adminId: number, groupId: number) => {
   await groupMemberService.checkGroupMemberPermission(adminId, groupId);
 };
 
-export function generateInviteToken(): string {
+export const generateInviteToken = () => {
   return crypto.randomBytes(32).toString('hex');
-}
+};
 
 export const findAllGroups = async (): Promise<
   {
     hasFilter: boolean;
     id: number;
-    groupSize: number | null;
-    community: { name: string; privacy: boolean | null };
+    groupSize: number;
+    community: { name: string; privacy: boolean; imageURL: string };
   }[]
 > => {
   return await groupRepository.findAllGroups();
@@ -27,7 +27,7 @@ export const findGroupById = async (
   id: number
 ): Promise<{
   id: number;
-  community: { name: string; privacy: boolean | null };
+  community: { name: string; privacy: boolean | null; imageURL: string };
   groupSize: number | null;
 }> => {
   return await groupRepository.findGroupById(id);
@@ -38,8 +38,12 @@ export const createGroup = async (data: {
   privacy: boolean;
   creatorId: number;
   groupSize: number;
-  admins: number[];
-}) => {
+  imageURL?: string;
+}): Promise<{
+  id: number;
+  community: { name: string; privacy: boolean; imageURL: string };
+  groupSize: number;
+}> => {
   const token: string = generateInviteToken();
   const invitationLink: string = crypto
     .createHash('sha256')
@@ -48,35 +52,33 @@ export const createGroup = async (data: {
 
   const group: {
     id: number;
-    community: { name: string; privacy: boolean };
+    community: { name: string; privacy: boolean; imageURL: string };
     groupSize: number;
   } = await groupRepository.createGroup({ ...data, invitationLink });
 
-  await groupMemberRepository.addGroupMember({
-    groupId: group.id,
-    userId: data.creatorId,
-    role: CommunityRole.admin,
-  });
+  // check he is users not admins and add it
+  await groupMemberService.addGroupCreator(
+    group.id,
+    data.creatorId,
+    CommunityRole.admin
+  );
 
-  for (const admin of data.admins) {
-    await groupMemberService.addGroupMember(
-      data.creatorId,
-      group.id,
-      admin,
-      CommunityRole.admin
-    );
-  }
   return group;
 };
 
 export const updateGroup = async (
   groupId: number,
   adminId: number,
-  data: { name?: string; privacy?: boolean; groupSize?: number }
+  data: {
+    name?: string;
+    privacy?: boolean;
+    groupSize?: number;
+    imageURL?: string;
+  }
 ): Promise<{
   id: number;
-  community: { name: string; privacy: boolean | null };
-  groupSize: number | null;
+  community: { name: string; privacy: boolean; imageURL: string };
+  groupSize: number;
 }> => {
   await checkPermission(adminId, groupId);
   return await groupRepository.updateGroup(groupId, data);

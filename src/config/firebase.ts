@@ -1,20 +1,12 @@
-import { initializeApp } from 'firebase/app';
-import {
-  getStorage,
-} from 'firebase/storage';
+import admin from 'firebase-admin';
+import path from 'path';
 
-const firebaseConfig = {
-  apiKey: process.env.FIREBASE_APIKEY,
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.FIREBASE_APP_ID,
-  measurementId: process.env.FIREBASE_MEASUREMENT_ID,
-};
+const serviceAccount = path.join(__dirname, '../../../serviceAccountKey.json'); // Make sure this path is correct
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const storage = getStorage(app);
-
-export { storage };
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET, // If you're using Cloud Storage
+});
+const storage = admin.storage();
+const bucket = storage.bucket();
+export { storage, bucket };
