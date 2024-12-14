@@ -16,7 +16,7 @@ export const addFcmTokenController = catchAsync(async (req: Request, res: Respon
 });
 
 export const sendNotificationController = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.session.user.id;
+  const userId = req.body.receiverId;
   const NotificationData = notificationSchema.parse(req.body);
   const {title,body,image} = NotificationData;
   const result = await sendNotificationService(userId, {title,body,image});
