@@ -2,7 +2,6 @@ import crypto from 'crypto';
 import * as groupRepository from '../repositories';
 import * as groupMemberService from '../services';
 import { CommunityRole } from '@prisma/client';
-import { AppError } from '../utility';
 
 export const checkPermission = async (adminId: number, groupId: number) => {
   await groupMemberService.checkGroupMemberPermission(adminId, groupId);
