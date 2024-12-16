@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import { IncomingMessage } from 'node:http';
 import { io } from '../../server';
 import logger from '../../utility/logger';
+import { sendNotifications } from '../../services/notificationsService';
 import {
   deleteFileFromFirebase,
   uploadFileToFirebase,
@@ -190,7 +191,14 @@ export const handleNewMessage = catchSocketError(
         message.durationInMinutes * 60 * 1000
       );
     }
+    sendNotifications(message.participantId, message.senderId, {
+      title: 'New Message',
+      body: message.content,
+    })
+
   }
+  ////////////////
+
 );
 
 export const handleDeleteMessage = catchSocketError(

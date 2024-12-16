@@ -34,7 +34,7 @@ export const sendNotificationService = async (userId: number,NotificationData: F
     
 }
 
-export const sendNotifications = async (participantId:number,senderId,NotificationData: FCMNotification)=>{
+export const sendNotifications = async (participantId:number,senderId:number,NotificationData: FCMNotification)=>{
     const chatType=await getParticipantType(participantId);
     if (chatType.toString()===ParticipiantTypes.personalChat.toString()){
          const users=await getPersonalChatUsers(participantId);
