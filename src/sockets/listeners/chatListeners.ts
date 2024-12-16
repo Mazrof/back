@@ -191,8 +191,8 @@ export const handleNewMessage = catchSocketError(
         message.durationInMinutes * 60 * 1000
       );
     }
-    sendNotifications(message.participantId, message.senderId, {
-      title: 'New Message',
+    await sendNotifications(message.participantId, message.senderId, {
+      title: `New Message`,
       body: message.content,
     })
 

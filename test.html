@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Socket.IO with Session Auth</title>
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+</head>
+<body>
+<h1>Socket.IO Session Auth Demo</h1>
+<button id="login">Login</button>
+<button id="connect">Connect to Socket.IO</button>
+<button id="send">Send Message</button>
+<div id="output"></div>
+<input id="email" type="email" placeholder="Email">
+<input id="password" type="password" placeholder="password">
+<input id="receiverId" type="number" placeholder="receiverId">
+<input id="messageId" type="number" placeholder="messageId">
+<input id="participantId" type="number" placeholder="participant">
+<button id="deleteMsg">delete Message</button>
+<button id="editMsg">edit Message</button>
+<button id="participant">open context</button>
+<script>
+  const output = document.getElementById('output');
+  const send = document.getElementById('send');
+  const deleteMsgBtn= document.getElementById('deleteMsg');
+  const editMsgBtn= document.getElementById('editMsg');
+  const participantBtn= document.getElementById('participant');
+
+  let socket;
+  const messageData = {
+
+    content: "after @abdo @mohamed",
+    status: "pinned", // or null or drafted
+    durationInMinutes: null, // can be null self destored
+    isAnnouncement: true, // for group announcement
+    isForward: false,
+    // participantType:'channel',// or group or personalChat
+    // channelOrGroupId:1,
+    // participantId: 1, // id of the place where the message is going to be sent or null if you will provide receiverId for new personal chats
+    senderId: 1, // Will be deleted after merging auth,
+    receiverId: document.getElementById('receiverId').value||undefined, // if you provide a receiverId this means I will create a new personal chat
+    // inputMessageMentions: [
+    //   49,
+    // ]
+  };
+  // Login to set session
+  document.getElementById('login').addEventListener('click', async () => {
+    const response = await fetch('http://localhost:3000/api/v1/auth/login', { method: 'POST',  headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: document.getElementById('email').value||'abdo@gmail.com',
+          password: document.getElementById('password').value||'abdo123'
+        })
+      }
+
+    );
+    if (response.ok) {
+      output.innerText = 'Logged in. Session cookie set!';
+      let res = await response.json();
+      console.log(res);
+      messageData.senderId = res.data.user.id;
+    } else {
+      output.innerText = 'Login failed.';
+    }
+  });
+
+  // Connect to Socket.IO
+
+  document.getElementById('connect').addEventListener('click', () => {
+    socket = io('http://localhost:3000', { withCredentials: true });
+
+
+    socket.on('connect', () => {
+      output.innerText = 'Connected to Socket.IO!';
+    });
+
+
+    socket.on('message:receive', message => {
+      console.log(message);
+      output.innerText = message;
+    })
+    socket.on('response', (data) => {
+
+    });
+
+    socket.on('connect_error', (err) => {
+
+    });
+
+    socket.on('message:deleted', (message) =>  {
+      console.log((message));
+    });
+    socket.on('message:edited', (message) => {
+      console.log(message);
+    });
+
+    socket.on('message:update-info', (participant) => {
+      console.log(participant);
+    })
+    socket.on('user:connected', (user) => {
+      console.log(user);
+    })
+    socket.on('user:disconnected', (user) => {
+      console.log(user);
+    })
+  });
+  deleteMsgBtn.addEventListener('click', () => {
+    console.log('message delete');
+    let id = document.getElementById('messageId').value;
+
+    socket.emit('message:delete', {
+      id:parseInt(id),
+    },err=>{
+      console.log(err);
+    })
+  })
+  participantBtn.addEventListener('click', () => {
+    console.log('open context', {participantId: parseInt(document.getElementById('participantId').value) });
+    socket.emit('context:opened', {participantId: parseInt(document.getElementById('participantId').value) })
+  })
+  editMsgBtn.addEventListener('click', () => {
+    console.log('message edited');
+    let id = document.getElementById('messageId').value;
+
+    socket.emit('message:edit', {
+      id:parseInt(id),
+      content:"hello edited message".repeat(100),
+    },err=>{
+      console.log(err);
+    })
+  })
+
+  send.addEventListener('click', () => {
+    console.log('message sent');
+    //TODO: TRY THIS
+    messageData.receiverId = parseInt(document.getElementById('receiverId').value);
+    messageData.participantId = parseInt(document.getElementById('participantId').value||'2');
+    console.log(messageData.receiverId);
+    socket.emit('message:sent',messageData,err=>{
+      console.log(err);
+      output.innerText = err;
+    })
+  })
+  // Send message to server
+</script>
+</body>
+</html>

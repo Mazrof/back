@@ -20,13 +20,13 @@ export const addFcmTokenService = async (userId: number, fcmToken: string) => {
 
 export const sendNotificationService = async (userId: number,NotificationData: FCMNotification) => {
     const user = await findUserById(userId);
-    if (!user.fcmtokens.length)
-        throw new AppError('user has no device to send notification to', 400);
+    /* if (!user.fcmtokens.length)
+        throw new AppError('user has no device to send notification to', 400); */
     const message: MulticastMessage = {
         notification: {
           title: NotificationData.title,
           body: NotificationData.body        },
-        tokens: [...user.fcmtokens]
+        tokens: ["dZOzTWzFMK-R6RCKD03vVz:APA91bEs8zf8G0BcS1tfxODkhSLYuwaj8EON-SBApEkq4B-B-u1DL8PdSuC7sf7dYycfoswmhBzKwbgwj1CsPE9LKU6-uhA7Q3BO-X5pTi50wQjPqO6NjPY"]
     };
 
     return await admin.messaging().sendEachForMulticast(message)
@@ -36,7 +36,7 @@ export const sendNotificationService = async (userId: number,NotificationData: F
 
 export const sendNotifications = async (participantId:number,senderId:number,NotificationData: FCMNotification)=>{
     const chatType=await getParticipantType(participantId);
-    if (chatType.toString()===ParticipiantTypes.personalChat.toString()){
+    if (chatType.type.toString()===ParticipiantTypes.personalChat.toString()){
          const users=await getPersonalChatUsers(participantId);
         const mutedUsersIds=(await getUserMutedParticipants(participantId)).map((user)=>user.id);
         const usersToSend=users.filter((user)=>!mutedUsersIds.includes(user.id)&&user.id!==senderId);
