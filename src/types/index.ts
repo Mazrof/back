@@ -5,9 +5,3 @@ export interface UpdateGroupMemberData {
   hasMessagePermissions?: boolean;
   hasDownloadPermissions?: boolean;
 }
-
-// Interface for updating community member data
-export interface UpdateChannelMemberData {
-  role?: CommunityRole;
-  hasDownloadPermissions?: boolean;
-}
