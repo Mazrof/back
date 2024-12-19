@@ -89,10 +89,12 @@ const checkMember = async (
   const existingMember = await Repository.findExistingMember(userId, channelId);
   if (existingMember) {
     if (!existingMember.active) {
-      return await Repository.updateChannelMember(userId, channelId, {
+      const member = await Repository.updateChannelMember(userId, channelId, {
         active: true,
         role: CommunityRole.member,
       });
+      delete member.active;
+      return member;
     }
     throw new AppError('Member already exists in this channel', 400);
   }
@@ -210,7 +212,6 @@ export const updateChannelMember = async (
   if (!existingMember || !existingMember.active) {
     throw new AppError('Member not found in this Channel', 404);
   }
-
   return await Repository.updateChannelMember(userId, channelId, data); // Update the member's data
 };
 
@@ -235,9 +236,8 @@ export const deleteChannelMember = async (
     const adminCount: number = await Repository.getAdminCounts(channelId);
 
     if (adminCount === 1) {
-      console.log('terminate');
       // Delete all users in the channel if the admin is being removed
-      const members = await Service.getChannelMembers(channelId, userId);
+      const members = await getChannelMembers(channelId, userId);
       for (const member of members) {
         if (member.active && member.userId !== existingMember.userId)
           await Repository.updateChannelMember(member.userId, channelId, {
@@ -248,6 +248,7 @@ export const deleteChannelMember = async (
       await Service.deleteChannel(channelId, userId);
     }
   }
+
   const channelMember = await Repository.updateChannelMember(
     userId,
     channelId,

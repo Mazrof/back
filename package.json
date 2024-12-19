@@ -16,7 +16,8 @@
     "push_db": "npx prisma db push --skip-generate",
     "start": "node build/src/server.js",
     "container": "npm run push_db & npm run start",
-    "start-prod": "node build/src/server.js"
+    "start-prod": "node build/src/server.js",
+    "generate_prisma": "npx prisma generate"
   },
   "dependencies": {
     "@faker-js/faker": "^9.2.0",

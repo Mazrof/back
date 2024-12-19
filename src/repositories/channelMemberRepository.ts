@@ -51,6 +51,7 @@ export const findChannelMembers = async (
   return prisma.channelSubscriptions.findMany({
     where: {
       channelId,
+      active: true
     },
     select: {
       channelId: true,

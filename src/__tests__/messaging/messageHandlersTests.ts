@@ -1,12 +1,12 @@
-import { io, server } from '../server';
-import { Chat } from '../sockets/chat';
+import { io, server } from '../../server';
+import { Chat } from '../../sockets/chat';
 import {
   handleDeleteMessage,
   handleEditMessage,
   handleNewMessage,
   handleOpenContext,
   NewMessages,
-} from '../sockets/listeners/chatListeners';
+} from '../../sockets/listeners/chatListeners';
 import {
   createMessage,
   createPersonalChat,
@@ -15,21 +15,21 @@ import {
   insertMessageRecipient,
   markMessagesAsRead,
   updateMessageById,
-} from '../services';
+} from '../../services';
 import {
   deleteFileFromFirebase,
   uploadFileToFirebase,
-} from '../third_party_services';
-import logger from '../utility/logger';
+} from '../../third_party_services';
+import logger from '../../utility/logger';
 import { MessageStatus } from '@prisma/client';
 
-jest.mock('../utility/logger');
-jest.mock('../config/firebase');
-jest.mock('../sockets/chat');
-jest.mock('../third_party_services/Firebase');
-jest.mock('../services/chatService');
+jest.mock('../../utility/logger');
+jest.mock('../../config/firebase');
+jest.mock('../../sockets/chat');
+jest.mock('../../third_party_services/Firebase');
+jest.mock('../../services/chatService');
 const mockEmit = jest.fn();
-jest.mock('../server', () => ({
+jest.mock('../../server', () => ({
   io: {
     sockets: {
       adapter: { rooms: { get: jest.fn() } },
@@ -45,7 +45,7 @@ jest.mock('../server', () => ({
 describe('New Message Handling Function', () => {
   let mockSocket: any;
   let callbackMock: jest.Mock;
-  jest.mock('../sockets/listeners/chatListeners', () => {
+  jest.mock('../../sockets/listeners/chatListeners', () => {
     const actual = jest.requireActual('../sockets/listeners/chatListeners');
     return {
       ...actual,
