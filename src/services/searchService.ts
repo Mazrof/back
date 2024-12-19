@@ -18,8 +18,48 @@ type Channel = {
   imageurl: string;
 };
 
-export const getProfileByUsername = async (username: string) => {
-  return searchRepository.findProfilesByUsername(username);
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  photo: string | null;
+  screenname: string;
+  phone: string;
+  publickey: string;
+  lastseen: Date | null;
+  activenow: boolean;
+};
+
+type MappedUser = {
+  id: string;
+  username: string;
+  email: string;
+  photo: string | null;
+  screenName: string;
+  phone: string;
+  publicKey: string;
+  lastSeen: Date | null;
+  activeNow: boolean;
+};
+
+export const getProfileByUsername = async (
+  username: string
+): Promise<MappedUser[]> => {
+  const users = (await searchRepository.findProfilesByUsername(username)) as
+    | User[]
+    | null;
+
+  return users.map((user) => ({
+    id: user.id,
+    username: user.name,
+    email: user.email,
+    photo: user.photo,
+    screenName: user.screenname,
+    phone: user.phone,
+    publicKey: user.publickey,
+    lastSeen: user.lastseen,
+    activeNow: user.activenow,
+  }));
 };
 
 export const getGroupByGroupName = async (groupName: string) => {
