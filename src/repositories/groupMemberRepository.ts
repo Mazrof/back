@@ -21,7 +21,7 @@ export const getMembersCount = async (groupId: number) => {
 };
 
 export const findGroupMember = async (userId: number, groupId: number) => {
-  return await prisma.groupMemberships.findUnique({
+  return prisma.groupMemberships.findUnique({
     where: {
       userId_groupId: {
         userId,
@@ -38,10 +38,9 @@ export const findGroupMember = async (userId: number, groupId: number) => {
 };
 
 export const findGroupMembers = async (groupId: number) => {
-  return await prisma.groupMemberships.findMany({
+  return prisma.groupMemberships.findMany({
     where: {
       groupId,
-      // active: true,
     },
     select: {
       groupId: true,
@@ -60,7 +59,7 @@ export const findGroupMembers = async (groupId: number) => {
 };
 
 export const findExistingMember = async (memberId: number, groupId: number) => {
-  return await prisma.groupMemberships.findUnique({
+  return prisma.groupMemberships.findUnique({
     where: {
       userId_groupId: {
         userId: memberId,
@@ -83,7 +82,7 @@ export const addGroupMember = async (memberData: {
   hasDownloadPermissions: boolean;
   hasMessagePermissions: boolean;
 }) => {
-  return await prisma.groupMemberships.create({
+  return prisma.groupMemberships.create({
     data: memberData,
     select: {
       groupId: true,
@@ -100,7 +99,7 @@ export const updateGroupMemberStatus = async (
   groupId: number,
   active: boolean
 ) => {
-  return await prisma.groupMemberships.update({
+  return prisma.groupMemberships.update({
     where: {
       userId_groupId: {
         userId,
@@ -116,7 +115,7 @@ export const updateGroupMemberData = async (
   groupId: number,
   data: UpdateGroupMemberData
 ) => {
-  return await prisma.groupMemberships.update({
+  return prisma.groupMemberships.update({
     where: {
       userId_groupId: {
         userId,
@@ -128,7 +127,7 @@ export const updateGroupMemberData = async (
 };
 
 export const findGroupByInvitationLinkHash = async (invitationLink: string) => {
-  return await prisma.groups.findUnique({
+  return prisma.groups.findUnique({
     where: { invitationLink },
     select: {
       id: true,
@@ -137,7 +136,7 @@ export const findGroupByInvitationLinkHash = async (invitationLink: string) => {
 };
 
 export const getAdminCounts = async (groupId: number) => {
-  return await prisma.groupMemberships.count({
+  return prisma.groupMemberships.count({
     where: {
       groupId,
       role: CommunityRole.admin,

@@ -1,22 +1,25 @@
 import { prisma } from '../prisma/client';
-import { AppError } from '../utility';
 import { ParticipiantTypes } from '@prisma/client';
-import { da } from '@faker-js/faker';
+import {
+  GroupResponse,
+  DetailedGroupResponse,
+} from './repositoriesTypes/groupTypes';
 
-export const findAllGroups = async (): Promise<
-  {
-    hasFilter: boolean;
-    id: number;
-    groupSize: number;
-    community: { name: string; privacy: boolean; imageURL: string };
-  }[]
-> => {
-  // Fetch the groups with their communities
-  const groups: {
-    id: number;
-    groupSize: number;
-    community: { name: string; privacy: boolean; imageURL: string };
-  }[] = await prisma.groups.findMany({
+/**
+ * Fetch all active groups with their community details.
+ *
+ * @returns {Promise<GroupResponse[]>}
+ * Array of groups, each containing:
+ *  - `id`: Group ID
+ *  - `groupSize`: Number of members in the group
+ *  - `adminGroupFilters`: Admin filters associated with the group
+ *  - `community`: Community details including:
+ *    - `name`: Community name
+ *    - `privacy`: Community privacy setting
+ *    - `imageURL`: Community image URL
+ */
+export const findAllGroups = async (): Promise<GroupResponse[]> => {
+  return prisma.groups.findMany({
     where: {
       community: {
         active: true,
@@ -32,57 +35,31 @@ export const findAllGroups = async (): Promise<
           imageURL: true,
         },
       },
+      adminGroupFilters: {
+        select: {
+          groupId: true,
+        },
+      },
     },
   });
-  const filters: { groupId: number }[] =
-    await prisma.adminGroupFilters.findMany({
-      select: {
-        groupId: true,
-      },
-    });
-
-  // Create a Set of filtered group IDs for efficient lookup
-  const filteredGroupIds: Set<number> = new Set(
-    filters.map((filter) => filter.groupId)
-  );
-
-  // Add the filtered property to the groups
-  const groupsWithFilters: {
-    hasFilter: boolean;
-    id: number;
-    groupSize: number;
-    community: { name: string; privacy: boolean | null; imageURL: string };
-  }[] = groups.map((group) => ({
-    ...group,
-    hasFilter: filteredGroupIds.has(group.id),
-  }));
-
-  return groupsWithFilters;
 };
 
+/**
+ * Find a group by its ID with detailed community information.
+ *
+ * @param {number} id - The ID of the group to retrieve.
+ * @returns {Promise<DetailedGroupResponse | null>}
+ * A group object or `null` if not found.
+ */
 export const findGroupById = async (
   id: number
-): Promise<{
-  id: number;
-  community: { name: string; privacy: boolean; imageURL: string };
-  groupSize: number;
-}> => {
-  const group: {
-    id: number;
-    community: {
-      name: string;
-      privacy: boolean;
-      active: boolean;
-      imageURL: string;
-    };
-    groupSize: number;
-  } | null = await prisma.groups.findUnique({
-    where: {
-      id,
-    },
+): Promise<DetailedGroupResponse | null> => {
+  return prisma.groups.findUnique({
+    where: { id },
     select: {
       id: true,
       groupSize: true,
+      communityId: true,
       community: {
         select: {
           name: true,
@@ -91,16 +68,28 @@ export const findGroupById = async (
           imageURL: true,
         },
       },
+      adminGroupFilters: {
+        select: {
+          groupId: true,
+        },
+      },
     },
   });
-
-  if (!group || !group.community.active) {
-    throw new AppError('No Group found with that ID', 404);
-  }
-  delete group.community.active;
-  return group;
 };
 
+/**
+ * Create a new group and its associated community.
+ *
+ * @param {Object} data - The data to create a new group.
+ * @param {string} data.name - Community name.
+ * @param {boolean} data.privacy - Community privacy setting.
+ * @param {number} data.creatorId - ID of the creator.
+ * @param {number} data.groupSize - Initial size of the group.
+ * @param {string} data.invitationLink - Group invitation link.
+ * @param {string} [data.imageURL] - Community image URL (optional).
+ * @returns {Promise<GroupResponse>}
+ * The newly created group object.
+ */
 export const createGroup = async (data: {
   name: string;
   privacy: boolean;
@@ -108,57 +97,24 @@ export const createGroup = async (data: {
   groupSize: number;
   invitationLink: string;
   imageURL?: string;
-}): Promise<{
-  id: number;
-  community: { name: string; privacy: boolean; imageURL: string };
-  groupSize: number;
-}> => {
-  let message: string = '';
-  if (!data.name) {
-    message = 'Invalid Group name';
-  }
-  if (!data.creatorId) {
-    if (message) message += ', ';
-    message += 'Invalid Creator ID';
-  }
-  if (!data.groupSize || data.groupSize < 1) {
-    if (message) message += ', ';
-    message += 'Invalid Group size';
-  }
-  if (message) {
-    throw new AppError(`${message}`, 400);
-  }
-  const community: {
-    id: number;
-    name: string;
-    active: boolean | null;
-    privacy: boolean | null;
-    creatorId: number | null;
-  } = await prisma.communities.create({
-    data: {
-      name: data.name,
-      privacy: data.privacy,
-      creatorId: data.creatorId,
-      imageURL: data.imageURL,
-    },
-  });
-
-  await prisma.participants.create({
-    data: {
-      communityId: community.id,
-      type: ParticipiantTypes.community,
-    },
-  });
-
-  const group: {
-    id: number;
-    community: { name: string; privacy: boolean; imageURL: string };
-    groupSize: number;
-  } = await prisma.groups.create({
+}): Promise<GroupResponse> => {
+  return prisma.groups.create({
     data: {
       groupSize: data.groupSize,
-      communityId: community.id,
       invitationLink: data.invitationLink,
+      community: {
+        create: {
+          name: data.name,
+          privacy: data.privacy,
+          creatorId: data.creatorId,
+          imageURL: data.imageURL,
+          participants: {
+            create: {
+              type: ParticipiantTypes.community,
+            },
+          },
+        },
+      },
     },
     select: {
       id: true,
@@ -172,57 +128,48 @@ export const createGroup = async (data: {
       },
     },
   });
-  return group;
 };
 
+/**
+ * Update the size of a group.
+ *
+ * @param {number} groupId - The ID of the group to update.
+ * @param {number} [groupSize] - The new group size (optional).
+ * @returns {Promise<GroupResponse>}
+ * The updated group object.
+ */
 export const updateGroup = async (
   groupId: number,
-  data: {
-    name?: string;
-    privacy?: boolean;
-    groupSize?: number;
-    imageURL?: string;
-  }
-): Promise<{
-  id: number;
-  community: { name: string; privacy: boolean; imageURL: string };
-  groupSize: number;
-}> => {
-  if (!data.name && !data.privacy && !data.groupSize && !data.imageURL) {
-    throw new AppError('No data to update', 400);
-  }
-  const group: {
-    communityId: number;
-    community: { active: boolean };
-    groupSize: number;
-  } | null = await prisma.groups.findUnique({
+  groupSize?: number
+): Promise<GroupResponse> => {
+  return prisma.groups.update({
     where: { id: groupId },
+    data: {
+      groupSize,
+    },
     select: {
-      communityId: true,
+      id: true,
       groupSize: true,
       community: {
         select: {
-          active: true,
+          name: true,
+          privacy: true,
+          imageURL: true,
         },
       },
     },
   });
+};
 
-  if (!group || !group.community.active) {
-    throw new AppError('No Group found with that ID', 404);
-  }
-
-  if (data.name || data.privacy) {
-    await prisma.communities.update({
-      where: { id: group.communityId },
-      data: {
-        name: data.name,
-        privacy: data.privacy,
-        imageURL: data.imageURL,
-      },
-    });
-  }
-  const count: number = await prisma.groupMemberships.count({
+/**
+ * Get the number of active members in a group.
+ *
+ * @param {number} groupId - The ID of the group.
+ * @returns {Promise<number>}
+ * The count of active members.
+ */
+export const getGroupSize = async (groupId: number): Promise<number> => {
+  return prisma.groupMemberships.count({
     where: {
       AND: {
         groupId,
@@ -230,89 +177,86 @@ export const updateGroup = async (
       },
     },
   });
-  if (data.groupSize) {
-    if (data.groupSize >= count /*&& data.groupSize > 2*/) {
-      await prisma.groups.update({
-        where: { id: groupId },
-        data: {
-          groupSize: data.groupSize,
-        },
-      });
-    } else {
-      throw new AppError('Invalid Group Size Limit', 400);
-    }
-  }
-
-  return await findGroupById(groupId);
 };
 
-export const deleteGroup = async (
-  id: number
-): Promise<{ communityId: number }> => {
-  const group: {
-    communityId: number;
-    community: { active: boolean | null };
-  } | null = await prisma.groups.findUnique({
-    where: { id },
-    select: {
-      communityId: true,
-      community: {
-        select: {
-          active: true,
-        },
-      },
-    },
-  });
-
-  if (!group || !group.community.active) {
-    throw new AppError('No Group found with that ID', 404);
-  }
-
+/**
+ * Deactivate a group by its community ID.
+ *
+ * @param {number} communityId - The ID of the community to deactivate.
+ * @returns {Promise<void>}
+ */
+export const deleteGroup = async (communityId: number): Promise<void> => {
   await prisma.communities.update({
-    where: { id: group.communityId },
+    where: { id: communityId },
     data: { active: false },
   });
-
-  return group;
 };
 
-export const applyGroupFilter = async (
+/**
+ * Find an admin filter for a group.
+ *
+ * @param {number} groupId - The group ID.
+ * @param {number} adminId - The admin ID.
+ * @returns {Promise<{ adminId: number; groupId: number } | null>}
+ * The filter object or `null` if not found.
+ */
+export const findGroupFilter = async (
   groupId: number,
   adminId: number
-): Promise<{
-  adminId: number;
-  groupId: number;
-} | null> => {
-  if (!adminId) {
-    throw new AppError('adminId are required', 400);
-  }
-  const group: {
-    id: number;
-    community: { name: string; privacy: boolean | null };
-    groupSize: number | null;
-  } = await findGroupById(groupId);
-
-  if (!group) {
-    throw new AppError('No Group found with that ID', 404);
-  }
-
-  let groupFilter: { adminId: number; groupId: number } | null =
-    await prisma.adminGroupFilters.findFirst({
-      where: { groupId: groupId },
-    });
-
-  if (groupFilter) {
-    await prisma.adminGroupFilters.delete({
-      where: { groupId: groupId },
-      select: {
-        groupId: true,
-        adminId: true,
+): Promise<{ adminId: number; groupId: number } | null> => {
+  return prisma.adminGroupFilters.findUnique({
+    where: {
+      adminId_groupId: {
+        adminId,
+        groupId,
       },
-    });
-    return groupFilter;
-  }
+    },
+    select: {
+      groupId: true,
+      adminId: true,
+    },
+  });
+};
 
-  groupFilter = await prisma.adminGroupFilters.create({
+/**
+ * Remove an admin filter for a group.
+ *
+ * @param {number} groupId - The group ID.
+ * @param {number} adminId - The admin ID.
+ * @returns {Promise<{ adminId: number; groupId: number } | null>}
+ * The deleted filter object or `null` if not found.
+ */
+export const deleteGroupFilter = async (
+  groupId: number,
+  adminId: number
+): Promise<{ adminId: number; groupId: number } | null> => {
+  return prisma.adminGroupFilters.delete({
+    where: {
+      adminId_groupId: {
+        adminId,
+        groupId,
+      },
+    },
+    select: {
+      groupId: true,
+      adminId: true,
+    },
+  });
+};
+
+/**
+ * Create a new admin filter for a group.
+ *
+ * @param {number} groupId - The group ID.
+ * @param {number} adminId - The admin ID.
+ * @returns {Promise<{ adminId: number; groupId: number }>}
+ * The created filter object.
+ */
+export const createGroupFilter = async (
+  groupId: number,
+  adminId: number
+): Promise<{ adminId: number; groupId: number }> => {
+  return prisma.adminGroupFilters.create({
     data: {
       groupId,
       adminId,
@@ -322,6 +266,4 @@ export const applyGroupFilter = async (
       adminId: true,
     },
   });
-
-  return groupFilter;
 };
