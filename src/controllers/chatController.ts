@@ -6,7 +6,11 @@ import {
 } from '../services';
 
 export const getUserChats = catchAsync(async (req, res) => {
-  const data = await getUserParticipants(req.session.user.id);
+  let data = await getUserParticipants(req.session.user.id);
+  console.log(req.query, 'params');
+  if (req.query.type) {
+    data = data.filter((participant) => participant.type === req.query.type);
+  }
   res.status(200).json(data);
 });
 
@@ -26,5 +30,6 @@ export const getMessages = catchAsync(async (req, res) => {
     limit,
     (page - 1) * limit
   );
+
   res.status(200).json(data);
 });

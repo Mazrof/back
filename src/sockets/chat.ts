@@ -1,7 +1,6 @@
 import { Server, Socket } from 'socket.io';
 
 import { handleNewConnection, MySocket } from './listeners/chatListeners';
-import { io } from '../server';
 
 type UserSocketMap = Map<number, Socket[]>; // Maps user ID to Socket
 type SocketUserMap = Map<string, number>;

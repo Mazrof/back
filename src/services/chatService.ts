@@ -10,9 +10,11 @@ import {
 } from '@prisma/client';
 import { NewMessages } from '../sockets/listeners/chatListeners';
 import logger from '../utility/logger';
+// import { getFileFromFirebase } from '../third_party_services';
 
 interface Participant {
   communityId: undefined;
+  messagesCount?: number;
   personalChatId: undefined;
   messages: undefined;
   personalChat: undefined | object;
@@ -26,7 +28,11 @@ interface Participant {
     | null
     | undefined;
   id: number;
-  secondUser?: { id: number };
+  secondUser?: {
+    id: number;
+    lastSeenVisibility?: Privacy;
+    profilePicVisibility?: Privacy;
+  };
   type: $Enums.ParticipiantTypes | string;
 }
 export const createMessage = async (data: any) => {
@@ -379,6 +385,40 @@ export const getUserGroupsChannelsChats = async (userId: number) => {
     personalChats: combinedPersonalChats,
   };
 };
+const countUnreadMessage = async (userId: number, participantId: number) => {
+  return prisma.messages.count({
+    where: {
+      senderId: {
+        not: userId,
+      },
+      status: {
+        not: MessageStatus.drafted,
+      },
+      participants: {
+        id: participantId,
+      },
+      OR: [
+        {
+          NOT: {
+            messageReadReceipts: {
+              some: {
+                userId: userId,
+              },
+            },
+          },
+        },
+        {
+          messageReadReceipts: {
+            some: {
+              userId: userId,
+              readAt: null,
+            },
+          },
+        },
+      ],
+    },
+  });
+};
 export const getUserParticipants = async (userId: number) => {
   const userParticipants = await prisma.participants.findMany({
     where: {
@@ -429,6 +469,8 @@ export const getUserParticipants = async (userId: number) => {
               publicKey: true,
               lastSeen: true,
               activeNow: true,
+              profilePicVisibility: true,
+              lastSeenVisibility: true,
             },
           },
           users2: {
@@ -441,6 +483,8 @@ export const getUserParticipants = async (userId: number) => {
               publicKey: true,
               lastSeen: true,
               activeNow: true,
+              profilePicVisibility: true,
+              lastSeenVisibility: true,
             },
           },
         },
@@ -469,6 +513,21 @@ export const getUserParticipants = async (userId: number) => {
     channel: {} as undefined | object,
     group: {} as undefined | object,
   }));
+  //
+  // for (const participant of results) {
+  //   if (participant.lastMessage && participant.lastMessage.url) {
+  //     participant.lastMessage.content = await getFileFromFirebase(
+  //       participant.lastMessage.url
+  //     );
+  //     participant.lastMessage.url = undefined;
+  //   }
+  // }
+  for (const participant of results) {
+    participant.messagesCount = await countUnreadMessage(
+      userId,
+      participant.id
+    );
+  }
   results.forEach((participant) => {
     if (participant.type !== 'personalChat') {
       if (participant.communities!.channels) {
@@ -500,6 +559,7 @@ export const getUserParticipants = async (userId: number) => {
       if (participant!.user2!.id === userId) {
         participant.secondUser = participant.user1;
       }
+
       participant.user1 = undefined;
       participant.user2 = undefined;
     }
@@ -512,6 +572,7 @@ export const getUserParticipants = async (userId: number) => {
       p2.lastMessage.createdAt!.getTime() - p1.lastMessage.createdAt!.getTime()
     );
   });
+
   return results;
 };
 
@@ -544,6 +605,13 @@ export const getMessagesService = async (
       msg.messageReadReceipts = [];
     }
   });
+  // for (const message of messages) {
+  //   if (message.url) {
+  //     console.log(message.url);
+  //     message.content = await getFileFromFirebase(message.url);
+  //     message.url = undefined;
+  //   }
+  // }
   if (skip !== 0) return messages;
   let draftedMessage = await prisma.messages.findFirst({
     where: {
@@ -556,7 +624,6 @@ export const getMessagesService = async (
       messageMentions: true,
     },
   });
-
   if (!draftedMessage) {
     const data = {
       participantId,
@@ -566,6 +633,10 @@ export const getMessagesService = async (
     };
     draftedMessage = await createMessage(data);
   }
+  // if (draftedMessage.url) {
+  //   draftedMessage.content = await getFileFromFirebase(draftedMessage.url);
+  //   draftedMessage.url = undefined;
+  // }
 
   return [...messages, draftedMessage];
 };

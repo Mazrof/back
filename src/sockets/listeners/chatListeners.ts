@@ -2,10 +2,9 @@ import { Server, Socket } from 'socket.io';
 import { IncomingMessage } from 'node:http';
 import { io } from '../../server';
 import logger from '../../utility/logger';
-import {
-  deleteFileFromFirebase,
-  uploadFileToFirebase,
-} from '../../third_party_services';
+// import {} from // deleteFileFromFirebase,
+// uploadFileToFirebase,
+// '../../third_party_services';
 import { Messages, MessageStatus } from '@prisma/client';
 
 import {
@@ -25,7 +24,6 @@ import { Chat } from '../chat';
 import { updateUserById } from '../../repositories/userRepository';
 import { catchSocketError } from '../../utility';
 import prisma from '../../prisma/client';
-import { channel } from 'node:diagnostics_channel';
 
 export interface NewMessages extends Messages {
   messageMentions: (number | { userId: number })[];
@@ -33,6 +31,8 @@ export interface NewMessages extends Messages {
   receiverId?: number;
   channelOrGroupId: number;
   participantType: string;
+  content: string;
+  senderId: number;
 }
 
 export const handleNewMessage = catchSocketError(
@@ -62,6 +62,7 @@ export const handleNewMessage = catchSocketError(
         message.receiverId,
         message.senderId
       ))!.participants!.id;
+
       Chat.getInstance()
         .getSocketsByUserId(message.senderId)
         .forEach((socket: MySocket) => {
@@ -135,22 +136,22 @@ export const handleNewMessage = catchSocketError(
     message.receiverId = undefined;
     let createdMessage = await createMessage({
       ...message,
-      content: null,
+      // content: null,
       url: null,
       participantType: undefined,
       channelOrGroupId: undefined,
     });
 
-    if (message.content.length > 200) {
-      message.url = await uploadFileToFirebase(message.content);
-      createdMessage = await updateMessageById(createdMessage.id, {
-        url: message.url,
-      });
-    } else {
-      createdMessage = await updateMessageById(createdMessage.id, {
-        content: message.content,
-      });
-    }
+    // if (message.content.length > 200) {
+    //   message.url = await uploadFileToFirebase(message.content);
+    //   createdMessage = await updateMessageById(createdMessage.id, {
+    //     url: message.url,
+    //   });
+    // } else {
+    //   createdMessage = await updateMessageById(createdMessage.id, {
+    //     content: message.content,
+    //   });
+    // }
 
     const roomSockets = io.sockets.adapter.rooms.get(
       message.participantId.toString()
@@ -164,17 +165,25 @@ export const handleNewMessage = catchSocketError(
           socketId
         ) as number;
         if (userId !== message.senderId && !userSockets.includes(userId)) {
+          console.log('created message', createdMessage);
           userSockets.push(userId);
-          socket.to(userId.toString()).emit('message:receive', createdMessage);
+          socket.to(userId.toString()).emit('message:receive', {
+            ...createdMessage,
+            // content: message.content,
+            url: undefined,
+          });
           messageReadReceipts.push(
             await insertMessageRecipient(userId, createdMessage)
           );
         }
       }
     }
+    console.log(messageReadReceipts);
     io.to(message.senderId.toString()).emit('message:receive', {
       ...createdMessage,
+      // content: message.content,
       messageReadReceipts,
+      url: undefined,
     });
 
     if (message.durationInMinutes) {
@@ -202,7 +211,7 @@ export const handleDeleteMessage = catchSocketError(
       return;
     }
     logger.info('deleted message', message);
-    if (message!.url) await deleteFileFromFirebase(message!.url);
+    // if (message!.url) await deleteFileFromFirebase(message!.url);
     await deleteMessage(message!.id);
 
     io.to(message!.participantId.toString()).emit('message:deleted', {
@@ -215,7 +224,7 @@ export const handleEditMessage = catchSocketError(
   async (socket: MySocket, callback: (err: object) => void, data: Messages) => {
     const userId = socket.user.id;
     logger.info(`message with id ${data.id} is being edited`);
-    if (!data.content) {
+    if (!data.content && !data.status) {
       callback({ message: 'message cannot have empty content' });
     }
     const message = await getMessageById(data.id);
@@ -224,33 +233,42 @@ export const handleEditMessage = catchSocketError(
       logger.info('message not found');
       return;
     }
-    let url;
-    if (data.content) {
-      if (message.url) {
-        await deleteFileFromFirebase(message.url);
-      }
-      if (data.content.length > 100) {
-        url = await uploadFileToFirebase(data.content);
-        data.content = null; // to avoid saving it in db
-      } else {
-        url = null;
-      }
-    }
-    const { content } = data;
-    const updatedMessage = await updateMessageById(data.id, {
+    // let url;
+    // if (message.url) {
+    //   await deleteFileFromFirebase(message.url);
+    // }
+    // const contentToBeSent = data.content;
+    // if (data.content.length > 100) {
+    //   url = await uploadFileToFirebase(data.content);
+    //   data.content = null; // to avoid saving it in db
+    // } else {
+    //   url = null;
+    // }
+    const { content, status } = data;
+
+    const updateData: { content: string; status?: 'pinned' | 'usual' } = {
       content,
-      url,
-    });
+    };
+    if (status === 'pinned') {
+      updateData.status = status;
+    }
+
+    const updatedMessage = await updateMessageById(data.id, updateData);
+
     if (message.status === MessageStatus.drafted) {
       io.to(updatedMessage.senderId.toString()).emit('message:edited', {
         ...updatedMessage,
         messageReadReceipts: undefined,
+        url: undefined,
+        content,
       });
       return;
     }
     io.to(updatedMessage.participantId.toString()).emit('message:edited', {
       ...updatedMessage,
       messageReadReceipts: undefined,
+      url: undefined,
+      content,
     });
   }
 );
@@ -262,6 +280,7 @@ export const handleOpenContext = catchSocketError(
     data: { participantId: number }
   ) => {
     const userId = socket.user.id;
+    console.log(userId);
     const updatedMessages = await markMessagesAsRead(
       userId,
       data.participantId
@@ -282,6 +301,7 @@ export interface SocketRequest extends IncomingMessage {
   };
 }
 export interface MySocket extends Socket {
+  userRooms?: string[];
   user?: { id: number };
   request: SocketRequest;
 }
@@ -305,9 +325,26 @@ export const handleNewConnection = catchSocketError(
     notifyParticipants(insertedData, socket);
     // Set up socket event handlers
     setupSocketEventHandlers(socket);
+    const rooms = Array.from(socket.rooms);
+    socket.userRooms = rooms;
+    console.log(rooms, 'rooms');
+    rooms.forEach((room) => {
+      socket.broadcast.to(room).emit('user:connected', {
+        socketId: socket.id,
+        userId: socket.user.id,
+        connected: true,
+      });
+    });
   }
 );
 
+// const handleCreateCall = catchSocketError(
+//   async (
+//     socket: MySocket,
+//     callback: (arg: object) => void,
+//     callDetails: object
+//   ) => {}
+// );
 // Helper function to retrieve all participant IDs
 const getAllParticipantIds = async (userId: number): Promise<number[]> => {
   const [personalChatIds, groupIds, channelIds] = await Promise.all([
@@ -332,7 +369,17 @@ const notifyParticipants = (
 
 export const disconnectedHandler = catchSocketError(
   async (socket: MySocket) => {
-    logger.info(`User disconnected: ${socket.id.toString()}`);
+    logger.info(`User disconnected: ${socket.user.id.toString()}`);
+    const rooms = Array.from(socket.userRooms);
+    console.log(rooms);
+    rooms.forEach((room) => {
+      socket.broadcast.to(room).emit('user:disconnected', {
+        socketId: socket.id,
+        userId: socket.user.id,
+        connected: false,
+      });
+    });
+
     const userId = Chat.getInstance().removeUser(socket.id);
     await updateUserById(userId, {
       activeNow: false,
@@ -350,6 +397,7 @@ export const disconnectAllUser = () => {
       });
     });
 };
+
 export const setupSocketEventHandlers = (socket: Socket) => {
   socket.on(
     'message:sent',
@@ -379,6 +427,59 @@ export const setupSocketEventHandlers = (socket: Socket) => {
     }
   );
   socket.on('disconnect', async () => {
+    console.log(socket.rooms, 'disconnected');
     await disconnectedHandler(socket);
+  });
+  //One to One voice call setup
+  socket.on('call-user', ({ targetId, offer }) => {
+    io.to(targetId).emit('incoming-call', { from: socket.id, offer });
+  });
+  socket.on('answer-call', ({ callerId, answer }) => {
+    io.to(callerId).emit('call-answered', { from: socket.id, answer });
+  });
+  socket.on('ice-candidate', ({ targetId, candidate }) => {
+    io.to(targetId).emit('ice-candidate', { from: socket.id, candidate });
+  });
+
+  //Group voice call setup
+  socket.on('start-room', ({ roomId, participinatId }) => {
+    socket.join(roomId);
+    //TODO:I may need to store the current rooms
+    io.to(participinatId.toString()).emit('room-created', {
+      roomId,
+      from: socket.id,
+    });
+  });
+  socket.on('join-room', ({ roomId }) => {
+    if (roomId) {
+      socket.join(roomId);
+      io.to(roomId).emit('user-joined', {
+        userId: socket.id,
+      });
+    }
+  });
+  socket.on('offer', ({ roomId, offer, to }) => {
+    if (roomId) {
+      socket.to(roomId).emit('offer', { from: socket.id, offer, to });
+    }
+  });
+
+  socket.on('answer', ({ roomId, answer, to }) => {
+    if (roomId) {
+      socket.to(roomId).emit('answer', { from: socket.id, answer, to });
+    }
+  });
+
+  socket.on('group-ice-candidate', ({ roomId, candidate }) => {
+    if (roomId) {
+      socket.to(roomId).emit('ice-candidate', { from: socket.id, candidate });
+    }
+  });
+
+  socket.on('leave-room', ({ roomId }) => {
+    if (roomId) {
+      socket.leave(roomId);
+      io.to(roomId).emit('user-left', { userId: socket.id });
+    }
   });
 };

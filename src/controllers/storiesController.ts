@@ -4,14 +4,21 @@ import * as storiesService from '../services/storiesService';
 
 export const addStory = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { userId, content, storyMedia } = req.body;
+    const userId = req.session.user.id;
+    const { content, storyMedia, mediaType, color } = req.body;
     if (!userId || !content) {
       return res.status(400).json({
         status: 'fail',
         message: 'User ID and content are required.',
       });
     }
-    await storiesService.createStory(userId, content, storyMedia);
+    await storiesService.createStory(
+      userId,
+      content,
+      storyMedia,
+      mediaType,
+      color
+    );
     res.status(201).json({
       status: 'success',
     });
@@ -20,10 +27,10 @@ export const addStory = catchAsync(
 
 export const getStory = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { id } = req.params;
-    const curUserId = req.body.userId;
+    const curUserId = req.session.user.id;
+    const storyId = req.params.id;
     const story = await storiesService.getStoryById(
-      Number(id),
+      Number(storyId),
       Number(curUserId)
     );
 
@@ -42,17 +49,15 @@ export const getStory = catchAsync(
 
 export const getAllUserStories = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { userId } = req.query;
-    const curUserId = req.body.userId;
-    const stories = await storiesService.getUserStories(
-      Number(userId),
-      Number(curUserId)
+    const userId = req.session.user.id;
+    const allFriendsStories = await storiesService.getUserStories(
+      Number(userId)
     );
 
     res.status(200).json({
       status: 'success',
       data: {
-        stories,
+        allFriendsStories,
       },
     });
   }
@@ -60,9 +65,8 @@ export const getAllUserStories = catchAsync(
 
 export const deleteStory = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { id } = req.params;
-
-    await storiesService.deleteStoryById(Number(id));
+    const userId = req.session.user.id;
+    await storiesService.deleteStoryById(Number(userId));
 
     res.status(204).json({
       status: 'success',
