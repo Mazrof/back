@@ -8,7 +8,7 @@ import {
 } from '../../controllers/groupMemberController';
 import * as groupMemberService from '../../services/groupMemberService';
 import {
-  checkGroupMember,
+  checkGroupMemberExistence,
   checkGroupMemberPermission,
 } from '../../services/groupMemberService';
 import { CommunityRole } from '@prisma/client';
@@ -56,7 +56,7 @@ describe('Group Member Controller', () => {
         },
       ];
 
-      (checkGroupMember as jest.Mock).mockResolvedValue(undefined);
+      (checkGroupMemberExistence as jest.Mock).mockResolvedValue(undefined);
       (groupMemberService.getGroupMembers as jest.Mock).mockResolvedValue(
         mockMembers
       );
@@ -67,7 +67,7 @@ describe('Group Member Controller', () => {
         mockNext
       );
 
-      expect(checkGroupMember).toHaveBeenCalledWith(1, 1);
+      expect(checkGroupMemberExistence).toHaveBeenCalledWith(1, 1);
       expect(groupMemberService.getGroupMembers).toHaveBeenCalledWith(1);
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
@@ -81,7 +81,7 @@ describe('Group Member Controller', () => {
       const error = new Error('Service error');
       mockRequest.params = { groupId: '1' };
 
-      (checkGroupMember as jest.Mock).mockRejectedValue(error);
+      (checkGroupMemberExistence as jest.Mock).mockRejectedValue(error);
 
       await getGroupMembers(
         mockRequest as Request,
@@ -89,7 +89,7 @@ describe('Group Member Controller', () => {
         mockNext
       );
 
-      expect(checkGroupMember).toHaveBeenCalledWith(1, 1);
+      expect(checkGroupMemberExistence).toHaveBeenCalledWith(1, 1);
       expect(mockNext).toHaveBeenCalledWith(error);
     });
   });

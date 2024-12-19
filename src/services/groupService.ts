@@ -147,13 +147,14 @@ export const updateGroup = async (
   community: { name: string; privacy: boolean; imageURL: string };
   groupSize: number;
 }> => {
+  const group = await findGroupById(groupId);
+  
   await groupMemberService.checkGroupMemberPermission(adminId, groupId);
 
   if (!data.name && !data.privacy && !data.groupSize && !data.imageURL) {
     throw new AppError('No data to update', 400);
   }
 
-  const group = await findGroupById(groupId);
 
   if (data.name || data.privacy || data.imageURL) {
     await groupRepository.updateCommunity(group.communityId, data);
@@ -179,9 +180,10 @@ export const deleteGroup = async (
   groupId: number,
   adminId: number
 ): Promise<null> => {
+  const group = await findGroupById(groupId);
+
   await groupMemberService.checkGroupMemberPermission(adminId, groupId);
 
-  const group = await findGroupById(groupId);
 
   await groupRepository.updateCommunity(group.communityId, {
     active: false,
