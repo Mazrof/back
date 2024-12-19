@@ -224,7 +224,7 @@ export const handleEditMessage = catchSocketError(
   async (socket: MySocket, callback: (err: object) => void, data: Messages) => {
     const userId = socket.user.id;
     logger.info(`message with id ${data.id} is being edited`);
-    if (!data.content) {
+    if (!data.content && !data.status) {
       callback({ message: 'message cannot have empty content' });
     }
     const message = await getMessageById(data.id);
@@ -233,7 +233,7 @@ export const handleEditMessage = catchSocketError(
       logger.info('message not found');
       return;
     }
-    let url;
+    // let url;
     // if (message.url) {
     //   await deleteFileFromFirebase(message.url);
     // }
@@ -244,10 +244,17 @@ export const handleEditMessage = catchSocketError(
     // } else {
     //   url = null;
     // }
-    const { content } = data;
-    const updatedMessage = await updateMessageById(data.id, {
+    const { content, status } = data;
+
+    const updateData: { content: string; status?: 'pinned' | 'usual' } = {
       content,
-    });
+    };
+    if (status === 'pinned') {
+      updateData.status = status;
+    }
+
+    const updatedMessage = await updateMessageById(data.id, updateData);
+
     if (message.status === MessageStatus.drafted) {
       io.to(updatedMessage.senderId.toString()).emit('message:edited', {
         ...updatedMessage,
