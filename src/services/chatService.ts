@@ -10,10 +10,7 @@ import {
 } from '@prisma/client';
 import { NewMessages } from '../sockets/listeners/chatListeners';
 import logger from '../utility/logger';
-import {
-  getFileFromFirebase,
-  uploadFileToFirebase,
-} from '../third_party_services';
+// import { getFileFromFirebase } from '../third_party_services';
 
 interface Participant {
   communityId: undefined;
@@ -516,15 +513,15 @@ export const getUserParticipants = async (userId: number) => {
     channel: {} as undefined | object,
     group: {} as undefined | object,
   }));
-
-  for (const participant of results) {
-    if (participant.lastMessage && participant.lastMessage.url) {
-      participant.lastMessage.content = await getFileFromFirebase(
-        participant.lastMessage.url
-      );
-      participant.lastMessage.url = undefined;
-    }
-  }
+  //
+  // for (const participant of results) {
+  //   if (participant.lastMessage && participant.lastMessage.url) {
+  //     participant.lastMessage.content = await getFileFromFirebase(
+  //       participant.lastMessage.url
+  //     );
+  //     participant.lastMessage.url = undefined;
+  //   }
+  // }
   for (const participant of results) {
     participant.messagesCount = await countUnreadMessage(
       userId,
@@ -608,13 +605,13 @@ export const getMessagesService = async (
       msg.messageReadReceipts = [];
     }
   });
-  for (const message of messages) {
-    if (message.url) {
-      console.log(message.url);
-      message.content = await getFileFromFirebase(message.url);
-      message.url = undefined;
-    }
-  }
+  // for (const message of messages) {
+  //   if (message.url) {
+  //     console.log(message.url);
+  //     message.content = await getFileFromFirebase(message.url);
+  //     message.url = undefined;
+  //   }
+  // }
   if (skip !== 0) return messages;
   let draftedMessage = await prisma.messages.findFirst({
     where: {
@@ -636,10 +633,10 @@ export const getMessagesService = async (
     };
     draftedMessage = await createMessage(data);
   }
-  if (draftedMessage.url) {
-    draftedMessage.content = await getFileFromFirebase(draftedMessage.url);
-    draftedMessage.url = undefined;
-  }
+  // if (draftedMessage.url) {
+  //   draftedMessage.content = await getFileFromFirebase(draftedMessage.url);
+  //   draftedMessage.url = undefined;
+  // }
 
   return [...messages, draftedMessage];
 };

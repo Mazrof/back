@@ -2,10 +2,9 @@ import { Server, Socket } from 'socket.io';
 import { IncomingMessage } from 'node:http';
 import { io } from '../../server';
 import logger from '../../utility/logger';
-import {
-  deleteFileFromFirebase,
-  uploadFileToFirebase,
-} from '../../third_party_services';
+// import {} from // deleteFileFromFirebase,
+// uploadFileToFirebase,
+// '../../third_party_services';
 import { Messages, MessageStatus } from '@prisma/client';
 
 import {
@@ -61,6 +60,7 @@ export const handleNewMessage = catchSocketError(
         message.receiverId,
         message.senderId
       ))!.participants!.id;
+
       Chat.getInstance()
         .getSocketsByUserId(message.senderId)
         .forEach((socket: MySocket) => {
@@ -134,22 +134,22 @@ export const handleNewMessage = catchSocketError(
     message.receiverId = undefined;
     let createdMessage = await createMessage({
       ...message,
-      content: null,
+      // content: null,
       url: null,
       participantType: undefined,
       channelOrGroupId: undefined,
     });
 
-    if (message.content.length > 200) {
-      message.url = await uploadFileToFirebase(message.content);
-      createdMessage = await updateMessageById(createdMessage.id, {
-        url: message.url,
-      });
-    } else {
-      createdMessage = await updateMessageById(createdMessage.id, {
-        content: message.content,
-      });
-    }
+    // if (message.content.length > 200) {
+    //   message.url = await uploadFileToFirebase(message.content);
+    //   createdMessage = await updateMessageById(createdMessage.id, {
+    //     url: message.url,
+    //   });
+    // } else {
+    //   createdMessage = await updateMessageById(createdMessage.id, {
+    //     content: message.content,
+    //   });
+    // }
 
     const roomSockets = io.sockets.adapter.rooms.get(
       message.participantId.toString()
@@ -163,10 +163,11 @@ export const handleNewMessage = catchSocketError(
           socketId
         ) as number;
         if (userId !== message.senderId && !userSockets.includes(userId)) {
+          console.log('created message', createdMessage);
           userSockets.push(userId);
           socket.to(userId.toString()).emit('message:receive', {
             ...createdMessage,
-            content: message.content,
+            // content: message.content,
             url: undefined,
           });
           messageReadReceipts.push(
@@ -175,9 +176,10 @@ export const handleNewMessage = catchSocketError(
         }
       }
     }
+    console.log(messageReadReceipts);
     io.to(message.senderId.toString()).emit('message:receive', {
       ...createdMessage,
-      content: message.content,
+      // content: message.content,
       messageReadReceipts,
       url: undefined,
     });
@@ -207,7 +209,7 @@ export const handleDeleteMessage = catchSocketError(
       return;
     }
     logger.info('deleted message', message);
-    if (message!.url) await deleteFileFromFirebase(message!.url);
+    // if (message!.url) await deleteFileFromFirebase(message!.url);
     await deleteMessage(message!.id);
 
     io.to(message!.participantId.toString()).emit('message:deleted', {
@@ -230,27 +232,26 @@ export const handleEditMessage = catchSocketError(
       return;
     }
     let url;
-    if (message.url) {
-      await deleteFileFromFirebase(message.url);
-    }
-    const contentToBeSent = data.content;
-    if (data.content.length > 100) {
-      url = await uploadFileToFirebase(data.content);
-      data.content = null; // to avoid saving it in db
-    } else {
-      url = null;
-    }
+    // if (message.url) {
+    //   await deleteFileFromFirebase(message.url);
+    // }
+    // const contentToBeSent = data.content;
+    // if (data.content.length > 100) {
+    //   url = await uploadFileToFirebase(data.content);
+    //   data.content = null; // to avoid saving it in db
+    // } else {
+    //   url = null;
+    // }
     const { content } = data;
     const updatedMessage = await updateMessageById(data.id, {
       content,
-      url,
     });
     if (message.status === MessageStatus.drafted) {
       io.to(updatedMessage.senderId.toString()).emit('message:edited', {
         ...updatedMessage,
         messageReadReceipts: undefined,
         url: undefined,
-        content: contentToBeSent,
+        content,
       });
       return;
     }
@@ -258,7 +259,7 @@ export const handleEditMessage = catchSocketError(
       ...updatedMessage,
       messageReadReceipts: undefined,
       url: undefined,
-      content: contentToBeSent,
+      content,
     });
   }
 );
