@@ -69,6 +69,9 @@ ENV TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN_ARG}
 ENV INFOBIP_API_KEY=${INFOBIP_API_KEY_ARG}
 ENV BACKEND_URL=${BACKEND_URL_ARG}
 ENV FRONTEND_URL=${FRONTEND_URL_ARG}
+ENV REDIS_HOST=
+ENV REDIS_PORT=
+ENV REDIS_PASSWORD=
 
 ## Copying
 
@@ -79,6 +82,8 @@ COPY --from=build /build/node_modules ./node_modules
 COPY --from=build /build/package*.json ./
 
 COPY --from=build /build/prisma ./prisma
+
+COPY ./serviceAccountKey.json ./serviceAccountKey.json
 
 EXPOSE 3000
 

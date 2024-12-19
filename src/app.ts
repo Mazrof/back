@@ -24,7 +24,7 @@ export default async (app: Application) => {
   app.use(cookieParser());
   // Session middleware
 
-  app.options('*', cors()); // Preflight for all routes
+  app.options(process.env.FRONTEND_URL, cors()); // Preflight for all routes
 
   app.use(sessionMiddleware);
   app.use(passport.initialize());
