@@ -26,7 +26,7 @@ export const sendNotificationService = async (userId: number,NotificationData: F
         notification: {
           title: NotificationData.title,
           body: NotificationData.body        },
-        tokens: ["dZOzTWzFMK-R6RCKD03vVz:APA91bEs8zf8G0BcS1tfxODkhSLYuwaj8EON-SBApEkq4B-B-u1DL8PdSuC7sf7dYycfoswmhBzKwbgwj1CsPE9LKU6-uhA7Q3BO-X5pTi50wQjPqO6NjPY"]
+        tokens: user.fcmtokens
     };
 
     return await admin.messaging().sendEachForMulticast(message)
@@ -57,14 +57,13 @@ export const sendNotifications = async (participantId:number,senderId:number,Not
         const channelUsers=await getChannelUsers(participantId);
         const users=groupUsers.concat(channelUsers);
         const mutedUsersIds=(await getUserMutedParticipants(participantId)).map((user)=>user.id);
-        const usersToSend=users.filter((user)=>!mutedUsersIds.includes(user.id)&&user.id!=senderId);
+        const usersToSend=users.filter((user)=>!mutedUsersIds.includes(user.id)&&Number(user.id)!==Number(senderId));
         console.log("FCM Tokens",usersToSend.map((user)=>user.fcmtokens).flat());
 
         const message: MulticastMessage = {
             notification: {
               title: NotificationData.title,
               body: NotificationData.body,
-              imageUrl: NotificationData.image || `${process.env.BACKEND_URL}/download.jpeg`
             },
             tokens: usersToSend.map((user)=>user.fcmtokens).flat()
             
