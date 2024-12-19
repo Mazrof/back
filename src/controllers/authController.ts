@@ -5,8 +5,17 @@ import {
 import { redisClient } from '../config/sessionConfig';
 declare module 'express-session' {
   interface SessionData {
-    user?: { id: number; userType: string; user: unknown };
+    user?: { id: number; userType: string; user: unknown, systemInfo?: unknown };
   }
+}
+interface CustomRequest extends Request {
+  useragent: {
+    platform: string;
+    browser: string;
+    isMobile: boolean;
+    isDesktop: boolean;
+    os: string;
+  };
 }
 import { Request, Response } from 'express';
 import { registerUser, authenticateUser } from '../services/authService';
@@ -25,7 +34,7 @@ export const signup = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-export const login = catchAsync(async (req: Request, res: Response) => {
+export const login = catchAsync(async (req: CustomRequest, res: Response) => {
   const { email, password } = req.body;
 
   const user = await authenticateUser(email, password);
@@ -38,7 +47,20 @@ export const login = catchAsync(async (req: Request, res: Response) => {
       data: { user: { id: user.id, user_type: 'Admin',user } },
     });
   } else {
-    req.session.user = { id: user.id, userType: 'user',user }; // Store user in session
+    const systemInfo = {
+      platform: req.useragent.platform, // e.g., Windows, Mac, Linux
+      browser: req.useragent.browser,   // e.g., Chrome, Safari
+      isMobile: req.useragent.isMobile, // true if the device is mobile
+      isDesktop: req.useragent.isDesktop, // true if the device is desktop
+      os: req.useragent.os,             // e.g., Windows 10, macOS
+    };
+
+    req.session.user = {
+      id: user.id,
+      userType: 'user',
+      user,
+      systemInfo,
+    };
     res.status(200).json({
       status: 'success',
       data: { user: { id: user.id, user_type: 'user',user } },

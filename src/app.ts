@@ -13,6 +13,7 @@ import session from 'express-session';
 import { sessionConfig } from './config/sessionConfig';
 import { corsConfig } from './config/corsConfig';
 import express from "express";
+import useragent from 'express-useragent';
 
 export const sessionMiddleware = session(sessionConfig);
 
@@ -27,6 +28,7 @@ export default async (app: Application) => {
 
   app.options(process.env.FRONTEND_URL, cors()); // Preflight for all routes
 
+  app.use(useragent.express());
   app.use(sessionMiddleware);
   app.use(passport.initialize());
   app.use(passport.session());
