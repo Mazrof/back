@@ -2,6 +2,7 @@ import {
   requestPasswordReset,
   resetPassword,
 } from './../services/emailService';
+import { redisClient } from '../config/sessionConfig';
 declare module 'express-session' {
   interface SessionData {
     user?: { id: number; userType: string; user: unknown };
@@ -169,4 +170,47 @@ export const resetPasswordController = catchAsync(
     });
   }
 );
+
+
+// eslint-disable-next-line consistent-return
+export const getUserSessions = catchAsync(async (req: Request, res: Response) => {
+  const userId=req.session.user.id;
+  try {
+    const keys = await redisClient.keys('sess:*');
+    const userSessions = await Promise.all(
+      keys.map(async (key) => {
+        const sessionData = await redisClient.get(key);
+        const session = JSON.parse(sessionData);
+
+        if (session?.user?.id === userId) {
+          return { key, data: session };
+        }
+        return null;
+      })
+    );
+
+    // Filter out null values (non-matching sessions)
+    const filteredSessions = userSessions.filter((session) => session !== null);
+
+    if (filteredSessions.length === 0) {
+      return res.status(404).json({ error: `No sessions found for user ID ${userId}` });
+    }
+
+    res.json({ status: 'success', data: filteredSessions });
+  } catch (error) {
+    throw new AppError('Failed to retrieve sessions', 500);
+  }
+});
+
+export const endUserSession = catchAsync(async (req: Request, res: Response) => {
+  const { key } = req.body;
+  if (!key) {
+    throw new AppError('Session key is required', 400);
+  }
+
+  await redisClient.del(key);
+  res.json({ status: 'success', data: { message: 'Session ended' } });
+});
+
+
 

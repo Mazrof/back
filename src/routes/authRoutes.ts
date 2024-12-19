@@ -9,6 +9,8 @@ import {
   logoutController,
   resetPasswordController,
   requestPasswordResetController,
+  getUserSessions,
+  endUserSession,
 } from '../controllers/authController';
 import { isAuthenticated } from '../middlewares/authMiddleware';
 import passport from '../services/oauth';
@@ -51,5 +53,8 @@ router.post('/request-password-reset', requestPasswordResetController);
 router.post('/reset-password', resetPasswordController);
 
 router.post('/logout', isAuthenticated, logoutController);
+
+router.get("/sessions",isAuthenticated,getUserSessions);
+router.delete("/sessions",isAuthenticated,endUserSession);
 
 export default router;
