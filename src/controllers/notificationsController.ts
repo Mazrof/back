@@ -31,7 +31,7 @@ export const sendNotificationController = catchAsync(async (req: Request, res: R
 
 export const sendNotificationsController = catchAsync(async (req: Request, res: Response) => {
   const participantId = req.body.participantId;
-  const senderId = 1;
+  const senderId = req.session.user.id;
   const NotificationData = notificationSchema.parse(req.body);
   const {title,body,image} = NotificationData;
   const result = await sendNotifications(participantId,senderId, {title,body,image});

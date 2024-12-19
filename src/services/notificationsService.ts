@@ -39,7 +39,7 @@ export const sendNotifications = async (participantId:number,senderId:number,Not
     if (chatType.type.toString()===ParticipiantTypes.personalChat.toString()){
          const users=await getPersonalChatUsers(participantId);
         const mutedUsersIds=(await getUserMutedParticipants(participantId)).map((user)=>user.id);
-        const usersToSend=users.filter((user)=>!mutedUsersIds.includes(user.id)&&user.id!==senderId);
+        const usersToSend=users.filter((user)=>!mutedUsersIds.includes(user.id)&&Number(user.id)!==Number(senderId));
         console.log("FCM Tokens",usersToSend.map((user)=>user.fcmtokens).flat());
         const message: MulticastMessage = {
             notification: {
@@ -57,7 +57,7 @@ export const sendNotifications = async (participantId:number,senderId:number,Not
         const channelUsers=await getChannelUsers(participantId);
         const users=groupUsers.concat(channelUsers);
         const mutedUsersIds=(await getUserMutedParticipants(participantId)).map((user)=>user.id);
-        const usersToSend=users.filter((user)=>!mutedUsersIds.includes(user.id)&&user.id!==senderId);
+        const usersToSend=users.filter((user)=>!mutedUsersIds.includes(user.id)&&user.id!=senderId);
         console.log("FCM Tokens",usersToSend.map((user)=>user.fcmtokens).flat());
 
         const message: MulticastMessage = {
