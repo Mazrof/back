@@ -1,5 +1,4 @@
-import { DefaultEventsMap } from 'socket.io';
-import { Server, Socket } from 'socket.io';
+import { DefaultEventsMap, Socket } from 'socket.io';
 import {
   disconnectedHandler,
   setupSocketEventHandlers,
@@ -25,9 +24,7 @@ jest.mock('../../services/chatService');
 describe('setupSocketEventHandlers', () => {
   beforeEach(() => {
     (mockSocket.on as jest.Mock).mockClear();
-    setupSocketEventHandlers(
-      mockSocket as Socket<DefaultEventsMap, DefaultEventsMap>
-    );
+    setupSocketEventHandlers(mockSocket as Socket);
   });
 
   it('sets up message:sent handler', function () {
