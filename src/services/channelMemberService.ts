@@ -1,99 +1,178 @@
-import * as channelMemberRepository from '../repositories/channelMemberRepository';
-import * as userRepository from '../repositories/adminRepository';
+import * as Repository from '../repositories';
+import * as Service from '../services';
 import { AppError } from '../utility';
-import { UpdateChannelMemberData } from '../types';
 import { CommunityRole } from '@prisma/client';
-import * as channelRepository from '../repositories/channelRepository';
+import { channelResponse } from '../repositories/repositoriesTypes/channelTypes';
 
-
-const findChannel = async (channelId: number) => {
-  const channel = await channelRepository.findChannelById(channelId);
-  if (!channel) {
-    throw new AppError('this is no channel with this id', 404);
+/**
+ * Helper function to check if a channel exists by its ID.
+ * @param channelId - The ID of the channel to check.
+ * @throws {AppError} If the channel does not exist.
+ */
+const findChannel = async (channelId: number): Promise<void> => {
+  const channel: channelResponse = await Repository.findChannelById(channelId);
+  if (!channel || !channel.community.active) {
+    throw new AppError('No channel found with this ID', 404);
   }
 };
 
-const checkUser = async (userId: number) => {
-  const user = await userRepository.findUserById(userId);
+/**
+ * Helper function to check if a user exists by their ID.
+ * @param userId - The ID of the user to check.
+ * @throws {AppError} If the user does not exist.
+ */
+const checkUser = async (userId: number): Promise<void> => {
+  const user: { id: number; username: string; status: boolean } =
+    await Repository.findUserById(userId);
   if (!user) {
-    throw new AppError('this is no user with this id', 404);
+    throw new AppError('No user found with this ID', 404);
   }
 };
 
+/**
+ * Function to check if a user has admin permissions for a specific channel.
+ * @param userId - The ID of the user whose permissions are being checked.
+ * @param channelId - The ID of the channel.
+ * @throws {AppError} If the user is not an admin.
+ */
 export const checkChannelMemberPermission = async (
   userId: number,
   channelId: number
-) => {
+): Promise<void> => {
   const channelMember = await checkChannelMember(userId, channelId);
   if (channelMember.role !== CommunityRole.admin) {
     throw new AppError('Not Authorized', 403);
   }
 };
 
-export const checkChannelMember = async (userId: number, channelId: number) => {
-  await findChannel(channelId);
-  const channelMember = await channelMemberRepository.findExistingMember(
-    userId,
-    channelId
-  );
+/**
+ * Helper function to check if a user is a member of a channel.
+ * @param userId - The ID of the user to check.
+ * @param channelId - The ID of the channel.
+ * @returns The channel member's details, including permissions and role.
+ * @throws {AppError} If the user is not a member or is inactive.
+ */
+export const checkChannelMember = async (
+  userId: number,
+  channelId: number
+): Promise<{
+  hasDownloadPermissions: boolean;
+  active: boolean;
+  role: CommunityRole;
+}> => {
+  await findChannel(channelId); // Ensure the channel exists
+  const channelMember = await Repository.findExistingMember(userId, channelId);
   if (!channelMember || !channelMember.active) {
-    throw new AppError('the user is not a member of the channel', 404);
+    throw new AppError('User is not a member of the channel', 403);
   }
   return channelMember;
 };
 
-const checkMember = async (userId: number, channelId: number) => {
-  await checkUser(userId);
-  const existingMember = await channelMemberRepository.findExistingMember(
-    userId,
-    channelId
-  );
+/**
+ * Function to check if a member exists and update them if inactive.
+ * @param userId - The ID of the user.
+ * @param channelId - The ID of the channel.
+ * @returns The updated member details if the user is inactive and is updated.
+ * @throws {AppError} If the user already exists as an active member.
+ */
+const checkMember = async (
+  userId: number,
+  channelId: number
+): Promise<{
+  active: boolean;
+  role: CommunityRole;
+  hasDownloadPermissions: boolean;
+  userId: number;
+  channelId: number;
+} | null> => {
+  await checkUser(userId); // Ensure the user exists
+  const existingMember = await Repository.findExistingMember(userId, channelId);
   if (existingMember) {
     if (!existingMember.active) {
-      return await channelMemberRepository.updateChannelMemberStatus(
-        userId,
-        channelId,
-        true
-      );
+      return await Repository.updateChannelMember(userId, channelId, {
+        active: true,
+        role: CommunityRole.member,
+      });
     }
     throw new AppError('Member already exists in this channel', 400);
   }
   return null;
 };
 
+/**
+ * Helper function to check if the user is an admin of the channel.
+ * @param adminId - The ID of the admin to check.
+ * @param channelId - The ID of the channel.
+ * @throws {AppError} If the user is not an admin or is not authorized.
+ */
 const checkAdmin = async (adminId: number, channelId: number) => {
   if (!adminId) {
-    throw new AppError('AdminId is missing', 400);
+    throw new AppError('Admin ID is missing', 400);
   }
-  const user = await channelMemberRepository.findChannelMember(
-    adminId,
-    channelId
-  );
+  const user = await Repository.findChannelMember(adminId, channelId);
   if (!user || !user.active || user.role !== CommunityRole.admin) {
     throw new AppError('Not Authorized', 403);
   }
 };
 
-export const getChannelMembers = async (channelId: number) => {
-  // Check if there is a channel
-  await findChannel(channelId);
-
-  return await channelMemberRepository.findChannelMembers(channelId);
+/**
+ * Function to get all members of a channel.
+ * @param channelId - The ID of the channel to get members for.
+ * @param userId - The ID of the user requesting the member list.
+ * @returns A list of channel members with their roles and permissions.
+ * @throws {AppError} If the channel does not exist or the user is not a member.
+ */
+export const getChannelMembers = async (
+  channelId: number,
+  userId: number
+): Promise<
+  {
+    channelId: number;
+    userId: number;
+    role: CommunityRole;
+    hasDownloadPermissions: boolean;
+    active: boolean;
+    users: { username: string };
+  }[]
+> => {
+  await findChannel(channelId); // Ensure the channel exists
+  await checkChannelMember(userId, channelId); // Ensure the user is a member of the channel
+  return Repository.findChannelMembers(channelId); // Retrieve the members
 };
 
+/**
+ * Function to add a new member to the channel.
+ * @param userId - The ID of the user to add.
+ * @param channelId - The ID of the channel to add the user to.
+ * @param requesterId - The ID of the user making the request.
+ * @param role - The role to assign to the new member.
+ * @param hasDownloadPermissions - Whether the new member has download permissions.
+ * @returns The newly added member's details.
+ * @throws {AppError} If the requester does not have permission to add an admin or if the member already exists.
+ */
 export const addChannelMember = async (
   userId: number,
   channelId: number,
+  requesterId: number,
   role: CommunityRole,
   hasDownloadPermissions: boolean
 ) => {
-  // Check if there is a channel
-  await findChannel(channelId);
+  await findChannel(channelId); // Ensure the channel exists
+
   // Check if the member already exists in the channel
   const member = await checkMember(userId, channelId);
-  if (member) return member;
-  // Create a new channel membership for the member
-  return await channelMemberRepository.addChannelMember({
+
+  // If the requester is adding an admin, ensure they have admin rights
+  if (requesterId && role === CommunityRole.admin) {
+    await checkAdmin(requesterId, channelId);
+  }
+
+  if (member) {
+    return member; // Return existing member if already added
+  }
+
+  // Add the new member to the channel
+  return await Repository.addChannelMember({
     channelId,
     userId,
     role,
@@ -101,93 +180,120 @@ export const addChannelMember = async (
   });
 };
 
+/**
+ * Function to update an existing channel member's data.
+ * @param adminId - The ID of the admin requesting the update.
+ * @param channelId - The ID of the channel.
+ * @param userId - The ID of the member to update.
+ * @param data - The data to update (role and/or permissions).
+ * @returns The updated member's role and permissions.
+ * @throws {AppError} If there is no data to update, or if the admin does not have permission.
+ */
 export const updateChannelMember = async (
   adminId: number,
   channelId: number,
   userId: number,
-  updates: UpdateChannelMemberData
-) => {
-  // Check if there is a channel
-  await findChannel(channelId);
-  // Check if the user is an admin in the channel
-  await checkAdmin(adminId, channelId);
+  data: {
+    role?: CommunityRole;
+    hasDownloadPermissions?: boolean;
+  }
+): Promise<{ role: CommunityRole; hasDownloadPermissions: boolean }> => {
+  if (!data.role && !data.hasDownloadPermissions) {
+    throw new AppError('No data to update', 400);
+  }
 
-  const user = await channelMemberRepository.findChannelMember(
-    userId,
-    channelId
-  );
+  await findChannel(channelId); // Ensure the channel exists
+  await checkAdmin(adminId, channelId); // Ensure the admin has permission
 
-  const existingMember = await channelMemberRepository.findExistingMember(
-    userId,
-    channelId
-  );
+  const existingMember = await Repository.findExistingMember(userId, channelId);
 
-  if (!existingMember) {
+  if (!existingMember || !existingMember.active) {
     throw new AppError('Member not found in this Channel', 404);
   }
 
-  const updatedData: UpdateChannelMemberData = {};
-  if (updates.role) {
-    updatedData.role =
-      updates.role.toLowerCase() === 'admin'
-        ? CommunityRole.admin
-        : CommunityRole.member;
-  }
-
-  if (updates.hasDownloadPermissions) {
-    updatedData.hasDownloadPermissions = updates.hasDownloadPermissions;
-  }
-  if (!updates.role && !updates.hasDownloadPermissions) {
-    throw new AppError('Not Data to update', 400);
-  }
-  return await channelMemberRepository.updateChannelMemberData(
-    userId,
-    channelId,
-    updatedData
-  );
+  return await Repository.updateChannelMember(userId, channelId, data); // Update the member's data
 };
 
+/**
+ * Function to delete a member from a channel.
+ * @param channelId - The ID of the channel.
+ * @param userId - The ID of the member to delete.
+ * @returns The deleted member's details.
+ * @throws {AppError} If the member is not found or is inactive.
+ */
 export const deleteChannelMember = async (
   channelId: number,
   userId: number
 ) => {
-  const existingMember = await channelMemberRepository.findExistingMember(
-    userId,
-    channelId
-  );
+  const existingMember = await Repository.findExistingMember(userId, channelId);
 
   if (!existingMember || !existingMember.active) {
     throw new AppError('Member not found in this channel', 404);
   }
-  const channelMember = await channelMemberRepository.updateChannelMemberStatus(
-    userId,
-    channelId,
-    false
-  );
 
   if (existingMember.role === CommunityRole.admin) {
-    const adminCount = await channelMemberRepository.getAdminCounts(channelId);
-    if (!adminCount) await channelRepository.deleteChannel(channelId);
+    const adminCount: number = await Repository.getAdminCounts(channelId);
+
+    if (adminCount === 1) {
+      console.log('terminate');
+      // Delete all users in the channel if the admin is being removed
+      const members = await Service.getChannelMembers(channelId, userId);
+      for (const member of members) {
+        if (member.active && member.userId !== existingMember.userId)
+          await Repository.updateChannelMember(member.userId, channelId, {
+            active: false,
+          });
+      }
+      // Delete the channel if no admin remains
+      await Service.deleteChannel(channelId, userId);
+    }
   }
+  const channelMember = await Repository.updateChannelMember(
+    userId,
+    channelId,
+    { active: false }
+  );
   return channelMember;
 };
 
-export const joinChannelByInvite = async (token: string, userId: number) => {
+/**
+ * Function to allow a user to join a channel via an invitation link.
+ *
+ * This function verifies the invitation link, checks if the user is already a member,
+ * and adds the user to the channel if they are not already a member. The user will be
+ * assigned default permissions and role as a member.
+ *
+ * @param token - The invitation token containing the invitation link hash.
+ * @param userId - The ID of the user accepting the invitation.
+ * @returns The channel details including channelId, userId, role, and download permissions.
+ * @throws {AppError} If the invitation link is invalid or the community is inactive.
+ */
+export const joinChannelByInvite = async (
+  token: string,
+  userId: number
+): Promise<{
+  channelId: number;
+  userId: number;
+  role: CommunityRole;
+  hasDownloadPermissions: boolean;
+}> => {
+  // Verify the channel using the invitation token
+  const channel = await Repository.findChannelByInvitationLinkHash(token);
 
-  const channel: { id: number } | null =
-    await channelMemberRepository.findChannelByInvitationLinkHash(
-      token
-    );
-
-  if (!channel) {
-    throw new Error('Invalid or expired invitation link');
+  // Check if the channel exists and is active
+  if (!channel || !channel.community.active) {
+    throw new AppError('Invalid invitation link', 400);
   }
 
-  // Check if the member already exists in the group
+  // Check if the user is already a member of the channel
   const member = await checkMember(userId, channel.id);
-  // Create a new group membership for the member
-  if (member) return member;
-  return await channelMemberRepository.addChannelMember({
+
+  if (member) {
+    return member; // Return existing member if they are already part of the channel
+  }
+
+  // Add the user to the channel with default permissions (role: member, no download permissions)
+  return await Repository.addChannelMember({
     channelId: channel.id,
     userId,
     role: CommunityRole.member,
