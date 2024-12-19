@@ -78,8 +78,8 @@ model Communities {
   name         String        @db.VarChar(255)
   privacy      Boolean       @default(true)
   creatorId    Int           @map("creator_id")
-  imageURL     String        @default("") @map("image_url")
   active       Boolean       @default(true)
+  imageURL     String        @default("") @map("image_url")
   channels     Channels?
   users        Users         @relation(fields: [creatorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   groups       Groups?
@@ -165,11 +165,12 @@ model Messages {
 }
 
 model MutedParticipants {
-  userId        Int                      @map("user_id")
-  participantId Int                      @map("participant_id")
-  duration      Unsupported("interval")?
-  participants  Participants             @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users         Users                    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  userId        Int          @map("user_id")
+  participantId Int          @map("participant_id")
+  duration      MuteDuration @default(forever)
+  expiry_date   DateTime?    @db.Timestamp(6)
+  participants  Participants @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users         Users        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([userId, participantId])
   @@map("mutedparticipants")
@@ -206,12 +207,12 @@ model Stories {
   id         Int          @id @default(autoincrement())
   userId     Int?         @map("user_id")
   content    String?
+  color      String?
+  mediaType  String?
   status     Boolean?     @default(true)
   expiryDate DateTime?    @map("expiry_date") @db.Timestamp(6)
   createdAt  DateTime?    @default(now()) @map("created_at") @db.Timestamp(6)
   mediaUrl   String?
-  color      String?
-  mediaType  String?
   users      Users?       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   storyViews StoryViews[]
 
@@ -263,6 +264,7 @@ model Users {
   isPhoneVerified       Boolean?               @default(false) @map("is_phone_verified")
   privateKey            String?                @map("private_key")
   publicKey             String                 @map("public_key")
+  fcmtokens             String[]               @default([])
   lastSeenVisibility    Privacy?               @default(everyone) @map("last_seen_visibility")
   bannedUsers           BannedUsers[]
   channelSubscriptions  ChannelSubscriptions[]
@@ -329,4 +331,12 @@ enum CommunityRole {
   member
 
   @@map("community_role")
+}
+
+enum MuteDuration {
+  oneHour
+  oneDay
+  oneWeek
+  oneMonth
+  forever
 }
