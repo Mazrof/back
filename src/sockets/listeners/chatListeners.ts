@@ -31,6 +31,8 @@ export interface NewMessages extends Messages {
   receiverId?: number;
   channelOrGroupId: number;
   participantType: string;
+  content: string;
+  senderId: number;
 }
 
 export const handleNewMessage = catchSocketError(
