@@ -18,6 +18,7 @@ type Channel = {
 };
 
 type User = {
+  profilePicVisibility: string | null;
   id: string;
   name: string;
   email: string;
@@ -44,15 +45,18 @@ type MappedUser = {
 export const getProfileByUsername = async (
   username: string
 ): Promise<MappedUser[]> => {
-  const users = (await searchRepository.findProfilesByUsername(username)) as
-    | User[]
-    | null;
+  const users = await searchRepository.findProfilesByUsername(username);
 
-  return users.map((user) => ({
+  // Type assertion to tell TypeScript that `users` will be an array of User
+  if (!users) {
+    return [];
+  }
+
+  return (users as User[]).map((user) => ({
     id: user.id,
     username: user.name,
     email: user.email,
-    photo: user.photo,
+    photo: user.profilePicVisibility == 'everyone' ? user.photo : null,
     screenName: user.screenname,
     phone: user.phone,
     publicKey: user.publickey,
@@ -62,12 +66,15 @@ export const getProfileByUsername = async (
 };
 
 export const getGroupByGroupName = async (groupName: string) => {
-  const groups = (await searchRepository.findGroupByGroupName(groupName)) as
-    | Group[]
-    | null;
+  const groups = await searchRepository.findGroupByGroupName(groupName);
+
+  // Type assertion to tell TypeScript that `groups` will be an array of Group
+  if (!groups) {
+    return [];
+  }
 
   return Promise.all(
-    groups.map(async (group) => ({
+    (groups as Group[]).map(async (group) => ({
       id: group.id,
       groupSize: group.groupsize,
       community: {
@@ -80,12 +87,15 @@ export const getGroupByGroupName = async (groupName: string) => {
 };
 
 export const getChannelByChannelName = async (channelName: string) => {
-  const channels = (await searchRepository.findChannelByChannelName(
-    channelName
-  )) as Channel[] | null;
+  const channels = await searchRepository.findChannelByChannelName(channelName);
+
+  // Type assertion to tell TypeScript that `channels` will be an array of Channel
+  if (!channels) {
+    return [];
+  }
 
   return Promise.all(
-    channels.map(async (channel) => ({
+    (channels as Channel[]).map(async (channel) => ({
       id: channel.id,
       invitationLink: channel.invitationlink,
       canAddComments: channel.canaddcomments,
