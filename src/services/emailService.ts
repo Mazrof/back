@@ -62,7 +62,7 @@ export const verifyCode = async (email, code) => {
 };
 
 // Request password reset
-export const requestPasswordReset = async (email) => {
+export const requestPasswordReset = async (email,deviceType:string) => {
   const user = await findUserByEmail(email);
   if (!user) {
     throw new AppError('User not found', 404);
@@ -75,9 +75,12 @@ export const requestPasswordReset = async (email) => {
     .digest('hex');
 
   await redis.set(`passwordReset:${user.id}`, tokenHash, 'EX', 900);
-
-  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&id=${user.id}`;
-
+  let resetUrl=""
+  if (deviceType==="mobile")
+    resetUrl=`${process.env.CROSS_URL}/reset-password?token=${resetToken}&id=${user.id}`  
+  else
+    resetUrl=`${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&id=${user.id}`
+    
   const mailOptions = {
     from: '"Mazroof" <no-reply@yourapp.com>',
     to: email,

@@ -166,11 +166,11 @@ export const logoutController = catchAsync(async (req, res) => {
 
 export const requestPasswordResetController = catchAsync(
   async (req: Request, res: Response) => {
-    const { email } = req.body;
+    const { email,type } = req.body;
     if (!email) {
       throw new AppError('Email is required', 400);
     }
-    await requestPasswordReset(email);
+    await requestPasswordReset(email,type);
     res.status(200).json({
       status: 'success',
       data: { message: 'Reset link sent' },
