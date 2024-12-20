@@ -1,13 +1,4 @@
-// Mock firebase-admin module
-jest.mock('firebase-admin', () => ({
-  initializeApp: jest.fn(),
-  credential: {
-    cert: jest.fn().mockReturnValue({}),
-  },
-  storage: jest.fn().mockReturnValue({
-    bucket: jest.fn().mockReturnValue({}),
-  }),
-}));
+jest.mock('firebase-admin');
 
 import { CommunityRole } from '@prisma/client';
 import * as groupRepository from '../../repositories/groupRepository';
