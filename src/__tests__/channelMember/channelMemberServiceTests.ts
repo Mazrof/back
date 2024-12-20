@@ -1,346 +1,276 @@
-// import * as channelMemberService from '../../services/channelMemberService';
-// import * as channelMemberRepository from '../../repositories/channelMemberRepository';
-// import * as channelRepository from '../../repositories/channelRepository';
-// import * as userRepository from '../../repositories/adminRepository';
-// import { CommunityRole } from '@prisma/client';
-// import crypto from 'crypto';
-//
-// jest.mock('../../server', () => ({
-//   io: jest.fn(),
-// }));
-//
-// jest.mock('crypto');
-// jest.mock('../../repositories/channelMemberRepository');
-// jest.mock('../../repositories/channelRepository');
-// jest.mock('../../repositories/adminRepository', () => ({
-//   findUserById: jest.fn(),
-// }));
-//
-// describe('Channel Member Service', () => {
-//   let mockUser: { id: number; role: CommunityRole; active: boolean };
-//
-//   beforeEach(() => {
-//     jest.clearAllMocks();
-//     mockUser = { id: 1, role: CommunityRole.admin, active: true };
-//   });
-//
-//   describe('checkChannelMemberPermission', () => {
-//     it('should throw an error if the user is not in the channel or inactive', async () => {
-//       (
-//         channelMemberRepository.findExistingMember as jest.Mock
-//       ).mockResolvedValue(null);
-//
-//       await expect(
-//         channelMemberService.checkChannelMemberPermission(1, 1)
-//       ).rejects.toThrow('the user is not a member of the channel');
-//     });
-//
-//     it('should throw an error if the user is not an admin', async () => {
-//       (
-//         channelMemberRepository.findExistingMember as jest.Mock
-//       ).mockResolvedValue({
-//         ...mockUser,
-//         role: CommunityRole.member,
-//       });
-//
-//       await expect(
-//         channelMemberService.checkChannelMemberPermission(1, 1)
-//       ).rejects.toThrow('Not Authorized');
-//     });
-//
-//     it('should pass if the user is an active admin', async () => {
-//       (
-//         channelMemberRepository.findExistingMember as jest.Mock
-//       ).mockResolvedValue(mockUser);
-//
-//       await expect(
-//         channelMemberService.checkChannelMemberPermission(1, 1)
-//       ).resolves.not.toThrow();
-//     });
-//   });
-//
-//   describe('addChannelMember', () => {
-//     it('should throw an error if the channel does not exist', async () => {
-//       (channelRepository.findChannelById as jest.Mock).mockResolvedValue(null);
-//
-//       await expect(
-//         channelMemberService.addChannelMember(1, 1, CommunityRole.member, true)
-//       ).rejects.toThrow('this is no channel with this id');
-//     });
-//
-//     it('should add a new member if checks pass', async () => {
-//       // Mock the channel existence
-//       (channelRepository.findChannelById as jest.Mock).mockResolvedValue({
-//         id: 1,
-//       });
-//
-//       // Mock user check
-//       (userRepository.findUserById as jest.Mock).mockResolvedValue({ id: 4 });
-//
-//       // Mock checking existing member (should return null)
-//       (
-//         channelMemberRepository.findExistingMember as jest.Mock
-//       ).mockResolvedValue(null);
-//
-//       // Mock adding channel member
-//       const mockNewMember = {
-//         channelId: 1,
-//         userId: 4,
-//         role: CommunityRole.member,
-//       };
-//       (channelMemberRepository.addChannelMember as jest.Mock).mockResolvedValue(
-//         mockNewMember
-//       );
-//
-//       const result = await channelMemberService.addChannelMember(
-//         4,
-//         1,
-//         CommunityRole.member,
-//         true
-//       );
-//
-//       // Verify all checks and method calls
-//       expect(channelRepository.findChannelById).toHaveBeenCalledWith(1);
-//       expect(userRepository.findUserById).toHaveBeenCalledWith(4);
-//       expect(channelMemberRepository.findExistingMember).toHaveBeenCalledWith(
-//         4,
-//         1
-//       );
-//       expect(channelMemberRepository.addChannelMember).toHaveBeenCalledWith({
-//         channelId: 1,
-//         userId: 4,
-//         role: CommunityRole.member,
-//       });
-//
-//       expect(result).toEqual(mockNewMember);
-//     });
-//
-//     it('should reactivate an existing inactive member', async () => {
-//       // Mock the channel existence
-//       (channelRepository.findChannelById as jest.Mock).mockResolvedValue({
-//         id: 1,
-//       });
-//
-//       // Mock user check
-//       (userRepository.findUserById as jest.Mock).mockResolvedValue({ id: 4 });
-//
-//       // Mock an existing inactive member
-//       (
-//         channelMemberRepository.findExistingMember as jest.Mock
-//       ).mockResolvedValue({
-//         userId: 4,
-//         channelId: 1,
-//         active: false,
-//       });
-//
-//       // Mock reactivating the member
-//       const mockReactivatedMember = {
-//         channelId: 1,
-//         userId: 4,
-//         role: CommunityRole.member,
-//         active: true,
-//       };
-//       (
-//         channelMemberRepository.updateChannelMemberStatus as jest.Mock
-//       ).mockResolvedValue(mockReactivatedMember);
-//
-//       const result = await channelMemberService.addChannelMember(
-//         4,
-//         1,
-//         CommunityRole.member,
-//         true
-//       );
-//
-//       expect(
-//         channelMemberRepository.updateChannelMemberStatus
-//       ).toHaveBeenCalledWith(4, 1, true);
-//     });
-//
-//     it('should throw an error if member already exists and is active', async () => {
-//       // Mock the channel existence
-//       (channelRepository.findChannelById as jest.Mock).mockResolvedValue({
-//         id: 1,
-//       });
-//
-//       // Mock user check
-//       (userRepository.findUserById as jest.Mock).mockResolvedValue({ id: 4 });
-//
-//       // Mock an existing active member
-//       (
-//         channelMemberRepository.findExistingMember as jest.Mock
-//       ).mockResolvedValue({
-//         userId: 4,
-//         channelId: 1,
-//         active: true,
-//       });
-//
-//       await expect(
-//         channelMemberService.addChannelMember(4, 1, CommunityRole.member, true)
-//       ).rejects.toThrow('Member already exists in this channel');
-//     });
-//   });
-//
-//   describe('updateChannelMember', () => {
-//     it('should throw an error if the channel does not exist', async () => {
-//       (channelRepository.findChannelById as jest.Mock).mockResolvedValue(null);
-//
-//       await expect(
-//         channelMemberService.updateChannelMember(1, 1, 2, {})
-//       ).rejects.toThrow('this is no channel with this id');
-//     });
-//
-//     it('should update channel member successfully', async () => {
-//       // Mock channel existence
-//       (channelRepository.findChannelById as jest.Mock).mockResolvedValue({
-//         id: 1,
-//       });
-//
-//       // Mock admin check
-//       (
-//         channelMemberRepository.findChannelMember as jest.Mock
-//       ).mockResolvedValue({
-//         userId: 1,
-//         role: CommunityRole.admin,
-//         active: true,
-//       });
-//
-//       // Mock existing member
-//       (
-//         channelMemberRepository.findExistingMember as jest.Mock
-//       ).mockResolvedValue({
-//         userId: 2,
-//         channelId: 1,
-//       });
-//
-//       // Mock update
-//       const mockUpdatedMember = {
-//         userId: 2,
-//         channelId: 1,
-//         role: CommunityRole.admin,
-//       };
-//       (
-//         channelMemberRepository.updateChannelMemberData as jest.Mock
-//       ).mockResolvedValue(mockUpdatedMember);
-//
-//       const result = await channelMemberService.updateChannelMember(1, 1, 2, {
-//         role: 'admin',
-//       });
-//
-//       expect(result).toEqual(mockUpdatedMember);
-//     });
-//   });
-//
-//   describe('deleteChannelMember', () => {
-//     it('should deactivate the member if they exist', async () => {
-//       // Mock existing member
-//       (
-//         channelMemberRepository.findExistingMember as jest.Mock
-//       ).mockResolvedValue(mockUser);
-//
-//       // Mock deactivation
-//       (
-//         channelMemberRepository.updateChannelMemberStatus as jest.Mock
-//       ).mockResolvedValue(true);
-//
-//       const result = await channelMemberService.deleteChannelMember(1, 2);
-//
-//       expect(result).toBe(true);
-//     });
-//
-//     it('should throw an error if member does not exist', async () => {
-//       // Mock no existing member
-//       (
-//         channelMemberRepository.findExistingMember as jest.Mock
-//       ).mockResolvedValue(null);
-//
-//       await expect(
-//         channelMemberService.deleteChannelMember(1, 2)
-//       ).rejects.toThrow('Member not found in this channel');
-//     });
-//   });
-//
-//   describe('joinChannelByInvite', () => {
-//     it('should throw an error for an invalid token', async () => {
-//       (crypto.createHash as jest.Mock).mockReturnValue({
-//         update: jest.fn().mockReturnThis(),
-//         digest: jest.fn().mockReturnValue('hashed_token'),
-//       });
-//
-//       (
-//         channelMemberRepository.findChannelByInvitationLinkHash as jest.Mock
-//       ).mockResolvedValue(null);
-//
-//       await expect(
-//         channelMemberService.joinChannelByInvite(
-//           'invalid_token',
-//           1,
-//           CommunityRole.member
-//         )
-//       ).rejects.toThrow('Invalid or expired invitation link');
-//     });
-//
-//     it('should add a user to the channel for a valid token', async () => {
-//       const mockChannel = { id: 1 };
-//       const mockMember = {
-//         channelId: 1,
-//         userId: 2,
-//         role: CommunityRole.member,
-//       };
-//
-//       (crypto.createHash as jest.Mock).mockReturnValue({
-//         update: jest.fn().mockReturnThis(),
-//         digest: jest.fn().mockReturnValue('hashed_token'),
-//       });
-//
-//       // Mock user check to pass
-//       (userRepository.findUserById as jest.Mock).mockResolvedValue({ id: 2 });
-//
-//       (
-//         channelMemberRepository.findChannelByInvitationLinkHash as jest.Mock
-//       ).mockResolvedValue(mockChannel);
-//       (
-//         channelMemberRepository.findExistingMember as jest.Mock
-//       ).mockResolvedValue(null);
-//       (channelMemberRepository.addChannelMember as jest.Mock).mockResolvedValue(
-//         mockMember
-//       );
-//
-//       const result = await channelMemberService.joinChannelByInvite(
-//         'valid_token',
-//         2,
-//         CommunityRole.member
-//       );
-//
-//       expect(result).toEqual(mockMember);
-//     });
-//   });
-//
-//   describe('getChannelMembers', () => {
-//     it('should throw an error if the channel does not exist', async () => {
-//       (channelRepository.findChannelById as jest.Mock).mockResolvedValue(null);
-//
-//       await expect(channelMemberService.getChannelMembers(1)).rejects.toThrow(
-//         'this is no channel with this id'
-//       );
-//     });
-//
-//     it('should return channel members if the channel exists', async () => {
-//       (channelRepository.findChannelById as jest.Mock).mockResolvedValue({
-//         id: 1,
-//       });
-//       (
-//         channelMemberRepository.findChannelMembers as jest.Mock
-//       ).mockResolvedValue([
-//         { id: 1, role: CommunityRole.admin },
-//         { id: 2, role: CommunityRole.member },
-//       ]);
-//
-//       const result = await channelMemberService.getChannelMembers(1);
-//
-//       expect(result).toEqual([
-//         { id: 1, role: CommunityRole.admin },
-//         { id: 2, role: CommunityRole.member },
-//       ]);
-//     });
-//   });
-// });
+// Mock firebase-admin module
+jest.mock('firebase-admin', () => ({
+  initializeApp: jest.fn(),
+  credential: {
+    cert: jest.fn().mockReturnValue({}),
+  },
+  storage: jest.fn().mockReturnValue({
+    bucket: jest.fn().mockReturnValue({}),
+  }),
+}));
+
+import * as Repository from '../../repositories';
+import * as Service from '../../services/channelMemberService';
+import { AppError } from '../../utility';
+import { CommunityRole } from '@prisma/client';
+
+jest.mock('../../server', () => ({
+  io: jest.fn(),
+}));
+// Mock the repository functions
+jest.mock('../../repositories');
+
+describe('channelMemberService', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('findChannel', () => {
+    it('should throw an error if the channel does not exist', async () => {
+      (Repository.findChannelById as jest.Mock).mockResolvedValue(null);
+
+      await expect(Service.findChannel(1)).rejects.toThrow(
+        new AppError('No channel found with this ID', 404)
+      );
+      expect(Repository.findChannelById).toHaveBeenCalledWith(1);
+    });
+
+    it('should not throw an error if the channel exists', async () => {
+      const mockChannel = { id: 1, community: { active: true } };
+      (Repository.findChannelById as jest.Mock).mockResolvedValue(mockChannel);
+
+      await expect(Service.findChannel(1)).resolves.not.toThrow();
+      expect(Repository.findChannelById).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('checkUser', () => {
+    it('should throw an error if the user does not exist', async () => {
+      (Repository.findUserById as jest.Mock).mockResolvedValue(null);
+
+      await expect(Service.checkUser(1)).rejects.toThrow(
+        new AppError('No user found with this ID', 404)
+      );
+      expect(Repository.findUserById).toHaveBeenCalledWith(1);
+    });
+
+    it('should not throw an error if the user exists', async () => {
+      const mockUser = { id: 1, username: 'testuser', status: true };
+      (Repository.findUserById as jest.Mock).mockResolvedValue(mockUser);
+
+      await expect(Service.checkUser(1)).resolves.not.toThrow();
+      expect(Repository.findUserById).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('checkChannelMemberPermission', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should throw an error if the user is not an admin', async () => {
+      // Mock the checkChannelMember function
+      jest.spyOn(Service, 'checkChannelMember').mockResolvedValue({
+        role: CommunityRole.member,
+        active: true,
+        hasDownloadPermissions: false,
+      });
+
+      await expect(Service.checkChannelMemberPermission(1, 1)).rejects.toThrow(
+        new AppError('Not Authorized', 403)
+      );
+
+      expect(Service.checkChannelMember).toHaveBeenCalledWith(1, 1);
+    });
+
+    it('should not throw an error if the user is an admin', async () => {
+      // Mock the checkChannelMember function
+      jest.spyOn(Service, 'checkChannelMember').mockResolvedValue({
+        role: CommunityRole.admin,
+        active: true,
+        hasDownloadPermissions: false,
+      });
+
+      await expect(Service.checkChannelMemberPermission(1, 1)).resolves.not.toThrow();
+      expect(Service.checkChannelMember).toHaveBeenCalledWith(1, 1);
+    });
+  });
+
+  describe('addChannelMember', () => {
+    it('should add a new member if they do not already exist', async () => {
+      (Repository.findExistingMember as jest.Mock).mockResolvedValue(null);
+      (Repository.addChannelMember as jest.Mock).mockResolvedValue({
+        channelId: 1,
+        userId: 2,
+        role: CommunityRole.member,
+        hasDownloadPermissions: false,
+      });
+
+      const result = await Service.addChannelMember(2, 1, 3, CommunityRole.member, false);
+
+      expect(result).toEqual({
+        channelId: 1,
+        userId: 2,
+        role: CommunityRole.member,
+        hasDownloadPermissions: false,
+      });
+      expect(Repository.addChannelMember).toHaveBeenCalledWith({
+        channelId: 1,
+        userId: 2,
+        role: CommunityRole.member,
+        hasDownloadPermissions: false,
+      });
+    });
+
+    it('should throw an error if the requester does not have admin rights to add an admin', async () => {
+      // Mock the checkAdmin function
+      jest.spyOn(Service, 'checkAdmin').mockImplementation(() => {
+        throw new AppError('Not Authorized', 403);
+      });
+
+      await expect(
+        Service.addChannelMember(2, 1, 3, CommunityRole.admin, true)
+      ).rejects.toThrow(new AppError('Not Authorized', 403));
+
+      expect(Service.checkAdmin).toHaveBeenCalledWith(3, 1);
+    });
+  });
+
+  describe('deleteChannelMember', () => {
+    it('should throw an error if the member does not exist', async () => {
+      (Repository.findExistingMember as jest.Mock).mockResolvedValue(null);
+
+      await expect(Service.deleteChannelMember(1, 2)).rejects.toThrow(
+        new AppError('Member not found in this channel', 404)
+      );
+      expect(Repository.findExistingMember).toHaveBeenCalledWith(2, 1);
+    });
+
+    it('should deactivate the member if they exist', async () => {
+      (Repository.findExistingMember as jest.Mock).mockResolvedValue({
+        id: 1,
+        active: true,
+        role: CommunityRole.member,
+      });
+      (Repository.updateChannelMember as jest.Mock).mockResolvedValue({
+        id: 1,
+        active: false,
+      });
+
+      const result = await Service.deleteChannelMember(1, 2);
+
+      expect(result).toEqual({ id: 1, active: false });
+      expect(Repository.updateChannelMember).toHaveBeenCalledWith(2, 1, {
+        active: false,
+      });
+    });
+  });
+
+  describe('checkChannelMember', () => {
+    it('should throw an error if the user is not a member or is inactive', async () => {
+      jest.spyOn(Service, 'findChannel').mockResolvedValue(); // Mock findChannel to succeed
+      (Repository.findExistingMember as jest.Mock).mockResolvedValue(null); // Simulate no member found
+
+      await expect(Service.checkChannelMember(1, 1)).rejects.toThrow(
+        new AppError('User is not a member of the channel', 403)
+      );
+
+      expect(Repository.findExistingMember).toHaveBeenCalledWith(1, 1);
+    });
+
+    it('should return the channel member details if the user is active', async () => {
+      jest.spyOn(Service, 'findChannel').mockResolvedValue();
+      const mockMember = {
+        hasDownloadPermissions: false,
+        active: true,
+        role: CommunityRole.admin,
+      };
+      (Repository.findExistingMember as jest.Mock).mockResolvedValue(mockMember);
+
+      const result = await Service.checkChannelMember(1, 1);
+
+      expect(result).toEqual(mockMember);
+      expect(Repository.findExistingMember).toHaveBeenCalledWith(1, 1);
+    });
+  });
+
+  describe('checkMember', () => {
+    it('should return null if the user is not an existing member', async () => {
+      jest.spyOn(Service, 'checkUser').mockResolvedValue();
+      (Repository.findExistingMember as jest.Mock).mockResolvedValue(null);
+
+      const result = await Service.checkMember(1, 1);
+
+      expect(result).toBeNull();
+      expect(Repository.findExistingMember).toHaveBeenCalledWith(1, 1);
+    });
+
+    it('should update and return the member if they are inactive', async () => {
+      jest.spyOn(Service, 'checkUser').mockResolvedValue();
+      const mockInactiveMember = {
+        active: false,
+        role: CommunityRole.member,
+      };
+      (Repository.findExistingMember as jest.Mock).mockResolvedValue(mockInactiveMember);
+      const updatedMember = {
+        active: true,
+        role: CommunityRole.member,
+      };
+      (Repository.updateChannelMember as jest.Mock).mockResolvedValue(updatedMember);
+
+      const result = await Service.checkMember(1, 1);
+
+      expect(result).toEqual(updatedMember);
+      expect(Repository.updateChannelMember).toHaveBeenCalledWith(1, 1, {
+        active: true,
+        role: CommunityRole.member,
+      });
+    });
+
+    it('should throw an error if the member is already active', async () => {
+      jest.spyOn(Service, 'checkUser').mockResolvedValue();
+      const mockActiveMember = {
+        active: true,
+        role: CommunityRole.member,
+      };
+      (Repository.findExistingMember as jest.Mock).mockResolvedValue(mockActiveMember);
+
+      await expect(Service.checkMember(1, 1)).rejects.toThrow(
+        new AppError('Member already exists in this channel', 400)
+      );
+    });
+  });
+
+  describe('updateChannelMember', () => {
+    it('should throw an error if no data is provided to update', async () => {
+      await expect(
+        Service.updateChannelMember(1, 1, 1, {})
+      ).rejects.toThrow(new AppError('No data to update', 400));
+    });
+
+    it('should throw an error if the member is not found or inactive', async () => {
+      jest.spyOn(Service, 'findChannel').mockResolvedValue();
+      (Repository.findExistingMember as jest.Mock).mockResolvedValue(null);
+
+      await expect(Service.updateChannelMember(1, 1, 1, { role: 'admin' })).rejects.toThrow(
+        new AppError('User is not a member of the channel', 404)
+      );
+    });
+
+    it('should update the channel member successfully if data is valid', async () => {
+      const mockMember = { id: 1, role: 'member', active: true };
+      (Repository.findExistingMember as jest.Mock).mockResolvedValue(mockMember);
+      (Repository.updateChannelMember as jest.Mock).mockResolvedValue({
+        ...mockMember,
+        role: 'admin',
+      });
+
+      const result = await Service.updateChannelMember(1, 1, 1, { role: 'admin' });
+
+      expect(result).toEqual({ ...mockMember, role: 'admin' });
+      expect(Repository.updateChannelMember).toHaveBeenCalledWith(1, 1, {
+        role: 'admin',
+      });
+    });
+  });
+});

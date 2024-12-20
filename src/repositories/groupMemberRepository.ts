@@ -262,7 +262,7 @@ export const findGroupByInvitationLinkHash = async (
  * @param {number} groupId - The ID of the group.
  * @returns {Promise<number>} The count of active admin members.
  */
-export const getAdminCounts = async (groupId: number): Promise<number> => {
+export const getGroupAdminCounts = async (groupId: number): Promise<number> => {
   return prisma.groupMemberships.count({
     where: {
       groupId,

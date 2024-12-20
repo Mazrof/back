@@ -1,12 +1,17 @@
-import * as channelRepository from '../repositories';
+import * as channelRepository from '../repositories/channelRepository';
+import * as communityRepository from '../repositories/communityRepository';
 import generateInvitationLink from '../utility/invitationLink';
-import * as channelMemberService from '../services';
+import * as channelMemberService from '../services/channelMemberService';
 import { CommunityRole } from '@prisma/client';
 import { AppError } from '../utility';
 import {
   channelResponse,
   commonChannelResponse,
 } from '../repositories/repositoriesTypes/channelTypes';
+import {
+  getFileFromFirebase,
+  uploadFileToFirebase,
+} from '../third_party_services';
 
 /**
  * Checks the validity of the input data for creating or updating a channel.
@@ -104,14 +109,35 @@ export const createChannel = async (data: {
 
   const invitationLink: string = generateInvitationLink();
 
+  const tempURL = data.imageURL;
+  if (data.imageURL) {
+    try {
+      data.imageURL = await uploadFileToFirebase(data.imageURL);
+    } catch (error) {
+      console.log('Error fetching image from Firebase:');
+      data.imageURL = tempURL; // or keep it unchanged if you prefer
+    }
+  }
+
   const channel: {
     id: number;
     canAddComments: boolean;
-    community: { name: string; privacy: boolean };
+    community: { name: string; privacy: boolean; imageURL: string };
   } = await channelRepository.createChannel({
     ...data,
     invitationLink,
   });
+
+  if (channel.community.imageURL) {
+    try {
+      channel.community.imageURL = await getFileFromFirebase(
+        channel.community.imageURL
+      );
+    } catch (error) {
+      console.log('Error fetching image from Firebase:');
+      channel.community.imageURL = tempURL;
+    }
+  }
 
   await channelMemberService.addChannelMember(
     data.creatorId,
@@ -147,22 +173,48 @@ export const updateChannel = async (
     imageURL?: string;
   }
 ): Promise<commonChannelResponse> => {
+  const channel: {
+    communityId: number;
+  } = await findChannelById(channelId);
+
   // check permissions
   await channelMemberService.checkChannelMemberPermission(adminId, channelId);
 
   if (!data.name && !data.privacy && !data.canAddComments && !data.imageURL) {
     throw new AppError('No data to update', 400);
   }
-  const channel: {
-    communityId: number;
-  } = await findChannelById(channelId);
 
+  const tempURL = data.imageURL;
   if (data.name || data.privacy || data.imageURL) {
-    await channelRepository.updateCommunity(channel.communityId, {
+    if (data.imageURL) {
+      try {
+        data.imageURL = await uploadFileToFirebase(data.imageURL);
+      } catch (error) {
+        console.log('Error fetching image from Firebase:');
+        data.imageURL = tempURL; // or keep it unchanged if you prefer
+      }
+    }
+
+    await communityRepository.updateCommunity(channel.communityId, {
       ...data,
     });
   }
-  return await channelRepository.updateChannel(channelId, data.canAddComments);
+  const updatedChannel = await channelRepository.updateChannel(
+    channelId,
+    data.canAddComments
+  );
+
+  if (updatedChannel.community.imageURL) {
+    try {
+      updatedChannel.community.imageURL = await getFileFromFirebase(
+        updatedChannel.community.imageURL
+      );
+    } catch (error) {
+      console.log('Error fetching image from Firebase:');
+      updatedChannel.community.imageURL = tempURL;
+    }
+  }
+  return updatedChannel;
 };
 
 /**
@@ -177,15 +229,15 @@ export const deleteChannel = async (
   channelId: number,
   adminId: number
 ): Promise<null> => {
-  // check permissions
-  await channelMemberService.checkChannelMemberPermission(adminId, channelId);
-
   const channel: {
     communityId: number;
     community: { active: boolean };
   } | null = await findChannelById(channelId);
 
-  await channelRepository.updateCommunity(channel.communityId, {
+  // check permissions
+  await channelMemberService.checkChannelMemberPermission(adminId, channelId);
+
+  await communityRepository.updateCommunity(channel.communityId, {
     active: false,
   });
   return null;

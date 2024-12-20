@@ -2,7 +2,7 @@
  * Import required modules for handling HTTP requests and channel services.
  */
 import { Request, Response, NextFunction } from 'express';
-import * as channelService from '../services';
+import * as channelService from '../services/channelService';
 import { catchAsync } from '../utility';
 
 /**

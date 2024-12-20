@@ -1,3 +1,14 @@
+// Mock firebase-admin module
+jest.mock('firebase-admin', () => ({
+  initializeApp: jest.fn(),
+  credential: {
+    cert: jest.fn().mockReturnValue({}),
+  },
+  storage: jest.fn().mockReturnValue({
+    bucket: jest.fn().mockReturnValue({}),
+  }),
+}));
+
 import { Request, Response, NextFunction } from 'express';
 import {
   getAllGroups,
@@ -124,13 +135,11 @@ describe('Group Controller', () => {
         name: 'New Group',
         privacy: 'private',
         groupSize: 10,
-        admins: [1],
       };
       mockRequest.body = {
         name: 'New Group',
         privacy: 'private',
         groupSize: 10,
-        admins: [1],
       };
 
       (groupService.createGroup as jest.Mock).mockResolvedValue(mockGroup);
@@ -146,7 +155,6 @@ describe('Group Controller', () => {
         privacy: 'private',
         creatorId: 1,
         groupSize: 10,
-        admins: [1],
       });
       expect(mockResponse.status).toHaveBeenCalledWith(201);
       expect(mockResponse.json).toHaveBeenCalledWith({
@@ -161,7 +169,6 @@ describe('Group Controller', () => {
         name: 'New Group',
         privacy: 'private',
         groupSize: 10,
-        admins: [1],
       };
 
       (groupService.createGroup as jest.Mock).mockRejectedValue(error);

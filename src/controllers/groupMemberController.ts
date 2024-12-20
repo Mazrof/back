@@ -11,7 +11,11 @@ import { CommunityRole } from '@prisma/client';
  * @param next - The next function to pass control to the next middleware.
  */
 export const getGroupMembers = catchAsync(
-  async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response> => {
     const userId: number = req.session.user.id; // Get the ID of the current logged-in user from session
     const groupId: number = parseInt(req.params.groupId); // Get the group ID from request parameters
 
@@ -45,13 +49,19 @@ export const getGroupMembers = catchAsync(
  * @param next - The next function to pass control to the next middleware.
  */
 export const addGroupMember = catchAsync(
-  async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response> => {
     const adminId: number = req.session.user.id; // The ID of the admin making the request
     const groupId: number = parseInt(req.params.groupId); // The ID of the group from the request params
     const memberId: number = parseInt(req.body.memberId); // The ID of the member to be added
     const role: CommunityRole = req.body.role; // The role of the member (admin, member, etc.)
-    const hasDownloadPermissions: boolean = req.body.hasDownloadPermissions || false; // Permissions related to downloading
-    const hasMessagePermissions: boolean = req.body.hasMessagePermissions || false; // Permissions related to messaging
+    const hasDownloadPermissions: boolean =
+      req.body.hasDownloadPermissions || false; // Permissions related to downloading
+    const hasMessagePermissions: boolean =
+      req.body.hasMessagePermissions || false; // Permissions related to messaging
 
     // Add the new member to the group using the service layer
     const member = await groupMemberService.addGroupMember(
@@ -81,7 +91,11 @@ export const addGroupMember = catchAsync(
  * @param next - The next function to pass control to the next middleware.
  */
 export const inviteGroupMember = catchAsync(
-  async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response> => {
     const token: string = req.body.token; // The invitation token to join the group
     const memberId: number = req.session.user.id; // The ID of the user inviting themselves to the group
 
@@ -106,7 +120,11 @@ export const inviteGroupMember = catchAsync(
  * @param next - The next function to pass control to the next middleware.
  */
 export const updateGroupMember = catchAsync(
-  async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response> => {
     const userId: number = req.session.user.id; // The ID of the current logged-in user
     const groupId: number = parseInt(req.params.groupId); // The ID of the group from the request params
     const memberId: number = parseInt(req.params.id); // The ID of the member to be updated
@@ -137,7 +155,11 @@ export const updateGroupMember = catchAsync(
  * @param next - The next function to pass control to the next middleware.
  */
 export const deleteGroupMember = catchAsync(
-  async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
+  async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response> => {
     const userId: number = req.session.user.id; // The ID of the current logged-in user (admin)
     const groupId: number = parseInt(req.params.groupId); // The ID of the group from the request params
     const memberId: number = parseInt(req.params.id); // The ID of the member to be deleted

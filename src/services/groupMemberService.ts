@@ -332,7 +332,16 @@ export const updateGroupMember = async (
   if (!existingMember || !existingMember.active) {
     throw new AppError('Member not found in this group', 404);
   }
-
+  if (
+    existingMember.role &&
+    existingMember.role === CommunityRole.admin &&
+    data.role === CommunityRole.member
+  ) {
+    const adminCount = await groupMemberRepository.getGroupAdminCounts(groupId);
+    if (adminCount === 1) {
+      throw new AppError('Group should have at least one admin.', 400);
+    }
+  }
   return await groupMemberRepository.updateGroupMemberData(
     userId,
     groupId,
@@ -354,7 +363,6 @@ export const deleteGroupMember = async (
   groupId: number,
   userId: number
 ): Promise<null> => {
-
   await groupService.findGroupById(groupId);
 
   const existingMember = await groupMemberRepository.findExistingMember(
@@ -371,7 +379,7 @@ export const deleteGroupMember = async (
   }
 
   if (existingMember.role === CommunityRole.admin) {
-    const adminCount = await groupMemberRepository.getAdminCounts(groupId);
+    const adminCount = await groupMemberRepository.getGroupAdminCounts(groupId);
 
     if (adminCount === 1) {
       const members = await getGroupMembers(groupId, userId);

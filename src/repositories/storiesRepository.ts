@@ -1,5 +1,4 @@
 import { prisma } from '../prisma/client';
-import { use } from 'passport';
 
 export const createStory = async (
   userId,

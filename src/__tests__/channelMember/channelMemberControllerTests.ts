@@ -1,3 +1,14 @@
+// Mock firebase-admin module
+jest.mock('firebase-admin', () => ({
+  initializeApp: jest.fn(),
+  credential: {
+    cert: jest.fn().mockReturnValue({}),
+  },
+  storage: jest.fn().mockReturnValue({
+    bucket: jest.fn().mockReturnValue({}),
+  }),
+}));
+
 import { Request, Response, NextFunction } from 'express';
 import {
   getChannelMembers,

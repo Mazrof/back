@@ -1,3 +1,14 @@
+// Mock firebase-admin module
+jest.mock('firebase-admin', () => ({
+  initializeApp: jest.fn(),
+  credential: {
+    cert: jest.fn().mockReturnValue({}),
+  },
+  storage: jest.fn().mockReturnValue({
+    bucket: jest.fn().mockReturnValue({}),
+  }),
+}));
+
 import { getAllUsers, toggleUserStatus } from '../../services/adminService';
 import * as userRepository from '../../repositories/adminRepository';
 import { AppError } from '../../utility';
@@ -6,11 +17,9 @@ jest.mock('../../server', () => ({
   io: jest.fn(),
 }));
 
-// Mock the entire userRepository
 jest.mock('../../repositories/adminRepository');
 
 describe('Admin Service', () => {
-  // Clear all mocks before each test
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -38,9 +47,7 @@ describe('Admin Service', () => {
     ];
 
     it('should fetch all users when admin is authorized', async () => {
-      // Mock admin authentication
       (userRepository.findAdminById as jest.Mock).mockResolvedValue({ id: 1 });
-      // Mock users fetch
       (userRepository.getAllUsers as jest.Mock).mockResolvedValue(mockUsers);
 
       const result = await getAllUsers(1);
@@ -86,11 +93,8 @@ describe('Admin Service', () => {
     };
 
     it('should toggle user status when admin is authorized and user exists', async () => {
-      // Mock admin authentication
       (userRepository.findAdminById as jest.Mock).mockResolvedValue({ id: 1 });
-      // Mock user fetch
       (userRepository.findUserById as jest.Mock).mockResolvedValue(mockUser);
-      // Mock status update
       (userRepository.updateUserStatus as jest.Mock).mockResolvedValue(
         mockUpdatedUser
       );

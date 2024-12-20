@@ -1,3 +1,14 @@
+// Mock firebase-admin module
+jest.mock('firebase-admin', () => ({
+  initializeApp: jest.fn(),
+  credential: {
+    cert: jest.fn().mockReturnValue({}),
+  },
+  storage: jest.fn().mockReturnValue({
+    bucket: jest.fn().mockReturnValue({}),
+  }),
+}));
+
 import { Request, Response, NextFunction } from 'express';
 import * as channelService from '../../services/channelService';
 import {
@@ -143,7 +154,6 @@ describe('Channel Controller', () => {
         name: 'Channel1',
         privacy: true,
         canAddComments: true,
-        admins: [2, 3],
       };
 
       (channelService.createChannel as jest.Mock).mockResolvedValue(
@@ -160,7 +170,6 @@ describe('Channel Controller', () => {
         name: 'Channel1',
         privacy: true,
         canAddComments: true,
-        admins: [2, 3],
         creatorId: 1, // Mock creatorId from session
       });
       expect(mockResponse.status).toHaveBeenCalledWith(201);
@@ -177,7 +186,6 @@ describe('Channel Controller', () => {
         name: 'Channel1',
         privacy: true,
         canAddComments: true,
-        admins: [2, 3],
       };
 
       (channelService.createChannel as jest.Mock).mockRejectedValue(error);
