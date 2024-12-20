@@ -2,10 +2,20 @@ import {
   requestPasswordReset,
   resetPassword,
 } from './../services/emailService';
+import { redisClient } from '../config/sessionConfig';
 declare module 'express-session' {
   interface SessionData {
-    user?: { id: number; userType: string; user: unknown };
+    user?: { id: number; userType: string; user: unknown, systemInfo?: unknown };
   }
+}
+interface CustomRequest extends Request {
+  useragent: {
+    platform: string;
+    browser: string;
+    isMobile: boolean;
+    isDesktop: boolean;
+    os: string;
+  };
 }
 import { Request, Response } from 'express';
 import { registerUser, authenticateUser } from '../services/authService';
@@ -14,7 +24,6 @@ import { signupSchema } from '../schemas/authSchema';
 import { sendVerificationCode, verifyCode } from '../services/emailService';
 import { sendVerificationCodeSMS } from '../services/smsService';
 import crypto from 'crypto';
-import { updateUserById } from '../repositories/userRepository';
 
 export const signup = catchAsync(async (req: Request, res: Response) => {
   const validatedData = signupSchema.parse(req.body); // Zod validation
@@ -25,12 +34,11 @@ export const signup = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-export const login = catchAsync(async (req: Request, res: Response) => {
+export const login = catchAsync(async (req: CustomRequest, res: Response) => {
   const { email, password } = req.body;
 
   const user = await authenticateUser(email, password);
   if (!user) throw new AppError('Invalid credentials', 401);
-  console.log(user);
   if ('bannedUsers' in user) {
     req.session.user = { id: user.id, userType: 'Admin', user }; // Store user in session
     res.status(200).json({
@@ -38,7 +46,20 @@ export const login = catchAsync(async (req: Request, res: Response) => {
       data: { user: { id: user.id, user_type: 'Admin', user } },
     });
   } else {
-    req.session.user = { id: user.id, userType: 'user', user }; // Store user in session
+    const systemInfo = {
+      platform: req.useragent.platform,
+      browser: req.useragent.browser,
+      isMobile: req.useragent.isMobile,
+      isDesktop: req.useragent.isDesktop,
+      os: req.useragent.os,
+    };
+
+    req.session.user = {
+      id: user.id,
+      userType: 'user',
+      user,
+      systemInfo,
+    };
     res.status(200).json({
       status: 'success',
       data: { user: { id: user.id, user_type: 'user', user } },
@@ -170,3 +191,47 @@ export const resetPasswordController = catchAsync(
     });
   }
 );
+
+
+// eslint-disable-next-line consistent-return
+export const getUserSessions = catchAsync(async (req: Request, res: Response) => {
+  const userId=req.session.user.id;
+  try {
+    const keys = await redisClient.keys('sess:*');
+    const userSessions = await Promise.all(
+      keys.map(async (key) => {
+        const sessionData = await redisClient.get(key);
+        const session = JSON.parse(sessionData);
+
+        if (session?.user?.id === userId) {
+          return { key, data: session };
+        }
+        return null;
+      })
+    );
+
+    // Filter out null values (non-matching sessions)
+    const filteredSessions = userSessions.filter((session) => session !== null);
+
+    if (filteredSessions.length === 0) {
+      return res.status(404).json({ error: `No sessions found for user ID ${userId}` });
+    }
+
+    res.json({ status: 'success', data: filteredSessions });
+  } catch {
+    throw new AppError('Failed to retrieve sessions', 500);
+  }
+});
+
+export const endUserSession = catchAsync(async (req: Request, res: Response) => {
+  const { key } = req.body;
+  if (!key) {
+    throw new AppError('Session key is required', 400);
+  }
+
+  await redisClient.del(key);
+  res.json({ status: 'success', data: { message: 'Session ended' } });
+});
+
+
+

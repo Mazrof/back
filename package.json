@@ -37,6 +37,7 @@
     "express": "^4.21.1",
     "express-rate-limit": "^7.3.1",
     "express-session": "^1.18.1",
+    "express-useragent": "^1.0.15",
     "firebase": "^11.0.1",
     "firebase-admin": "^13.0.1",
     "firebase-tools": "^13.23.1",

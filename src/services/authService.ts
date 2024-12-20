@@ -4,13 +4,11 @@ import { AppError } from '../utility';
 import { SignupInput } from '../schemas/authSchema';
 import * as userRepo from '../repositories/userRepository';
 import { HTTPERROR } from '../constants/HTTPERROR';
-import { Users } from '@prisma/client';
 
 export const registerUser = async (data: SignupInput) => {
   const { email } = data;
   // Check for duplicate email
   const existingUser = await userRepo.findUserByEmail(email);
-  console.log(existingUser);
   if (existingUser) {
     throw new AppError('Email already in use', HTTPERROR.CONFLICT);
   }
@@ -24,7 +22,8 @@ export const registerUser = async (data: SignupInput) => {
     username: data.username,
     password: hashedPassword,
     phone: data.phone,
-    publicKey: '',
+    publicKey: data.publicKey,
+    privateKey: data.privateKey,
   };
   console.log(userData);
   const user = await createUser(userData);

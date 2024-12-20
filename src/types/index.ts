@@ -5,3 +5,10 @@ export interface UpdateGroupMemberData {
   hasMessagePermissions?: boolean;
   hasDownloadPermissions?: boolean;
 }
+export interface FCMNotification {
+
+  title: string;
+  body: string;
+  image?: string;
+
+}

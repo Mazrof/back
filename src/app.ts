@@ -6,6 +6,7 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 import './services/oauth';
+import useragent from 'express-useragent';
 import { globalErrorHandler } from './middlewares/error_handlers/error_handler';
 import apiRoutes from './routes';
 import passport from 'passport';
@@ -30,6 +31,7 @@ export default async (app: Application) => {
 
   app.options(process.env.FRONTEND_URL, cors()); // Preflight for all routes
 
+  app.use(useragent.express());
   app.use(sessionMiddleware);
   app.use(passport.initialize());
   app.use(passport.session());
@@ -61,6 +63,7 @@ export default async (app: Application) => {
   app.get('/', (req: Request, res: Response) => {
     res.status(200).json({ msg: 'hello world, MAZROF COMMUNITY' });
   });
+
   // API routes
   app.use('/api', apiRoutes);
 

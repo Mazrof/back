@@ -5,6 +5,8 @@ export const signupSchema = z.object({
   username: z.string().min(1),
   password: z.string().min(6, 'Password must be at least 6 characters long'),
   phone: z.string().min(1),
+  publicKey: z.string().min(1),
+  privateKey: z.string().min(1),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;
