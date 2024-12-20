@@ -84,7 +84,9 @@ describe('Group Membership Repository', () => {
     };
 
     it('should return member details when found', async () => {
-      (prisma.groupMemberships.findUnique as jest.Mock).mockResolvedValue(mockMember);
+      (prisma.groupMemberships.findUnique as jest.Mock).mockResolvedValue(
+        mockMember
+      );
 
       const result = await findGroupMember(1, 1);
 
@@ -134,7 +136,9 @@ describe('Group Membership Repository', () => {
     ];
 
     it('should return all group members', async () => {
-      (prisma.groupMemberships.findMany as jest.Mock).mockResolvedValue(mockMembers);
+      (prisma.groupMemberships.findMany as jest.Mock).mockResolvedValue(
+        mockMembers
+      );
 
       const result = await findGroupMembers(1);
 
@@ -165,7 +169,9 @@ describe('Group Membership Repository', () => {
     };
 
     it('should return member details when found', async () => {
-      (prisma.groupMemberships.findUnique as jest.Mock).mockResolvedValue(mockExistingMember);
+      (prisma.groupMemberships.findUnique as jest.Mock).mockResolvedValue(
+        mockExistingMember
+      );
 
       const result = await findExistingMember(1, 1);
 
@@ -196,7 +202,9 @@ describe('Group Membership Repository', () => {
     };
 
     it('should create new group member', async () => {
-      (prisma.groupMemberships.create as jest.Mock).mockResolvedValue(mockMemberData);
+      (prisma.groupMemberships.create as jest.Mock).mockResolvedValue(
+        mockMemberData
+      );
 
       const result = await addGroupMember(mockMemberData);
 
@@ -224,7 +232,9 @@ describe('Group Membership Repository', () => {
     };
 
     it('should update member status', async () => {
-      (prisma.groupMemberships.update as jest.Mock).mockResolvedValue(mockUpdatedMember);
+      (prisma.groupMemberships.update as jest.Mock).mockResolvedValue(
+        mockUpdatedMember
+      );
 
       const result = await updateGroupMemberStatus(1, 1, false);
 
@@ -261,7 +271,9 @@ describe('Group Membership Repository', () => {
         hasDownloadPermissions: true,
       };
 
-      (prisma.groupMemberships.update as jest.Mock).mockResolvedValue(mockUpdatedMember);
+      (prisma.groupMemberships.update as jest.Mock).mockResolvedValue(
+        mockUpdatedMember
+      );
 
       const result = await updateGroupMemberData(1, 1, updateData);
 
@@ -284,7 +296,9 @@ describe('Group Membership Repository', () => {
     it('should update member data with partial fields', async () => {
       const updateData = { role: CommunityRole.admin };
 
-      (prisma.groupMemberships.update as jest.Mock).mockResolvedValue(mockUpdatedMember);
+      (prisma.groupMemberships.update as jest.Mock).mockResolvedValue(
+        mockUpdatedMember
+      );
 
       const result = await updateGroupMemberData(1, 1, updateData);
 

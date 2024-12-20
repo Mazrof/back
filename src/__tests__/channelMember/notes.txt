@@ -1,1 +1,1 @@
-controller, some of service
+2 funcs of service

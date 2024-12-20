@@ -1,209 +1,282 @@
-// jest.mock('firebase-admin');
-//
-// import * as channelRepository from '../../repositories/channelRepository';
-// import * as communityRepository from '../../repositories/communityRepository';
-// import generateInvitationLink from '../../utility/invitationLink';
-// import * as channelMemberService from '../../services/channelMemberService';
-//
-// import { CommunityRole } from '@prisma/client';
-// import { AppError } from '../../utility';
-// import * as channelService from '../../services/channelService';
-// import { getFileFromFirebase, uploadFileToFirebase } from '../../third_party_services';
-//
-// jest.mock('../../server', () => ({
-//   io: jest.fn(),
-// }));
-//
-// jest.mock('../../repositories/channelRepository');
-// jest.mock('../../repositories/communityRepository');
-// jest.mock('../../utility/invitationLink');
-// jest.mock('../../services/channelMemberService');
-// jest.mock('../../third_party_services');
-//
-// describe('Channel Service', () => {
-//   let mockData;
-//
-//   beforeEach(() => {
-//     jest.clearAllMocks();
-//
-//     mockData = {
-//       name: 'Test Channel',
-//       creatorId: 1,
-//       privacy: true,
-//       canAddComments: true,
-//       imageURL: 'https://imageurl.com/test.jpg',
-//     };
-//   });
-//
-//   describe('checkData', () => {
-//     it('should throw an error if channel name is missing', () => {
-//       const invalidData = { ...mockData, name: '' };
-//       expect(() => channelService.checkData(invalidData)).toThrow(AppError);
-//     });
-//
-//     it('should throw an error if creatorId is missing', () => {
-//       const invalidData = { ...mockData, creatorId: undefined };
-//       expect(() => channelService.checkData(invalidData)).toThrow(AppError);
-//     });
-//
-//     it('should not throw an error if all required fields are present', () => {
-//       expect(() => channelService.checkData(mockData)).not.toThrow(AppError);
-//     });
-//   });
-//
-//   describe('findAllChannels', () => {
-//     it('should return a list of channels', async () => {
-//       const mockChannels = [{ id: 1, name: 'Test Channel' }];
-//       (channelRepository.findAllChannels as jest.Mock).mockResolvedValue(mockChannels);
-//
-//       const result = await channelService.findAllChannels();
-//       expect(result).toEqual(mockChannels);
-//       expect(channelRepository.findAllChannels).toHaveBeenCalledTimes(1);
-//     });
-//   });
-//
-//   describe('findChannelById', () => {
-//     it('should return a channel if it exists', async () => {
-//       const mockChannel = {
-//         id: 1,
-//         canAddComments: true,
-//         community: {
-//           name: 'Test Channel',
-//           privacy: true,
-//           active: true,
-//           imageURL: 'https://imageurl.com/test.jpg',
-//         },
-//       };
-//
-//       (channelRepository.findChannelById as jest.Mock).mockResolvedValue(mockChannel);
-//
-//       const result = await channelService.findChannelById(1);
-//       expect(result).toEqual(mockChannel);
-//     });
-//
-//     it('should throw an error if no channel is found or community is inactive', async () => {
-//       (channelRepository.findChannelById as jest.Mock).mockResolvedValue(null);
-//       await expect(channelService.findChannelById(999)).rejects.toThrow(AppError);
-//     });
-//   });
-//
-//   describe('createChannel', () => {
-//     it('should create a new channel', async () => {
-//       const mockChannel = {
-//         id: 1,
-//         canAddComments: true,
-//         community: {
-//           name: 'Test Channel',
-//           privacy: true,
-//         },
-//       };
-//
-//       (generateInvitationLink as jest.Mock).mockReturnValue('invitationLink123');
-//       (uploadFileToFirebase as jest.Mock).mockResolvedValue('firebaseImageUrl');
-//       (channelRepository.createChannel as jest.Mock).mockResolvedValue(mockChannel);
-//       (getFileFromFirebase as jest.Mock).mockResolvedValue('firebaseImageUrl');
-//       (channelMemberService.addChannelMember as jest.Mock).mockResolvedValue(null);
-//
-//       const result = await channelService.createChannel(mockData);
-//
-//       expect(result).toEqual(mockChannel);
-//       expect(generateInvitationLink).toHaveBeenCalled();
-//       // expect(uploadFileToFirebase).toHaveBeenCalledWith(mockData.imageURL);
-//       expect(channelRepository.createChannel).toHaveBeenCalledWith({
-//         ...mockData,
-//         invitationLink: 'invitationLink123',
-//       });
-//       expect(channelMemberService.addChannelMember).toHaveBeenCalledWith(
-//         mockData.creatorId,
-//         mockChannel.id,
-//         null,
-//         CommunityRole.admin,
-//         true
-//       );
-//     });
-//
-//     it('should throw an error if data is invalid', async () => {
-//       const invalidData = { ...mockData, name: '' };
-//       await expect(channelService.createChannel(invalidData)).rejects.toThrow(AppError);
-//     });
-//   });
-//
-//   describe('updateChannel', () => {
-//     it('should update an existing channel', async () => {
-//       const mockUpdatedChannel = {
-//         id: 1,
-//         canAddComments: true,
-//         community: { name: 'Updated Channel', privacy: true, imageURL: 'https://updatedimageurl.com' },
-//       };
-//
-//       const mockData = { name: 'Updated Channel', imageURL: 'updatedImage.jpg' };
-//
-//       // Mocking dependencies
-//       (channelMemberService.checkChannelMemberPermission as jest.Mock).mockResolvedValue(null);
-//       (uploadFileToFirebase as jest.Mock).mockResolvedValue('updatedImageUrl');
-//       (communityRepository.updateCommunity as jest.Mock).mockResolvedValue(null);
-//       (channelRepository.updateChannel as jest.Mock).mockResolvedValue(mockUpdatedChannel);
-//       (getFileFromFirebase as jest.Mock).mockResolvedValue('updatedImageUrl');
-//
-//       // Mock findChannelById to return a mock channel
-//       (channelRepository.findChannelById as jest.Mock).mockResolvedValue({
-//         id: 1,
-//         canAddComments: true,
-//         communityId: 1,
-//         community: { name: 'Test Channel', privacy: true, active: true, imageURL: 'https://testimage.com' },
-//       });
-//
-//       // Call the updateChannel method
-//       const result = await channelService.updateChannel(1, 1, mockData);
-//
-//       // Assertions
-//       expect(result).toEqual(mockUpdatedChannel);
-//       // expect(uploadFileToFirebase).toHaveBeenCalledWith(mockData.imageURL);
-//       expect(communityRepository.updateCommunity).toHaveBeenCalledWith(1, {
-//         name: 'Updated Channel',
-//         privacy: true,
-//         imageURL: 'updatedImageUrl',
-//       });
-//       expect(channelRepository.updateChannel).toHaveBeenCalledWith(1, mockUpdatedChannel.canAddComments);
-//     });
-//
-//     it('should throw an error if no data to update is provided', async () => {
-//       await expect(channelService.updateChannel(1, 1, {})).rejects.toThrow(AppError);
-//     });
-//   });
-//
-//   describe('deleteChannel', () => {
-//
-//     it('should throw an error if the channel is not found', async () => {
-//       // Simulate that the channel is not found
-//       (channelService.findChannelById as jest.Mock).mockResolvedValue(null);
-//
-//       // Verifying that the function throws an error if the channel is not found
-//       await expect(channelService.deleteChannel(1, 1)).rejects.toThrow('No channel found with that ID');
-//     });
-//   });
-//
-//     it('should delete a channel successfully', async () => {
-//       (channelService.findChannelById as jest.Mock).mockResolvedValue({
-//         id: 1,
-//         communityId: 1,
-//         community: { active: true },
-//       });
-//
-//       // Mock other service calls
-//       (channelMemberService.checkChannelMemberPermission as jest.Mock).mockResolvedValue(null);
-//       (communityRepository.updateCommunity as jest.Mock).mockResolvedValue(null);
-//
-//       await channelService.deleteChannel(1, 1);
-//
-//       expect(channelMemberService.checkChannelMemberPermission).toHaveBeenCalledWith(1, 1);
-//       expect(communityRepository.updateCommunity).toHaveBeenCalledWith(1, { active: false });
-//     });
-//
-//     it('should throw an error if no permission to delete', async () => {
-//       (channelMemberService.checkChannelMemberPermission as jest.Mock).mockRejectedValue(new Error('Permission Denied'));
-//
-//       await expect(channelService.deleteChannel(1, 1)).rejects.toThrow(AppError);
-//     });
-//
-// });
+jest.mock('../../repositories/channelRepository');
+jest.mock('../../repositories/communityRepository');
+jest.mock('../../services/channelMemberService');
+jest.mock('../../middlewares/imageHandlers');
+jest.mock('../../utility/invitationLink');
+
+import * as channelRepository from '../../repositories/channelRepository';
+import * as communityRepository from '../../repositories/communityRepository';
+import * as channelMemberService from '../../services/channelMemberService';
+import {
+  convertBase64ToImage,
+  convertImageToBase64,
+  saveImage,
+} from '../../middlewares/imageHandlers';
+import generateInvitationLink from '../../utility/invitationLink';
+import { AppError } from '../../utility';
+import { CommunityRole } from '@prisma/client';
+import {
+  findAllChannels,
+  findChannelById,
+  createChannel,
+  updateChannel,
+  deleteChannel,
+} from '../../services/channelService';
+
+jest.mock('../../server', () => ({
+  io: jest.fn(),
+}));
+
+describe('Channel Service', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const mockChannel = {
+    id: 1,
+    name: 'Test Channel',
+    canAddComments: true,
+    communityId: 1,
+    community: {
+      name: 'Test Community',
+      privacy: false,
+      active: true,
+      imageURL: 'test-image.jpg',
+    },
+  };
+
+  describe('findAllChannels', () => {
+    it('should return all channels', async () => {
+      const mockChannels = [mockChannel];
+      (channelRepository.findAllChannels as jest.Mock).mockResolvedValue(
+        mockChannels
+      );
+
+      const result = await findAllChannels();
+
+      expect(result).toEqual(mockChannels);
+      expect(channelRepository.findAllChannels).toHaveBeenCalled();
+    });
+  });
+
+  describe('findChannelById', () => {
+    it('should return channel when found and active', async () => {
+      (channelRepository.findChannelById as jest.Mock).mockResolvedValue(
+        mockChannel
+      );
+
+      const result = await findChannelById(1);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: mockChannel.id,
+          canAddComments: mockChannel.canAddComments,
+        })
+      );
+    });
+
+    it('should throw AppError when channel not found', async () => {
+      (channelRepository.findChannelById as jest.Mock).mockResolvedValue(null);
+
+      await expect(findChannelById(999)).rejects.toThrow(
+        new AppError('No channel found with that ID', 404)
+      );
+    });
+
+    it('should throw AppError when community is not active', async () => {
+      const inactiveChannel = {
+        ...mockChannel,
+        community: { ...mockChannel.community, active: false },
+      };
+      (channelRepository.findChannelById as jest.Mock).mockResolvedValue(
+        inactiveChannel
+      );
+
+      await expect(findChannelById(1)).rejects.toThrow(
+        new AppError('No channel found with that ID', 404)
+      );
+    });
+  });
+
+  describe('createChannel', () => {
+    const mockCreateData = {
+      name: 'New Channel',
+      creatorId: 1,
+      privacy: false,
+      canAddComments: true,
+      imageURL: 'base64-image-data',
+    };
+
+    beforeEach(() => {
+      (generateInvitationLink as jest.Mock).mockReturnValue(
+        'mock-invitation-link'
+      );
+      (convertBase64ToImage as jest.Mock).mockReturnValue('decoded-image');
+      (saveImage as jest.Mock).mockReturnValue('saved-image-path');
+      (convertImageToBase64 as jest.Mock).mockReturnValue('converted-base64');
+    });
+
+    it('should create channel successfully', async () => {
+      const mockCreatedChannel = {
+        id: 1,
+        canAddComments: true,
+        community: {
+          name: 'New Channel',
+          privacy: false,
+          imageURL: 'saved-image-path',
+        },
+      };
+
+      (channelRepository.createChannel as jest.Mock).mockResolvedValue(
+        mockCreatedChannel
+      );
+      (channelMemberService.addChannelMember as jest.Mock).mockResolvedValue(
+        undefined
+      );
+
+      const result = await createChannel(mockCreateData);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: mockCreatedChannel.id,
+          canAddComments: mockCreatedChannel.canAddComments,
+        })
+      );
+      expect(channelMemberService.addChannelMember).toHaveBeenCalledWith(
+        mockCreateData.creatorId,
+        mockCreatedChannel.id,
+        null,
+        CommunityRole.admin,
+        true
+      );
+    });
+
+    // it('should throw AppError when required data is missing', async () => {
+    //   const invalidData = {
+    //     creatorId: 1
+    //   };
+    //
+    //   await expect(createChannel(invalidData as any)).rejects.toThrow(
+    //     new AppError('Invalid Group name', 400)
+    //   );
+    // });
+  });
+
+  describe('updateChannel', () => {
+    const mockUpdateData = {
+      name: 'Updated Channel',
+      privacy: true,
+      canAddComments: false,
+      imageURL: 'new-base64-image',
+    };
+
+    beforeEach(() => {
+      (channelRepository.findChannelById as jest.Mock).mockResolvedValue(
+        mockChannel
+      );
+      (
+        channelMemberService.checkChannelMemberPermission as jest.Mock
+      ).mockResolvedValue(true);
+      (convertBase64ToImage as jest.Mock).mockReturnValue('decoded-image');
+      (saveImage as jest.Mock).mockReturnValue('saved-image-path');
+    });
+
+    it('should update channel successfully', async () => {
+      const mockUpdatedChannel = {
+        ...mockChannel,
+        canAddComments: false,
+        community: {
+          ...mockChannel.community,
+          name: 'Updated Channel',
+          privacy: true,
+        },
+      };
+
+      // Mocking findChannel to return a valid channel before update
+      (channelRepository.findChannelById as jest.Mock).mockResolvedValue(
+        mockChannel
+      );
+
+      // Mock the update methods to return updated data
+      (channelRepository.updateChannel as jest.Mock).mockResolvedValue(
+        mockUpdatedChannel
+      );
+      (communityRepository.updateCommunity as jest.Mock).mockResolvedValue(
+        undefined
+      );
+
+      // Assuming updateChannel is the function under test
+      const result = await updateChannel(1, 1, mockUpdateData);
+
+      // Assertions
+      expect(result).toEqual(mockUpdatedChannel); // Check if the updated channel is returned
+      expect(communityRepository.updateCommunity).toHaveBeenCalled(); // Check if updateCommunity was called
+      expect(channelRepository.updateChannel).toHaveBeenCalled(); // Check if updateChannel was called
+    });
+
+    it('should throw AppError when no update data provided', async () => {
+      // Mock findChannel to return a valid channel
+      (channelRepository.findChannelById as jest.Mock).mockResolvedValue(
+        mockChannel
+      );
+
+      // Mock the update functions
+      (channelRepository.updateChannel as jest.Mock).mockResolvedValue(
+        undefined
+      );
+      (communityRepository.updateCommunity as jest.Mock).mockResolvedValue(
+        undefined
+      );
+
+      // Call the function with no update data
+      await expect(updateChannel(1, 1, {})).rejects.toThrowError(
+        new AppError('No data to update', 400)
+      );
+    });
+
+    it('should throw AppError when user lacks permission', async () => {
+      (
+        channelMemberService.checkChannelMemberPermission as jest.Mock
+      ).mockRejectedValue(new AppError('Not authorized', 403));
+
+      await expect(updateChannel(1, 1, mockUpdateData)).rejects.toThrow(
+        new AppError('Not authorized', 403)
+      );
+    });
+  });
+
+  describe('deleteChannel', () => {
+    beforeEach(() => {
+      (channelRepository.findChannelById as jest.Mock).mockResolvedValue(
+        mockChannel
+      );
+      (
+        channelMemberService.checkChannelMemberPermission as jest.Mock
+      ).mockResolvedValue(true);
+    });
+
+    it('should delete channel successfully', async () => {
+      (communityRepository.updateCommunity as jest.Mock).mockResolvedValue(
+        undefined
+      );
+
+      const result = await deleteChannel(1, 1);
+
+      expect(result).toBeNull();
+      expect(communityRepository.updateCommunity).toHaveBeenCalledWith(
+        mockChannel.communityId,
+        { active: false }
+      );
+    });
+
+    it('should throw AppError when user lacks permission', async () => {
+      (
+        channelMemberService.checkChannelMemberPermission as jest.Mock
+      ).mockRejectedValue(new AppError('Not authorized', 403));
+
+      await expect(deleteChannel(1, 1)).rejects.toThrow(
+        new AppError('Not authorized', 403)
+      );
+    });
+  });
+});
