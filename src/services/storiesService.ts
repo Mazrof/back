@@ -27,10 +27,10 @@ export const createStory = async (
 export const getStoryById = async (id: number, curUserId: number) => {
   const story: any = await storiesRepository.findStoryById(id);
   if (!story) {
-    return;
+    return null;
   }
   if (!(await checkStoryExpiry(story))) {
-    return;
+    return null;
   }
   await addUserView(story.id, curUserId);
   story.viewCount = await getViewCount(story.id);
@@ -42,16 +42,24 @@ export const getStoryById = async (id: number, curUserId: number) => {
 export const getUserStories = async (curUserId: number) => {
   const allUsersStories: any[] = [];
   const userChats = await storiesRepository.findUserPersonalChats(curUserId);
-  userChats.unshift({ chatId: -1, otherUserId: curUserId });
+  userChats.unshift({ chatId: 0, otherUserId: curUserId });
   for (const chat of userChats) {
-    allUsersStories.push(
-      await storiesRepository.findProfileByIdMinimal(chat.otherUserId)
+    const userProfile = await storiesRepository.findProfileByIdMinimal(
+      chat.otherUserId
     );
-    allUsersStories[allUsersStories.length - 1].stories =
-      await storiesRepository.findStoriesByUserId(chat.otherUserId);
+    if (userProfile) {
+      allUsersStories.push(userProfile);
+      if (
+        allUsersStories[allUsersStories.length - 1].storyVisibility != 'nobody'
+      ) {
+        allUsersStories[allUsersStories.length - 1].stories =
+          await storiesRepository.findStoriesByUserId(chat.otherUserId);
+      }
+    }
   }
   for (const user of allUsersStories)
     for (let i = 0; i < user.stories.length; i++) {
+      user.photo = user.profilePicVisibility == 'nobody' ? null : user.photo;
       const story = user.stories[i];
       if (!(await checkStoryExpiry(story))) {
         user.stories.splice(i, 1);

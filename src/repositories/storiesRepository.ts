@@ -9,7 +9,7 @@ export const createStory = async (
   color
 ) => {
   try {
-    const story = await prisma.stories.create({
+    return await prisma.stories.create({
       data: {
         userId,
         content,

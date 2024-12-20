@@ -19,6 +19,9 @@ export const getAllProfiles = async (): Promise<Users[]> => {
 
 export const getProfileById = async (id: number): Promise<Users | null> => {
   const user: any = await profileRepository.findProfileById(id);
+  if (!user) {
+    throw new AppError('user id not found', 400);
+  }
   return user;
 };
 export const createProfile = async (data: any) => {
