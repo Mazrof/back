@@ -3,7 +3,7 @@ import {addFcmTokenService,sendNotificationService,sendNotifications,
 } from '../services/notificationsService';
 import { Request, Response } from 'express';
 import { AppError, catchAsync } from '../utility';
-import { notificationSchema} from '../schemas/notificationSchema';
+import { notificationSchema } from '../schemas/notificationSchema';
 export const addFcmTokenController = catchAsync(async (req: Request, res: Response) => {
   const userId = req.session.user.id;
     const fcmToken = req.body.fcmToken

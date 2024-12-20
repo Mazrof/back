@@ -6,12 +6,14 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 import './services/oauth';
+import useragent from 'express-useragent';
 import { globalErrorHandler } from './middlewares/error_handlers/error_handler';
 import apiRoutes from './routes';
 import passport from 'passport';
 import session from 'express-session';
 import { sessionConfig } from './config/sessionConfig';
 import { corsConfig } from './config/corsConfig';
+import { serveStaticFiles } from './middlewares/imageHandlers';
 
 export const sessionMiddleware = session(sessionConfig);
 

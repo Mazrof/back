@@ -24,7 +24,6 @@ import { signupSchema } from '../schemas/authSchema';
 import { sendVerificationCode, verifyCode } from '../services/emailService';
 import { sendVerificationCodeSMS } from '../services/smsService';
 import crypto from 'crypto';
-import { updateUserById } from '../repositories/userRepository';
 
 export const signup = catchAsync(async (req: Request, res: Response) => {
   const validatedData = signupSchema.parse(req.body); // Zod validation
@@ -219,7 +218,7 @@ export const getUserSessions = catchAsync(async (req: Request, res: Response) =>
     }
 
     res.json({ status: 'success', data: filteredSessions });
-  } catch (error) {
+  } catch {
     throw new AppError('Failed to retrieve sessions', 500);
   }
 });
