@@ -101,16 +101,13 @@ export const getChannelUsers = async (participantId: number) => {
 export const getUserMutedParticipants = async (participantId: number) => {
   const mutedParticipants = await prisma.mutedParticipants.findMany({
     where: {
-      participantId,
+      participantId: participantId,
     },
-    include: {
-      users: {
-        select: {
-          id: true,
-          fcmtokens: true,
+    select: {
+        userId: true,
+        expiryDate: true,
+        participantId: true,
         },
-      },
-    },
   });
   const nonExpiredMutedParticipants = mutedParticipants.filter(
     (participant) =>
@@ -127,7 +124,7 @@ export const getUserMutedParticipants = async (participantId: number) => {
     }))
   );
   return (
-    nonExpiredMutedParticipants.map((participant) => participant.users) || []
+    nonExpiredMutedParticipants.map((participant) => participant.userId) || []
   );
 };
 
@@ -222,3 +219,4 @@ export const updateMutedParticipant = async (
     },
   });
 };
+

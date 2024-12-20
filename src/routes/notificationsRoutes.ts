@@ -1,5 +1,5 @@
 import express from 'express';
-import { addFcmTokenController,sendNotificationController,sendNotificationsController,
+import { addFcmTokenController,sendNotificationsController,
     addMutedParticipantController,removeMutedParticipantController,updateMutedParticipantController
  } from '../controllers/notificationsController';
 import { isAuthenticated } from '../middlewares/authMiddleware';
@@ -7,8 +7,6 @@ import { isAuthenticated } from '../middlewares/authMiddleware';
 const notifactionsRouter = express.Router();
 
 notifactionsRouter.post('/subscripe', isAuthenticated ,addFcmTokenController);
-
-notifactionsRouter.post('/send', isAuthenticated ,sendNotificationController);
 
 notifactionsRouter.post('/sendall',sendNotificationsController);
 

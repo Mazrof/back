@@ -36,11 +36,15 @@ export const sendNotificationService = async (userId: number,NotificationData: F
 
 export const sendNotifications = async (participantId:number,senderId:number,NotificationData: FCMNotification)=>{
     const chatType=await getParticipantType(participantId);
+    if (!chatType)
+        throw new AppError('participant not found', 404);
     if (chatType.type.toString()===ParticipiantTypes.personalChat.toString()){
          const users=await getPersonalChatUsers(participantId);
-        const mutedUsersIds=(await getUserMutedParticipants(participantId)).map((user)=>user.id);
+        const mutedUsersIds=(await getUserMutedParticipants(participantId))
         const usersToSend=users.filter((user)=>!mutedUsersIds.includes(user.id)&&Number(user.id)!==Number(senderId));
         console.log("FCM Tokens",usersToSend.map((user)=>user.fcmtokens).flat());
+        if (!usersToSend.length && !(usersToSend.map((user)=>user.fcmtokens).flat()).length )
+            throw new AppError('no users to send notification to', 400);
         const message: MulticastMessage = {
             notification: {
               title: NotificationData.title,
@@ -56,7 +60,7 @@ export const sendNotifications = async (participantId:number,senderId:number,Not
         const groupUsers=await getGroupUsers(participantId);
         const channelUsers=await getChannelUsers(participantId);
         const users=groupUsers.concat(channelUsers);
-        const mutedUsersIds=(await getUserMutedParticipants(participantId)).map((user)=>user.id);
+        const mutedUsersIds=(await getUserMutedParticipants(participantId))
         const usersToSend=users.filter((user)=>!mutedUsersIds.includes(user.id)&&Number(user.id)!==Number(senderId));
         console.log("FCM Tokens",usersToSend.map((user)=>user.fcmtokens).flat());
 
