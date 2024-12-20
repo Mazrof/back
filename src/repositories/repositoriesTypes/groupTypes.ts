@@ -12,7 +12,6 @@ export interface GroupResponse {
   };
 }
 
-
 export interface DetailedGroupResponse extends GroupResponse {
   communityId: number;
   community: {

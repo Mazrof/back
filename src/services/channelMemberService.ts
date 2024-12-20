@@ -1,15 +1,16 @@
 import * as Repository from '../repositories';
-import * as Service from '../services';
+import * as channelService from '../services/channelService';
 import { AppError } from '../utility';
 import { CommunityRole } from '@prisma/client';
 import { channelResponse } from '../repositories/repositoriesTypes/channelTypes';
+
 
 /**
  * Helper function to check if a channel exists by its ID.
  * @param channelId - The ID of the channel to check.
  * @throws {AppError} If the channel does not exist.
  */
-const findChannel = async (channelId: number): Promise<void> => {
+export const findChannel = async (channelId: number): Promise<void> => {
   const channel: channelResponse = await Repository.findChannelById(channelId);
   if (!channel || !channel.community.active) {
     throw new AppError('No channel found with this ID', 404);
@@ -21,7 +22,7 @@ const findChannel = async (channelId: number): Promise<void> => {
  * @param userId - The ID of the user to check.
  * @throws {AppError} If the user does not exist.
  */
-const checkUser = async (userId: number): Promise<void> => {
+export const checkUser = async (userId: number): Promise<void> => {
   const user: { id: number; username: string; status: boolean } =
     await Repository.findUserById(userId);
   if (!user) {
@@ -75,7 +76,7 @@ export const checkChannelMember = async (
  * @returns The updated member details if the user is inactive and is updated.
  * @throws {AppError} If the user already exists as an active member.
  */
-const checkMember = async (
+export const checkMember = async (
   userId: number,
   channelId: number
 ): Promise<{
@@ -107,7 +108,7 @@ const checkMember = async (
  * @param channelId - The ID of the channel.
  * @throws {AppError} If the user is not an admin or is not authorized.
  */
-const checkAdmin = async (adminId: number, channelId: number) => {
+export const checkAdmin = async (adminId: number, channelId: number) => {
   if (!adminId) {
     throw new AppError('Admin ID is missing', 400);
   }
@@ -212,6 +213,16 @@ export const updateChannelMember = async (
   if (!existingMember || !existingMember.active) {
     throw new AppError('Member not found in this Channel', 404);
   }
+  if (
+    existingMember.role &&
+    existingMember.role === CommunityRole.admin &&
+    data.role === CommunityRole.member
+  ) {
+    const adminCount = await Repository.getChannelAdminCounts(channelId);
+    if (adminCount === 1) {
+      throw new AppError('Channel should have at least one admin.', 400);
+    }
+  }
   return await Repository.updateChannelMember(userId, channelId, data); // Update the member's data
 };
 
@@ -233,7 +244,8 @@ export const deleteChannelMember = async (
   }
 
   if (existingMember.role === CommunityRole.admin) {
-    const adminCount: number = await Repository.getAdminCounts(channelId);
+    const adminCount: number =
+      await Repository.getChannelAdminCounts(channelId);
 
     if (adminCount === 1) {
       // Delete all users in the channel if the admin is being removed
@@ -245,7 +257,7 @@ export const deleteChannelMember = async (
           });
       }
       // Delete the channel if no admin remains
-      await Service.deleteChannel(channelId, userId);
+      await channelService.deleteChannel(channelId, userId);
     }
   }
 

@@ -2,7 +2,7 @@
  * Import required modules for handling HTTP requests and user services.
  */
 import { Request, Response, NextFunction } from 'express';
-import * as userService from '../services';
+import * as userService from '../services/adminService';
 import { catchAsync } from '../utility';
 
 /**

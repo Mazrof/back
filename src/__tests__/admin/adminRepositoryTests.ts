@@ -6,7 +6,6 @@ import {
 } from '../../repositories/adminRepository';
 import prisma from '../../prisma/client';
 
-// Mock the entire prisma module
 jest.mock('../../prisma/client', () => ({
   __esModule: true,
   default: {

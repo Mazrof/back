@@ -125,7 +125,6 @@ export const createChannel = async (data: {
   });
 };
 
-
 /**
  * Update the channel's ability to add comments.
  *

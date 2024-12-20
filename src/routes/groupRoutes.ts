@@ -27,10 +27,7 @@ const router = express.Router({
  * @description Create a new group.
  * @access Restricted (requires authentication)
  */
-router
-  .route('/')
-  .get(getAllGroups)
-  .post(createGroup);
+router.route('/').get(getAllGroups).post(createGroup);
 
 /**
  * @route POST /invitation
@@ -59,10 +56,6 @@ router.use('/:groupId/members', groupMemberRouter);
  * @description Delete a group (Admins only).
  * @access Restricted (Admins only)
  */
-router
-  .route('/:id')
-  .get(getGroup)
-  .patch(updateGroup)
-  .delete(deleteGroup);
+router.route('/:id').get(getGroup).patch(updateGroup).delete(deleteGroup);
 
 export default router;

@@ -1,5 +1,4 @@
 import { prisma } from '../prisma/client';
-import { use } from 'passport';
 
 export const createStory = async (
   userId,
@@ -53,7 +52,7 @@ export const addUserView = async (storyId: number, userId: number) => {
   } catch (error) {
     // Check if the error is a unique constraint violation
     if (error.code === 'P2002') {
-      return;
+      return null; // -------------------------------------edited for push
     }
     throw error;
   }

@@ -32,16 +32,16 @@ export const login = catchAsync(async (req: Request, res: Response) => {
   if (!user) throw new AppError('Invalid credentials', 401);
   console.log(user);
   if ('bannedUsers' in user) {
-    req.session.user = { id: user.id, userType: 'Admin',user }; // Store user in session
+    req.session.user = { id: user.id, userType: 'Admin', user }; // Store user in session
     res.status(200).json({
       status: 'success',
-      data: { user: { id: user.id, user_type: 'Admin',user } },
+      data: { user: { id: user.id, user_type: 'Admin', user } },
     });
   } else {
-    req.session.user = { id: user.id, userType: 'user',user }; // Store user in session
+    req.session.user = { id: user.id, userType: 'user', user }; // Store user in session
     res.status(200).json({
       status: 'success',
-      data: { user: { id: user.id, user_type: 'user',user } },
+      data: { user: { id: user.id, user_type: 'user', user } },
     });
   }
 });
