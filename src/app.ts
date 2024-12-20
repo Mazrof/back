@@ -12,12 +12,16 @@ import passport from 'passport';
 import session from 'express-session';
 import { sessionConfig } from './config/sessionConfig';
 import { corsConfig } from './config/corsConfig';
+import { serveStaticFiles } from './middlewares/imageHandlers';
 
 export const sessionMiddleware = session(sessionConfig);
 
 export default async (app: Application) => {
   // Serve static files from the 'public' directory
   app.use(express.static(path.join(__dirname, '../../public')));
+
+  // Serve static assets
+  serveStaticFiles(app);
 
   // Implement CORS
   app.use(cors(corsConfig));
