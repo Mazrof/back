@@ -48,11 +48,11 @@ export const login = catchAsync(async (req: CustomRequest, res: Response) => {
     });
   } else {
     const systemInfo = {
-      platform: req.useragent.platform, // e.g., Windows, Mac, Linux
-      browser: req.useragent.browser,   // e.g., Chrome, Safari
-      isMobile: req.useragent.isMobile, // true if the device is mobile
-      isDesktop: req.useragent.isDesktop, // true if the device is desktop
-      os: req.useragent.os,             // e.g., Windows 10, macOS
+      platform: req.useragent.platform, 
+      browser: req.useragent.browser,   
+      isMobile: req.useragent.isMobile, 
+      isDesktop: req.useragent.isDesktop,
+      os: req.useragent.os,   
     };
 
     req.session.user = {
