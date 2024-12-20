@@ -4,7 +4,6 @@ import { AppError } from '../utility';
 import { CommunityRole } from '@prisma/client';
 import { channelResponse } from '../repositories/repositoriesTypes/channelTypes';
 
-
 /**
  * Helper function to check if a channel exists by its ID.
  * @param channelId - The ID of the channel to check.
