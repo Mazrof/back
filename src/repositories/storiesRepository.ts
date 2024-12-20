@@ -52,7 +52,7 @@ export const addUserView = async (storyId: number, userId: number) => {
   } catch (error) {
     // Check if the error is a unique constraint violation
     if (error.code === 'P2002') {
-      return;
+      return null; // -------------------------------------edited for push
     }
     throw error;
   }

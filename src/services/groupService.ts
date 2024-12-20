@@ -104,7 +104,7 @@ export const createGroup = async (data: {
   community: { name: string; privacy: boolean; imageURL: string };
   groupSize: number;
 }> => {
-  
+
   let message = '';
   if (!data.name) message = 'Invalid Group name';
   if (!data.creatorId)
@@ -112,14 +112,14 @@ export const createGroup = async (data: {
   if (!data.groupSize || data.groupSize < 1)
     message += message ? ', Invalid Group size' : 'Invalid Group size';
   if (message) throw new AppError(message, 400);
-  
+
   const tempURL = data.imageURL;
   if (data.imageURL) {
     try {
       data.imageURL = await uploadFileToFirebase(data.imageURL);
     } catch (error) {
       console.log('Error fetching image from Firebase:');
-      data.imageURL = tempURL; 
+      data.imageURL = tempURL;
     }
     data.imageURL = await uploadFileToFirebase(data.imageURL);
   }
