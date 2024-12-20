@@ -17,7 +17,7 @@ Once logged in, users can personalize their experience by:
 
 - **Updating profile pictures**, **bios**, **username**, and **screen name** 🎨.
 - Control **privacy settings** for profile visibility, **block/unblock** users 🚫, and manage **read receipts** ✅.
-
+ 
 ---
 
 ### 💬 **Messaging Features**
@@ -62,6 +62,7 @@ Notifications ensure you never miss anything important:
 ### 🛡️ **Security & Privacy**
 We take security seriously:
 
+
 - **View active sessions** and **terminate suspicious devices** remotely 🔍🚫.
 - **Secret chats**: End-to-end encrypted messages that aren’t stored in the cloud ☁️🔒.
 - Use **self-destruct timers** for messages and media 🕰️.
@@ -95,7 +96,9 @@ Before you begin, ensure you have the following installed on your machine:
 
    ```bash
    git clone https://github.com/Mazrof/back.git
+
    cd back
+
    ```
 
 2. **Install dependencies**:
@@ -135,3 +138,4 @@ We are grateful to the following contributors who have made this platform possib
 We’re thrilled to have you onboard and look forward to seeing how you contribute to making this platform even better! 🎉
 
 ---
+
