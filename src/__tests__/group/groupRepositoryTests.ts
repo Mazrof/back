@@ -194,7 +194,9 @@ describe('Group Repository', () => {
         },
       };
 
-      (prisma.groups.create as jest.Mock).mockResolvedValue(mockCreatedGroupNoImage);
+      (prisma.groups.create as jest.Mock).mockResolvedValue(
+        mockCreatedGroupNoImage
+      );
 
       const result = await createGroup(dataWithoutImage);
 
@@ -287,7 +289,9 @@ describe('Group Repository', () => {
 
     describe('findGroupFilter', () => {
       it('should find existing filter', async () => {
-        (prisma.adminGroupFilters.findUnique as jest.Mock).mockResolvedValue(mockFilter);
+        (prisma.adminGroupFilters.findUnique as jest.Mock).mockResolvedValue(
+          mockFilter
+        );
 
         const result = await findGroupFilter(1, 1);
 
@@ -304,7 +308,9 @@ describe('Group Repository', () => {
       });
 
       it('should return null when filter not found', async () => {
-        (prisma.adminGroupFilters.findUnique as jest.Mock).mockResolvedValue(null);
+        (prisma.adminGroupFilters.findUnique as jest.Mock).mockResolvedValue(
+          null
+        );
 
         const result = await findGroupFilter(999, 999);
 
@@ -314,7 +320,9 @@ describe('Group Repository', () => {
 
     describe('deleteGroupFilter', () => {
       it('should delete existing filter', async () => {
-        (prisma.adminGroupFilters.delete as jest.Mock).mockResolvedValue(mockFilter);
+        (prisma.adminGroupFilters.delete as jest.Mock).mockResolvedValue(
+          mockFilter
+        );
 
         const result = await deleteGroupFilter(1, 1);
 
@@ -333,7 +341,9 @@ describe('Group Repository', () => {
 
     describe('createGroupFilter', () => {
       it('should create new filter', async () => {
-        (prisma.adminGroupFilters.create as jest.Mock).mockResolvedValue(mockFilter);
+        (prisma.adminGroupFilters.create as jest.Mock).mockResolvedValue(
+          mockFilter
+        );
 
         const result = await createGroupFilter(1, 1);
 

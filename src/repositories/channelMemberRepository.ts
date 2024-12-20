@@ -206,7 +206,9 @@ export const findChannelByInvitationLinkHash = async (
  * @param {number} channelId - The ID of the channel.
  * @returns {Promise<number>} A promise that resolves to the count of active admin members in the channel.
  */
-export const getChannelAdminCounts = async (channelId: number): Promise<number> => {
+export const getChannelAdminCounts = async (
+  channelId: number
+): Promise<number> => {
   return prisma.channelSubscriptions.count({
     where: {
       channelId,

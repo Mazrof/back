@@ -1,5 +1,10 @@
 import { prisma } from '../../prisma/client';
-import { findAllChannels, findChannelById, createChannel, updateChannel } from '../../repositories/channelRepository';
+import {
+  findAllChannels,
+  findChannelById,
+  createChannel,
+  updateChannel,
+} from '../../repositories/channelRepository';
 
 jest.mock('../../server', () => ({
   io: jest.fn(),
@@ -139,7 +144,9 @@ describe('Channel Repository', () => {
     };
 
     it('should create new channel with all provided data', async () => {
-      (prisma.channels.create as jest.Mock).mockResolvedValue(mockCreatedChannel);
+      (prisma.channels.create as jest.Mock).mockResolvedValue(
+        mockCreatedChannel
+      );
 
       const result = await createChannel(mockChannelData);
 
@@ -174,7 +181,9 @@ describe('Channel Repository', () => {
         invitationLink: minimalData.invitationLink,
       };
 
-      (prisma.channels.create as jest.Mock).mockResolvedValue(mockMinimalChannel);
+      (prisma.channels.create as jest.Mock).mockResolvedValue(
+        mockMinimalChannel
+      );
 
       const result = await createChannel(minimalData);
 
@@ -211,7 +220,9 @@ describe('Channel Repository', () => {
     };
 
     it('should update channel comments setting', async () => {
-      (prisma.channels.update as jest.Mock).mockResolvedValue(mockUpdatedChannel);
+      (prisma.channels.update as jest.Mock).mockResolvedValue(
+        mockUpdatedChannel
+      );
 
       const result = await updateChannel(1, false);
 
@@ -226,7 +237,9 @@ describe('Channel Repository', () => {
     });
 
     it('should handle undefined canAddComments parameter', async () => {
-      (prisma.channels.update as jest.Mock).mockResolvedValue(mockUpdatedChannel);
+      (prisma.channels.update as jest.Mock).mockResolvedValue(
+        mockUpdatedChannel
+      );
 
       const result = await updateChannel(1);
 

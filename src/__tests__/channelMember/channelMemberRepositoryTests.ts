@@ -39,7 +39,9 @@ describe('Channel Membership Repository', () => {
     };
 
     it('should return member details when found', async () => {
-      (prisma.channelSubscriptions.findUnique as jest.Mock).mockResolvedValue(mockMember);
+      (prisma.channelSubscriptions.findUnique as jest.Mock).mockResolvedValue(
+        mockMember
+      );
 
       const result = await findChannelMember(1, 1);
 
@@ -56,7 +58,9 @@ describe('Channel Membership Repository', () => {
     });
 
     it('should return null when member not found', async () => {
-      (prisma.channelSubscriptions.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.channelSubscriptions.findUnique as jest.Mock).mockResolvedValue(
+        null
+      );
 
       const result = await findChannelMember(999, 999);
 
@@ -85,7 +89,9 @@ describe('Channel Membership Repository', () => {
     ];
 
     it('should return all active channel members', async () => {
-      (prisma.channelSubscriptions.findMany as jest.Mock).mockResolvedValue(mockMembers);
+      (prisma.channelSubscriptions.findMany as jest.Mock).mockResolvedValue(
+        mockMembers
+      );
 
       const result = await findChannelMembers(1);
 
@@ -121,7 +127,9 @@ describe('Channel Membership Repository', () => {
     };
 
     it('should return member details when found', async () => {
-      (prisma.channelSubscriptions.findUnique as jest.Mock).mockResolvedValue(mockExistingMember);
+      (prisma.channelSubscriptions.findUnique as jest.Mock).mockResolvedValue(
+        mockExistingMember
+      );
 
       const result = await findExistingMember(1, 1);
 
@@ -150,7 +158,9 @@ describe('Channel Membership Repository', () => {
     };
 
     it('should create new channel member', async () => {
-      (prisma.channelSubscriptions.create as jest.Mock).mockResolvedValue(mockMemberData);
+      (prisma.channelSubscriptions.create as jest.Mock).mockResolvedValue(
+        mockMemberData
+      );
 
       const result = await addChannelMember(mockMemberData);
 
@@ -183,7 +193,9 @@ describe('Channel Membership Repository', () => {
         active: true,
       };
 
-      (prisma.channelSubscriptions.update as jest.Mock).mockResolvedValue(mockUpdatedMember);
+      (prisma.channelSubscriptions.update as jest.Mock).mockResolvedValue(
+        mockUpdatedMember
+      );
 
       const result = await updateChannelMember(1, 1, updateData);
 
@@ -206,7 +218,9 @@ describe('Channel Membership Repository', () => {
     it('should update member with partial fields', async () => {
       const updateData = { role: CommunityRole.admin };
 
-      (prisma.channelSubscriptions.update as jest.Mock).mockResolvedValue(mockUpdatedMember);
+      (prisma.channelSubscriptions.update as jest.Mock).mockResolvedValue(
+        mockUpdatedMember
+      );
 
       const result = await updateChannelMember(1, 1, updateData);
 

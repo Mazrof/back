@@ -47,7 +47,6 @@ export const convertImageToBase64 = (filePath: string): string => {
 
     const absolutePath = path.join(__dirname, '../../../', filePath);
 
-
     const imageBuffer = fs.readFileSync(absolutePath);
 
     // Convert the image buffer to a Base64 string
