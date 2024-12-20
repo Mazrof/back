@@ -24,6 +24,7 @@ import { signupSchema } from '../schemas/authSchema';
 import { sendVerificationCode, verifyCode } from '../services/emailService';
 import { sendVerificationCodeSMS } from '../services/smsService';
 import crypto from 'crypto';
+import { updateUserById } from '../repositories/userRepository';
 
 export const signup = catchAsync(async (req: Request, res: Response) => {
   const validatedData = signupSchema.parse(req.body); // Zod validation
@@ -38,21 +39,20 @@ export const login = catchAsync(async (req: CustomRequest, res: Response) => {
   const { email, password } = req.body;
 
   const user = await authenticateUser(email, password);
-  user.password = undefined;
   if (!user) throw new AppError('Invalid credentials', 401);
   if ('bannedUsers' in user) {
-    req.session.user = { id: user.id, userType: 'Admin',user }; // Store user in session
+    req.session.user = { id: user.id, userType: 'Admin', user }; // Store user in session
     res.status(200).json({
       status: 'success',
-      data: { user: { id: user.id, user_type: 'Admin',user } },
+      data: { user: { id: user.id, user_type: 'Admin', user } },
     });
   } else {
     const systemInfo = {
-      platform: req.useragent.platform, 
-      browser: req.useragent.browser,   
-      isMobile: req.useragent.isMobile, 
+      platform: req.useragent.platform,
+      browser: req.useragent.browser,
+      isMobile: req.useragent.isMobile,
       isDesktop: req.useragent.isDesktop,
-      os: req.useragent.os,   
+      os: req.useragent.os,
     };
 
     req.session.user = {
@@ -63,7 +63,7 @@ export const login = catchAsync(async (req: CustomRequest, res: Response) => {
     };
     res.status(200).json({
       status: 'success',
-      data: { user: { id: user.id, user_type: 'user',user } },
+      data: { user: { id: user.id, user_type: 'user', user } },
     });
   }
 });

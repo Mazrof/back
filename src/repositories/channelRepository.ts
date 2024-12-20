@@ -1,210 +1,156 @@
 import { prisma } from '../prisma/client';
-import { AppError } from '../utility';
-import { ParticipiantTypes } from '@prisma/client';
+import {
+  channelResponse,
+  commonChannelResponse,
+  selectType,
+} from './repositoriesTypes/channelTypes';
 
-export const findAllChannels = async () => {
+/**
+ * The `selectObject` is used to specify the fields to be selected when querying channels and communities.
+ */
+const selectObject: selectType = {
+  id: true,
+  communityId: true,
+  canAddComments: true,
+  invitationLink: true,
+  community: {
+    select: {
+      name: true,
+      privacy: true,
+      imageURL: true,
+      active: true,
+    },
+  },
+};
+
+const selectAllObject = {
+  id: true,
+  communityId: true,
+  canAddComments: true,
+  invitationLink: true,
+  community: {
+    select: {
+      name: true,
+      privacy: true,
+      imageURL: true,
+    },
+  },
+};
+/**
+ * Fetch all active channels from the database.
+ *
+ * @returns {Promise<commonChannelResponse[]>}
+ * An array of channel objects, each containing:
+ *  - `id`: Channel ID
+ *  - `communityId`: Community ID associated with the channel
+ *  - `canAddComments`: Whether users can add comments in the channel
+ *  - `invitationLink`: The invitation link for the channel
+ *  - `community`: The community associated with the channel, including:
+ *    - `name`: Community name
+ *    - `privacy`: Community privacy setting
+ *    - `imageURL`: Community image URL
+ *    - `active`: Whether the community is active
+ */
+export const findAllChannels = async (): Promise<commonChannelResponse[]> => {
   return prisma.channels.findMany({
     where: {
       community: {
         active: true,
       },
     },
-    select: {
-      id: true,
-      canAddComments: true,
-      invitationLink: true,
-      community: {
-        select: {
-          name: true,
-          privacy: true,
-          imageURL: true,
-        },
-      },
-    },
+    select: selectAllObject,
   });
 };
 
-export const findChannelById = async (
-  id: number
-): Promise<{
-  id: number;
-  canAddComments: boolean;
-  community: { name: string; privacy: boolean };
-}> => {
-  const channel: {
-    id: number;
-    canAddComments: boolean;
-    community: { name: string; privacy: boolean; active: boolean };
-  } | null = await prisma.channels.findUnique({
+/**
+ * Find a channel by its ID.
+ *
+ * @param {number} id - The ID of the channel to retrieve.
+ * @returns {Promise<channelResponse>}
+ * A channel object containing:
+ *  - `id`: Channel ID
+ *  - `communityId`: Community ID associated with the channel
+ *  - `canAddComments`: Whether users can add comments in the channel
+ *  - `invitationLink`: The invitation link for the channel
+ *  - `community`: The community associated with the channel, including:
+ *    - `name`: Community name
+ *    - `privacy`: Community privacy setting
+ *    - `imageURL`: Community image URL
+ *    - `active`: Whether the community is active
+ */
+export const findChannelById = async (id: number): Promise<channelResponse> => {
+  return prisma.channels.findUnique({
     where: {
       id,
     },
-    select: {
-      id: true,
-      canAddComments: true,
-      invitationLink: true,
-      community: {
-        select: {
-          name: true,
-          privacy: true,
-          active: true,
-          imageURL: true,
-        },
-      },
-    },
+    select: selectObject,
   });
-  if (!channel || !channel.community.active) {
-    throw new AppError('No channel found with that ID', 404);
-  }
-  delete channel.community.active;
-  return channel;
 };
 
+/**
+ * Create a new channel with a community.
+ *
+ * @param {Object} data - The data to create a new channel.
+ * @param {string} data.name - The name of the community.
+ * @param {boolean} [data.privacy] - The privacy setting of the community (optional).
+ * @param {number} data.creatorId - The ID of the creator of the community.
+ * @param {boolean} [data.canAddComments] - Whether users can add comments in the channel (optional).
+ * @param {string} data.invitationLink - The invitation link for the channel.
+ * @param {string} [data.imageURL] - The image URL for the community (optional).
+ * @returns {Promise<commonChannelResponse>}
+ * A common channel response object containing the newly created channel and community details.
+ */
 export const createChannel = async (data: {
   name: string;
-  privacy: boolean;
+  privacy?: boolean;
   creatorId: number;
-  canAddComments: boolean;
+  canAddComments?: boolean;
   invitationLink: string;
-  imageURL: string;
-}) => {
-  let message: string = '';
-  if (!data.name) {
-    message = 'Invalid Group name';
-  }
-  if (!data.creatorId) {
-    if (message) message += ', ';
-    message += 'Invalid Creator ID';
-  }
-  if (message) {
-    throw new AppError(`${message}`, 400);
-  }
-  const community: {
-    name: string;
-    id: number;
-    active: boolean;
-    privacy: boolean;
-    creatorId: number;
-    imageURL: string;
-  } = await prisma.communities.create({
-    data: {
-      name: data.name,
-      privacy: data.privacy,
-      creatorId: data.creatorId,
-      imageURL: data.imageURL,
-    },
-  });
-  await prisma.participants.create({
-    data: {
-      communityId: community.id,
-      type: ParticipiantTypes.community,
-    },
-  });
-
-  const channel = prisma.channels.create({
+  imageURL?: string;
+}): Promise<commonChannelResponse> => {
+  return prisma.channels.create({
     data: {
       canAddComments: data.canAddComments,
-      communityId: community.id,
       invitationLink: data.invitationLink,
-    },
-    select: {
-      id: true,
-      canAddComments: true,
-      invitationLink: true,
       community: {
-        select: {
-          name: true,
-          privacy: true,
-          imageURL: true,
+        create: {
+          name: data.name,
+          privacy: data.privacy,
+          creatorId: data.creatorId,
+          imageURL: data.imageURL,
         },
       },
     },
+    select: selectAllObject,
   });
-  return channel;
 };
 
+/**
+ * Update the channel's ability to add comments.
+ *
+ * @param {number} channelId - The ID of the channel to update.
+ * @param {boolean} [canAddComments] - Whether users can add comments in the channel (optional).
+ * @returns {Promise<commonChannelResponse>}
+ * The updated channel object containing:
+ *  - `id`: Channel ID
+ *  - `communityId`: Community ID associated with the channel
+ *  - `canAddComments`: Whether users can add comments in the channel
+ *  - `invitationLink`: The invitation link for the channel
+ *  - `community`: The community associated with the channel, including:
+ *    - `name`: Community name
+ *    - `privacy`: Community privacy setting
+ *    - `imageURL`: Community image URL
+ *    - `active`: Whether the community is active
+ */
 export const updateChannel = async (
   channelId: number,
-  data: {
-    name?: string;
-    privacy?: boolean;
-    canAddComments?: boolean;
-    imageURL: string | null;
-  }
-) => {
-  if (!data.name && !data.privacy && !data.canAddComments && !data.imageURL) {
-    throw new AppError('No data to update', 400);
-  }
-  const channel: {
-    communityId: number;
-    community: { active: boolean };
-  } | null = await prisma.channels.findUnique({
-    where: {
-      id: channelId,
+  canAddComments?: boolean
+): Promise<commonChannelResponse> => {
+  return prisma.channels.update({
+    where: { id: channelId },
+    data: {
+      canAddComments: canAddComments,
     },
-    select: {
-      communityId: true,
-      community: {
-        select: {
-          active: true,
-        },
-      },
-    },
+    select: selectAllObject,
   });
-
-  if (!channel || !channel.community.active) {
-    throw new AppError('No channel found with that ID', 404);
-  }
-
-  if (data.name || data.privacy) {
-    await prisma.communities.update({
-      where: { id: channel.communityId },
-      data: {
-        name: data.name,
-        privacy: data.privacy,
-        imageURL: data.imageURL,
-      },
-    });
-  }
-
-  if (data.canAddComments) {
-    await prisma.channels.update({
-      where: { id: channelId },
-      data: {
-        canAddComments: data.canAddComments,
-      },
-    });
-  }
-
-  return await findChannelById(channelId);
-};
-
-export const deleteChannel = async (
-  id: number
-): Promise<{ communityId: number }> => {
-  const channel: {
-    communityId: number;
-    community: { active: boolean };
-  } | null = await prisma.channels.findUnique({
-    where: { id },
-    select: {
-      communityId: true,
-      community: {
-        select: {
-          active: true,
-        },
-      },
-    },
-  });
-
-  if (!channel || !channel.community.active) {
-    throw new AppError('No channel found with that ID', 404);
-  }
-
-  await prisma.communities.update({
-    where: { id: channel.communityId, active: true },
-    data: { active: false },
-  });
-
-  return channel;
 };

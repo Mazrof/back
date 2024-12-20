@@ -1,17 +1,19 @@
 import { prisma } from '../../prisma/client';
+import { ParticipiantTypes } from '@prisma/client';
 import {
   findAllGroups,
   findGroupById,
   createGroup,
   updateGroup,
+  getGroupSize,
   deleteGroup,
-  applyGroupFilter,
+  findGroupFilter,
+  deleteGroupFilter,
+  createGroupFilter,
 } from '../../repositories/groupRepository';
-import { AppError } from '../../utility';
 
-// Mock the entire prisma module
+// Mock the prisma client
 jest.mock('../../prisma/client', () => ({
-  __esModule: true,
   prisma: {
     groups: {
       findMany: jest.fn(),
@@ -19,66 +21,90 @@ jest.mock('../../prisma/client', () => ({
       create: jest.fn(),
       update: jest.fn(),
     },
-    communities: {
-      create: jest.fn(),
-      update: jest.fn(),
-    },
-    participants: {
-      create: jest.fn(),
-    },
-    adminGroupFilters: {
-      findMany: jest.fn(),
-      findFirst: jest.fn(),
-      create: jest.fn(),
-      delete: jest.fn(),
-    },
     groupMemberships: {
       count: jest.fn(),
+    },
+    communities: {
+      update: jest.fn(),
+    },
+    adminGroupFilters: {
+      findUnique: jest.fn(),
+      delete: jest.fn(),
+      create: jest.fn(),
     },
   },
 }));
 
 describe('Group Repository', () => {
-  // Clear mocks before each test
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe('findAllGroups', () => {
-    it('should fetch all groups with filters', async () => {
-      const mockGroups = [
-        { id: 1, groupSize: 10, community: { name: 'Test', privacy: true } },
-      ];
-      const mockFilters = [{ groupId: 1 }];
+    const mockGroups = [
+      {
+        id: 1,
+        groupSize: 10,
+        community: {
+          name: 'Community 1',
+          privacy: true,
+          imageURL: 'image1.jpg',
+        },
+        adminGroupFilters: [{ groupId: 1 }],
+      },
+      {
+        id: 2,
+        groupSize: 5,
+        community: {
+          name: 'Community 2',
+          privacy: false,
+          imageURL: 'image2.jpg',
+        },
+        adminGroupFilters: [],
+      },
+    ];
 
+    it('should return all active groups', async () => {
       (prisma.groups.findMany as jest.Mock).mockResolvedValue(mockGroups);
-      (prisma.adminGroupFilters.findMany as jest.Mock).mockResolvedValue(
-        mockFilters
-      );
 
       const result = await findAllGroups();
 
-      expect(result).toEqual([
-        {
-          id: 1,
-          groupSize: 10,
-          community: { name: 'Test', privacy: true },
-          hasFilter: true,
+      expect(result).toEqual(mockGroups);
+      expect(prisma.groups.findMany).toHaveBeenCalledWith({
+        where: {
+          community: {
+            active: true,
+          },
         },
-      ]);
-      expect(prisma.groups.findMany).toHaveBeenCalledTimes(1);
-      expect(prisma.adminGroupFilters.findMany).toHaveBeenCalledTimes(1);
+        select: expect.any(Object),
+      });
+    });
+
+    it('should return empty array when no groups found', async () => {
+      (prisma.groups.findMany as jest.Mock).mockResolvedValue([]);
+
+      const result = await findAllGroups();
+
+      expect(result).toEqual([]);
+      expect(prisma.groups.findMany).toHaveBeenCalled();
     });
   });
 
   describe('findGroupById', () => {
-    it('should fetch group by ID', async () => {
-      const mockGroup = {
-        id: 1,
-        groupSize: 10,
-        community: { name: 'Test', privacy: true, active: true },
-      };
+    const mockGroup = {
+      id: 1,
+      groupSize: 10,
+      communityId: 1,
+      community: {
+        name: 'Test Community',
+        privacy: true,
+        active: true,
+        imageURL: 'test.jpg',
+      },
+      adminGroupFilters: [{ groupId: 1 }],
+    };
 
+    it('should return group when found', async () => {
       (prisma.groups.findUnique as jest.Mock).mockResolvedValue(mockGroup);
 
       const result = await findGroupById(1);
@@ -86,110 +112,168 @@ describe('Group Repository', () => {
       expect(result).toEqual(mockGroup);
       expect(prisma.groups.findUnique).toHaveBeenCalledWith({
         where: { id: 1 },
-        select: {
-          id: true,
-          groupSize: true,
-          community: {
-            select: { name: true, privacy: true, active: true },
-          },
-        },
+        select: expect.any(Object),
       });
     });
 
-    it('should throw an error if group is not found', async () => {
+    it('should return null when group not found', async () => {
       (prisma.groups.findUnique as jest.Mock).mockResolvedValue(null);
 
-      await expect(findGroupById(1)).rejects.toThrow(AppError);
-      expect(prisma.groups.findUnique).toHaveBeenCalledTimes(1);
+      const result = await findGroupById(999);
+
+      expect(result).toBeNull();
+      expect(prisma.groups.findUnique).toHaveBeenCalledWith({
+        where: { id: 999 },
+        select: expect.any(Object),
+      });
     });
   });
 
   describe('createGroup', () => {
-    it('should create a new group', async () => {
-      const mockCommunity = { id: 1, name: 'Community', privacy: true };
-      const mockGroup = {
-        id: 1,
-        groupSize: 10,
-        community: { name: 'Community', privacy: true },
-      };
+    const mockGroupData = {
+      name: 'New Group',
+      privacy: true,
+      creatorId: 1,
+      groupSize: 5,
+      invitationLink: 'newlink',
+      imageURL: 'new.jpg',
+    };
 
-      (prisma.communities.create as jest.Mock).mockResolvedValue(mockCommunity);
-      (prisma.groups.create as jest.Mock).mockResolvedValue(mockGroup);
-
-      const data = {
-        name: 'Community',
+    const mockCreatedGroup = {
+      id: 1,
+      groupSize: 5,
+      community: {
+        name: 'New Group',
         privacy: true,
-        creatorId: 1,
-        groupSize: 10,
-        invitationLink: 'test-link',
-      };
+        imageURL: 'new.jpg',
+      },
+    };
 
-      const result = await createGroup(data);
+    it('should create new group with all provided data', async () => {
+      (prisma.groups.create as jest.Mock).mockResolvedValue(mockCreatedGroup);
 
-      expect(result).toEqual(mockGroup);
-      expect(prisma.communities.create).toHaveBeenCalledWith({
-        data: { name: 'Community', privacy: true, creatorId: 1 },
-      });
+      const result = await createGroup(mockGroupData);
+
+      expect(result).toEqual(mockCreatedGroup);
       expect(prisma.groups.create).toHaveBeenCalledWith({
         data: {
-          groupSize: 10,
-          communityId: mockCommunity.id,
-          invitationLink: 'test-link',
-        },
-        select: {
-          id: true,
-          groupSize: true,
+          groupSize: mockGroupData.groupSize,
+          invitationLink: mockGroupData.invitationLink,
           community: {
-            select: { name: true, privacy: true },
+            create: {
+              name: mockGroupData.name,
+              privacy: mockGroupData.privacy,
+              creatorId: mockGroupData.creatorId,
+              imageURL: mockGroupData.imageURL,
+              participants: {
+                create: {
+                  type: ParticipiantTypes.community,
+                },
+              },
+            },
           },
         },
+        select: expect.any(Object),
+      });
+    });
+
+    it('should create group without optional imageURL', async () => {
+      const dataWithoutImage = {
+        name: 'New Group',
+        privacy: true,
+        creatorId: 1,
+        groupSize: 5,
+        invitationLink: 'newlink',
+      };
+
+      const mockCreatedGroupNoImage = {
+        ...mockCreatedGroup,
+        community: {
+          ...mockCreatedGroup.community,
+          imageURL: undefined,
+        },
+      };
+
+      (prisma.groups.create as jest.Mock).mockResolvedValue(
+        mockCreatedGroupNoImage
+      );
+
+      const result = await createGroup(dataWithoutImage);
+
+      expect(result).toEqual(mockCreatedGroupNoImage);
+      expect(prisma.groups.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          community: {
+            create: expect.not.objectContaining({
+              imageURL: expect.any(String),
+            }),
+          },
+        }),
+        select: expect.any(Object),
       });
     });
   });
 
   describe('updateGroup', () => {
-    it('should update group information', async () => {
-      const mockGroup = {
-        id: 1,
-        groupSize: 10,
-        community: { active: true },
-        communityId: 1,
-      };
+    const mockUpdatedGroup = {
+      id: 1,
+      groupSize: 15,
+      community: {
+        name: 'Test Community',
+        privacy: true,
+        imageURL: 'test.jpg',
+      },
+    };
 
-      (prisma.groups.findUnique as jest.Mock).mockResolvedValue(mockGroup);
-      (prisma.communities.update as jest.Mock).mockResolvedValue({});
-      (prisma.groups.update as jest.Mock).mockResolvedValue(mockGroup);
+    it('should update group size', async () => {
+      (prisma.groups.update as jest.Mock).mockResolvedValue(mockUpdatedGroup);
 
-      const result = await updateGroup(1, {
-        name: 'Updated Name',
-        privacy: false,
-      });
+      const result = await updateGroup(1, 15);
 
-      expect(result).toEqual(mockGroup);
-      expect(prisma.communities.update).toHaveBeenCalledWith({
+      expect(result).toEqual(mockUpdatedGroup);
+      expect(prisma.groups.update).toHaveBeenCalledWith({
         where: { id: 1 },
-        data: { name: 'Updated Name', privacy: false },
+        data: { groupSize: 15 },
+        select: expect.any(Object),
+      });
+    });
+
+    it('should handle undefined groupSize parameter', async () => {
+      (prisma.groups.update as jest.Mock).mockResolvedValue(mockUpdatedGroup);
+
+      const result = await updateGroup(1);
+
+      expect(result).toEqual(mockUpdatedGroup);
+      expect(prisma.groups.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { groupSize: undefined },
+        select: expect.any(Object),
+      });
+    });
+  });
+
+  describe('getGroupSize', () => {
+    it('should return active members count', async () => {
+      (prisma.groupMemberships.count as jest.Mock).mockResolvedValue(5);
+
+      const result = await getGroupSize(1);
+
+      expect(result).toBe(5);
+      expect(prisma.groupMemberships.count).toHaveBeenCalledWith({
+        where: {
+          AND: {
+            groupId: 1,
+            active: true,
+          },
+        },
       });
     });
   });
 
   describe('deleteGroup', () => {
-    it('should delete a group and deactivate its community', async () => {
-      const mockGroup = { communityId: 1, community: { active: true } };
+    it('should deactivate group by updating community', async () => {
+      await deleteGroup(1);
 
-      (prisma.groups.findUnique as jest.Mock).mockResolvedValue(mockGroup);
-      (prisma.communities.update as jest.Mock).mockResolvedValue({});
-
-      const result = await deleteGroup(1);
-
-      expect(result).toEqual(mockGroup);
-      expect(prisma.groups.findUnique).toHaveBeenCalledWith({
-        where: { id: 1 },
-        select: {
-          communityId: true,
-          community: { select: { active: true } },
-        },
-      });
       expect(prisma.communities.update).toHaveBeenCalledWith({
         where: { id: 1 },
         data: { active: false },
@@ -197,21 +281,80 @@ describe('Group Repository', () => {
     });
   });
 
-  describe('applyGroupFilter', () => {
-    it('should apply a filter to a group', async () => {
-      const mockGroupFilter = { groupId: 1, adminId: 1 };
+  describe('Group Filter Operations', () => {
+    const mockFilter = {
+      adminId: 1,
+      groupId: 1,
+    };
 
-      (prisma.adminGroupFilters.findFirst as jest.Mock).mockResolvedValue(null);
-      (prisma.adminGroupFilters.create as jest.Mock).mockResolvedValue(
-        mockGroupFilter
-      );
+    describe('findGroupFilter', () => {
+      it('should find existing filter', async () => {
+        (prisma.adminGroupFilters.findUnique as jest.Mock).mockResolvedValue(
+          mockFilter
+        );
 
-      const result = await applyGroupFilter(1, 1);
+        const result = await findGroupFilter(1, 1);
 
-      expect(result).toEqual(mockGroupFilter);
-      expect(prisma.adminGroupFilters.create).toHaveBeenCalledWith({
-        data: { groupId: 1, adminId: 1 },
-        select: { groupId: true, adminId: true },
+        expect(result).toEqual(mockFilter);
+        expect(prisma.adminGroupFilters.findUnique).toHaveBeenCalledWith({
+          where: {
+            adminId_groupId: {
+              adminId: 1,
+              groupId: 1,
+            },
+          },
+          select: expect.any(Object),
+        });
+      });
+
+      it('should return null when filter not found', async () => {
+        (prisma.adminGroupFilters.findUnique as jest.Mock).mockResolvedValue(
+          null
+        );
+
+        const result = await findGroupFilter(999, 999);
+
+        expect(result).toBeNull();
+      });
+    });
+
+    describe('deleteGroupFilter', () => {
+      it('should delete existing filter', async () => {
+        (prisma.adminGroupFilters.delete as jest.Mock).mockResolvedValue(
+          mockFilter
+        );
+
+        const result = await deleteGroupFilter(1, 1);
+
+        expect(result).toEqual(mockFilter);
+        expect(prisma.adminGroupFilters.delete).toHaveBeenCalledWith({
+          where: {
+            adminId_groupId: {
+              adminId: 1,
+              groupId: 1,
+            },
+          },
+          select: expect.any(Object),
+        });
+      });
+    });
+
+    describe('createGroupFilter', () => {
+      it('should create new filter', async () => {
+        (prisma.adminGroupFilters.create as jest.Mock).mockResolvedValue(
+          mockFilter
+        );
+
+        const result = await createGroupFilter(1, 1);
+
+        expect(result).toEqual(mockFilter);
+        expect(prisma.adminGroupFilters.create).toHaveBeenCalledWith({
+          data: {
+            groupId: 1,
+            adminId: 1,
+          },
+          select: expect.any(Object),
+        });
       });
     });
   });

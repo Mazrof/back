@@ -1,4 +1,4 @@
-import  { Request, Response, Application } from 'express';
+import express, { Request, Response, Application } from 'express';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import cors from 'cors';
@@ -12,14 +12,15 @@ import passport from 'passport';
 import session from 'express-session';
 import { sessionConfig } from './config/sessionConfig';
 import { corsConfig } from './config/corsConfig';
-import express from "express";
-import useragent from 'express-useragent';
 
 export const sessionMiddleware = session(sessionConfig);
 
 export default async (app: Application) => {
   // Serve static files from the 'public' directory
   app.use(express.static(path.join(__dirname, '../../public')));
+
+  // Serve static assets
+  serveStaticFiles(app);
 
   // Implement CORS
   app.use(cors(corsConfig));

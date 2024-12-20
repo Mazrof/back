@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
+import { CommunityRole } from '@prisma/client';
+import * as channelMemberService from '../../services/channelMemberService';
 import {
   getChannelMembers,
   addChannelMember,
@@ -6,57 +8,69 @@ import {
   inviteChannelMember,
   deleteChannelMember,
 } from '../../controllers/channelMemberController';
-import * as channelService from '../../services/channelMemberService';
-import {
-  checkChannelMember,
-  checkChannelMemberPermission,
-} from '../../services/channelMemberService';
-import { CommunityRole } from '@prisma/client';
 
-jest.mock('../../services/channelMemberService');
 jest.mock('../../server', () => ({
   io: jest.fn(),
 }));
+
+jest.mock('../../services/channelMemberService');
+
 describe('Channel Member Controller', () => {
   let mockRequest;
   let mockResponse: Partial<Response>;
   let mockNext: NextFunction;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-
+    mockRequest = {
+      session: {
+        user: {
+          id: 1,
+        },
+        // Include other required properties like `id`, `cookie`, `regenerate`, etc.
+        id: 'mock-session-id', // Add a mock session ID
+        cookie: {
+          originalMaxAge: 0,
+          expires: new Date(),
+          httpOnly: true,
+          secure: false,
+        },
+        regenerate: jest.fn(),
+        destroy: jest.fn(),
+      },
+      params: {},
+      body: {},
+    };
     mockResponse = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
-
     mockNext = jest.fn();
-
-    mockRequest = {
-      session: {
-        user: {
-          id: 1, // Mock user ID
-        },
-      },
-    };
+    jest.clearAllMocks();
   });
 
   describe('getChannelMembers', () => {
-    it('should fetch all members of a channel successfully', async () => {
-      mockRequest.params = { channelId: '1' };
-      const mockMembers = [
-        {
-          userId: 1,
-          channelId: 1,
-          active: true,
-          hasDownloadPermissions: true,
-          role: CommunityRole.member,
-          users: { username: 'User1' },
-        },
-      ];
+    const mockMembers = [
+      {
+        userId: 1,
+        channelId: 1,
+        active: true,
+        hasDownloadPermissions: true,
+        role: CommunityRole.admin,
+        users: { username: 'testuser1' },
+      },
+      {
+        userId: 2,
+        channelId: 1,
+        active: true,
+        hasDownloadPermissions: false,
+        role: CommunityRole.member,
+        users: { username: 'testuser2' },
+      },
+    ];
 
-      (checkChannelMember as jest.Mock).mockResolvedValue(undefined);
-      (channelService.getChannelMembers as jest.Mock).mockResolvedValue(
+    it('should return all channel members successfully', async () => {
+      mockRequest.params = { channelId: '1' };
+      (channelMemberService.getChannelMembers as jest.Mock).mockResolvedValue(
         mockMembers
       );
 
@@ -66,8 +80,7 @@ describe('Channel Member Controller', () => {
         mockNext
       );
 
-      expect(checkChannelMember).toHaveBeenCalledWith(1, 1);
-      expect(channelService.getChannelMembers).toHaveBeenCalledWith(1);
+      expect(channelMemberService.getChannelMembers).toHaveBeenCalledWith(1, 1);
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'success',
@@ -76,11 +89,12 @@ describe('Channel Member Controller', () => {
       });
     });
 
-    it('should handle errors when fetching members', async () => {
-      const error = new Error('Service error');
+    it('should handle service errors', async () => {
       mockRequest.params = { channelId: '1' };
-
-      (checkChannelMember as jest.Mock).mockRejectedValue(error);
+      const error = new Error('Service error');
+      (channelMemberService.getChannelMembers as jest.Mock).mockRejectedValue(
+        error
+      );
 
       await getChannelMembers(
         mockRequest as Request,
@@ -88,23 +102,26 @@ describe('Channel Member Controller', () => {
         mockNext
       );
 
-      expect(checkChannelMember).toHaveBeenCalledWith(1, 1);
       expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 
   describe('addChannelMember', () => {
-    it('should add a new member to a channel successfully', async () => {
-      mockRequest.params = { channelId: '1' };
-      mockRequest.body = { userId: 2, role: CommunityRole.member };
-      const mockMember = {
-        userId: 2,
-        channelId: 1,
-        role: CommunityRole.member,
-      };
+    const mockMember = {
+      userId: 2,
+      channelId: 1,
+      role: CommunityRole.member,
+      hasDownloadPermissions: true,
+    };
 
-      (checkChannelMemberPermission as jest.Mock).mockResolvedValue(undefined);
-      (channelService.addChannelMember as jest.Mock).mockResolvedValue(
+    it('should add channel member successfully', async () => {
+      mockRequest.params = { channelId: '1' };
+      mockRequest.body = {
+        userId: '2',
+        role: CommunityRole.member,
+        hasDownloadPermissions: true,
+      };
+      (channelMemberService.addChannelMember as jest.Mock).mockResolvedValue(
         mockMember
       );
 
@@ -114,11 +131,12 @@ describe('Channel Member Controller', () => {
         mockNext
       );
 
-      expect(checkChannelMemberPermission).toHaveBeenCalledWith(1, 1);
-      expect(channelService.addChannelMember).toHaveBeenCalledWith(
+      expect(channelMemberService.addChannelMember).toHaveBeenCalledWith(
         2,
         1,
-        CommunityRole.member
+        1,
+        CommunityRole.member,
+        true
       );
       expect(mockResponse.status).toHaveBeenCalledWith(201);
       expect(mockResponse.json).toHaveBeenCalledWith({
@@ -127,12 +145,12 @@ describe('Channel Member Controller', () => {
       });
     });
 
-    it('should handle errors when adding a new member', async () => {
-      const error = new Error('Service error');
+    it('should handle service errors', async () => {
       mockRequest.params = { channelId: '1' };
-      mockRequest.body = { userId: 2, role: CommunityRole.member };
-
-      (checkChannelMemberPermission as jest.Mock).mockRejectedValue(error);
+      const error = new Error('Service error');
+      (channelMemberService.addChannelMember as jest.Mock).mockRejectedValue(
+        error
+      );
 
       await addChannelMember(
         mockRequest as Request,
@@ -145,18 +163,21 @@ describe('Channel Member Controller', () => {
   });
 
   describe('updateChannelMember', () => {
-    it('should update a channel member successfully', async () => {
-      mockRequest.params = { channelId: '1', id: '2' };
-      mockRequest.body = { role: CommunityRole.admin };
-      const mockMember = {
-        userId: 2,
-        channelId: 1,
-        role: CommunityRole.admin,
-      };
+    const mockUpdatedMember = {
+      userId: 2,
+      channelId: 1,
+      role: CommunityRole.admin,
+      hasDownloadPermissions: true,
+    };
 
-      (checkChannelMemberPermission as jest.Mock).mockResolvedValue(undefined);
-      (channelService.updateChannelMember as jest.Mock).mockResolvedValue(
-        mockMember
+    it('should update channel member successfully', async () => {
+      mockRequest.params = { channelId: '1', id: '2' };
+      mockRequest.body = {
+        role: CommunityRole.admin,
+        hasDownloadPermissions: true,
+      };
+      (channelMemberService.updateChannelMember as jest.Mock).mockResolvedValue(
+        mockUpdatedMember
       );
 
       await updateChannelMember(
@@ -165,22 +186,25 @@ describe('Channel Member Controller', () => {
         mockNext
       );
 
-      expect(checkChannelMemberPermission).toHaveBeenCalledWith(1, 1);
-      expect(channelService.updateChannelMember).toHaveBeenCalledWith(1, 1, 2, {
-        role: CommunityRole.admin,
-      });
+      expect(channelMemberService.updateChannelMember).toHaveBeenCalledWith(
+        1,
+        1,
+        2,
+        mockRequest.body
+      );
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'success',
-        data: { member: mockMember },
+        data: { member: mockUpdatedMember },
       });
     });
 
-    it('should handle errors when updating a channel member', async () => {
-      const error = new Error('Service error');
+    it('should handle service errors', async () => {
       mockRequest.params = { channelId: '1', id: '2' };
-
-      (checkChannelMemberPermission as jest.Mock).mockRejectedValue(error);
+      const error = new Error('Service error');
+      (channelMemberService.updateChannelMember as jest.Mock).mockRejectedValue(
+        error
+      );
 
       await updateChannelMember(
         mockRequest as Request,
@@ -193,45 +217,40 @@ describe('Channel Member Controller', () => {
   });
 
   describe('inviteChannelMember', () => {
-    // it('should add a member by invite successfully', async () => {
-    //   const mockMember = { userId: 2, channelId: 1 };
-    //
-    //   // Mock the service method that handles the invite
-    //   (channelService.joinChannelByInvite as jest.Mock).mockResolvedValue(
-    //     mockMember
-    //   );
-    //
-    //   // Call the function with mock data
-    //   await inviteChannelMember(
-    //     mockRequest as Request,
-    //     mockResponse as Response,
-    //     mockNext
-    //   );
-    //
-    //   // Check if the joinChannelByInvite function was called with the correct arguments
-    //   expect(channelService.joinChannelByInvite).toHaveBeenCalledWith(
-    //     'invite-token', // token from the request body
-    //     1, // memberId from session (the current user ID)
-    //     'member' // role from the request body
-    //   );
-    //
-    //   // Ensure the response was correctly sent
-    //   expect(mockResponse.status).toHaveBeenCalledWith(201);
-    //   expect(mockResponse.json).toHaveBeenCalledWith({
-    //     status: 'success',
-    //     data: { member: mockMember },
-    //   });
-    // });
+    const mockInvitedMember = {
+      channelId: 1,
+      userId: 2,
+      role: CommunityRole.member,
+      hasDownloadPermissions: false,
+    };
 
-    it('should handle errors when inviting a channel member', async () => {
-      const error = new Error('Service error');
-      mockRequest.body = {
-        token: 'invite-token',
-        memberId: 2,
-        role: 'member',
-      };
+    it('should invite channel member successfully', async () => {
+      mockRequest.body = { token: 'valid-invite-token' };
+      (channelMemberService.joinChannelByInvite as jest.Mock).mockResolvedValue(
+        mockInvitedMember
+      );
 
-      (channelService.joinChannelByInvite as jest.Mock).mockRejectedValue(
+      await inviteChannelMember(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      expect(channelMemberService.joinChannelByInvite).toHaveBeenCalledWith(
+        'valid-invite-token',
+        1
+      );
+      expect(mockResponse.status).toHaveBeenCalledWith(201);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        status: 'success',
+        data: { member: mockInvitedMember },
+      });
+    });
+
+    it('should handle service errors', async () => {
+      mockRequest.body = { token: 'invalid-token' };
+      const error = new Error('Invalid invitation token');
+      (channelMemberService.joinChannelByInvite as jest.Mock).mockRejectedValue(
         error
       );
 
@@ -246,13 +265,39 @@ describe('Channel Member Controller', () => {
   });
 
   describe('deleteChannelMember', () => {
-    it('should delete a channel member successfully', async () => {
-      mockRequest.params = { channelId: '1' };
-      mockRequest.body = { userId: 2 };
+    it('should delete channel member successfully', async () => {
+      mockRequest.params = { channelId: '1', id: '2' };
+      (channelMemberService.deleteChannelMember as jest.Mock).mockResolvedValue(
+        null
+      );
+      (
+        channelMemberService.checkChannelMemberPermission as jest.Mock
+      ).mockResolvedValue(true);
 
-      (checkChannelMemberPermission as jest.Mock).mockResolvedValue(undefined);
-      (channelService.deleteChannelMember as jest.Mock).mockResolvedValue(
-        undefined
+      await deleteChannelMember(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      expect(
+        channelMemberService.checkChannelMemberPermission
+      ).toHaveBeenCalledWith(1, 1);
+      expect(channelMemberService.deleteChannelMember).toHaveBeenCalledWith(
+        1,
+        2
+      );
+      expect(mockResponse.status).toHaveBeenCalledWith(204);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        status: 'success',
+        data: null,
+      });
+    });
+
+    it('should skip permission check when member deletes themselves', async () => {
+      mockRequest.params = { channelId: '1', id: '1' };
+      (channelMemberService.deleteChannelMember as jest.Mock).mockResolvedValue(
+        null
       );
 
       await deleteChannelMember(
@@ -261,21 +306,21 @@ describe('Channel Member Controller', () => {
         mockNext
       );
 
-      expect(checkChannelMemberPermission).toHaveBeenCalledWith(1, 1);
-      expect(channelService.deleteChannelMember).toHaveBeenCalledWith(1, 2);
-      expect(mockResponse.status).toHaveBeenCalledWith(204);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        status: 'success',
-        data: null,
-      });
+      expect(
+        channelMemberService.checkChannelMemberPermission
+      ).not.toHaveBeenCalled();
+      expect(channelMemberService.deleteChannelMember).toHaveBeenCalledWith(
+        1,
+        1
+      );
     });
 
-    it('should handle errors when deleting a channel member', async () => {
-      const error = new Error('Service error');
-      mockRequest.params = { channelId: '1' };
-      mockRequest.body = { userId: 2 };
-
-      (checkChannelMemberPermission as jest.Mock).mockRejectedValue(error);
+    it('should handle permission check errors', async () => {
+      mockRequest.params = { channelId: '1', id: '2' };
+      const error = new Error('Not authorized');
+      (
+        channelMemberService.checkChannelMemberPermission as jest.Mock
+      ).mockRejectedValue(error);
 
       await deleteChannelMember(
         mockRequest as Request,
@@ -284,6 +329,7 @@ describe('Channel Member Controller', () => {
       );
 
       expect(mockNext).toHaveBeenCalledWith(error);
+      expect(channelMemberService.deleteChannelMember).not.toHaveBeenCalled();
     });
   });
 });

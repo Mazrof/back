@@ -10,7 +10,10 @@ export const findProfilesByUsername = async (query: string) => {
                photo,
                phone,
                screen_name            AS screenName,
-               profile_pic_visibility AS profilePicVisibility
+               profile_pic_visibility AS profilePicVisibility,
+               public_key             AS publicKey,
+               last_seen              AS lastSeen,
+               active_now             AS ActiveNow
         FROM users
         WHERE LOWER(username) LIKE LOWER(${`%${query}%`})
            OR LOWER(email) LIKE LOWER(${`%${query}%`})
@@ -24,13 +27,15 @@ export const findProfilesByUsername = async (query: string) => {
 
 export const findGroupByGroupName = async (groupName: string) => {
   return prisma.$queryRaw`
-        SELECT name,
-               groups.id
+        SELECT groups.id,
+               name,
+               privacy,
+               image_url AS imageURL,
+               group_size AS groupSize
         FROM communities,
              groups
         WHERE communities.privacy = true
-          --TODO uncomment when db is updated
-          --  AND communities.active = true
+          AND communities.active = true
           AND communities.id = groups.community_id
           AND LOWER(communities.name) LIKE LOWER(${'%' + groupName + '%'})
     `;
@@ -39,12 +44,15 @@ export const findGroupByGroupName = async (groupName: string) => {
 export const findChannelByChannelName = async (channelName: string) => {
   return prisma.$queryRaw`
         SELECT name,
-               channels.id
+               channels.id,
+               channels.can_add_comments AS canAddComments,
+               "invitationLink"          AS invitationLink,
+               image_url                 as imageUrl,
+               privacy
         FROM communities,
              channels
         WHERE communities.privacy = true
-          --TODO uncomment when db is updated
-          --  AND communities.active = true
+          AND communities.active = true
           AND communities.id = channels.community_id
           AND LOWER(communities.name) LIKE LOWER(${'%' + channelName + '%'})
     `;

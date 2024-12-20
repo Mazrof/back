@@ -1,16 +1,28 @@
-import crypto from 'crypto';
 import * as groupRepository from '../repositories';
-import * as groupMemberService from '../services';
+import * as groupMemberService from '../services/groupMemberService';
 import { CommunityRole } from '@prisma/client';
+import { checkAdmin } from './adminService';
+import { AppError } from '../utility';
+import generateInvitationLink from '../utility/invitationLink';
+import {
+  convertBase64ToImage,
+  convertImageToBase64,
+  saveImage,
+} from '../middlewares/imageHandlers';
 
-export const checkPermission = async (adminId: number, groupId: number) => {
-  await groupMemberService.checkGroupMemberPermission(adminId, groupId);
-};
-
-export const generateInviteToken = () => {
-  return crypto.randomBytes(32).toString('hex');
-};
-
+/**
+ * Fetch all groups with community details and filter status.
+ *
+ * @returns {Promise<GroupResponse[]>}
+ * An array of groups containing:
+ * - `id`: Group ID
+ * - `groupSize`: Size of the group
+ * - `community`: Details of the community associated with the group, including:
+ *   - `name`: Community name
+ *   - `privacy`: Privacy setting
+ *   - `imageURL`: Image URL of the community
+ * - `hasFilter`: Whether the group has an admin filter applied
+ */
 export const findAllGroups = async (): Promise<
   {
     hasFilter: boolean;
@@ -19,19 +31,68 @@ export const findAllGroups = async (): Promise<
     community: { name: string; privacy: boolean; imageURL: string };
   }[]
 > => {
-  return await groupRepository.findAllGroups();
+  const groups = await groupRepository.findAllGroups();
+  return groups.map((group) => ({
+    id: group.id,
+    groupSize: group.groupSize,
+    community: group.community,
+    hasFilter: group.adminGroupFilters?.groupId === group.id,
+  }));
 };
 
+/**
+ * Fetch a group by its ID.
+ *
+ * @param {number} id - The ID of the group to retrieve.
+ * @returns {Promise<GroupResponse>}
+ * A group object containing:
+ * - `id`: Group ID
+ * - `communityId`: ID of the associated community
+ * - `community`: Details of the community, including:
+ *   - `name`: Community name
+ *   - `privacy`: Privacy setting (nullable)
+ *   - `imageURL`: Image URL of the community
+ * - `groupSize`: Size of the group (nullable)
+ * @throws {AppError} If the group or community is inactive or not found.
+ */
 export const findGroupById = async (
   id: number
 ): Promise<{
   id: number;
+  communityId: number;
   community: { name: string; privacy: boolean | null; imageURL: string };
   groupSize: number | null;
 }> => {
-  return await groupRepository.findGroupById(id);
+  const group = await groupRepository.findGroupById(id);
+
+  if (!group || !group.community.active) {
+    throw new AppError('No Group found with that ID', 404);
+  }
+  group.hasFilter = group.adminGroupFilters?.groupId === group.id;
+  delete group.community.active;
+  delete group.adminGroupFilters;
+  return group;
 };
 
+/**
+ * Create a new group with associated community.
+ *
+ * @param {Object} data - Group creation data.
+ * @param {string} data.name - Name of the community.
+ * @param {boolean} data.privacy - Privacy setting of the community.
+ * @param {number} data.creatorId - ID of the creator.
+ * @param {number} data.groupSize - Size of the group.
+ * @param {string} [data.imageURL] - Image URL for the community (optional).
+ * @returns {Promise<GroupResponse>}
+ * The created group object containing:
+ * - `id`: Group ID
+ * - `community`: Community details, including:
+ *   - `name`: Community name
+ *   - `privacy`: Privacy setting
+ *   - `imageURL`: Image URL of the community
+ * - `groupSize`: Size of the group
+ * @throws {AppError} If required data is invalid.
+ */
 export const createGroup = async (data: {
   name: string;
   privacy: boolean;
@@ -43,19 +104,25 @@ export const createGroup = async (data: {
   community: { name: string; privacy: boolean; imageURL: string };
   groupSize: number;
 }> => {
-  const token: string = generateInviteToken();
-  const invitationLink: string = crypto
-    .createHash('sha256')
-    .update(token)
-    .digest('hex');
+  let message = '';
+  if (!data.name) message = 'Invalid Group name';
+  if (!data.creatorId)
+    message += message ? ', Invalid Creator ID' : 'Invalid Creator ID';
+  if (!data.groupSize || data.groupSize < 1)
+    message += message ? ', Invalid Group size' : 'Invalid Group size';
+  if (message) throw new AppError(message, 400);
 
-  const group: {
-    id: number;
-    community: { name: string; privacy: boolean; imageURL: string };
-    groupSize: number;
-  } = await groupRepository.createGroup({ ...data, invitationLink });
+  if (data.imageURL) {
+    const image = convertBase64ToImage(data.imageURL);
+    data.imageURL = saveImage(image);
+  }
 
-  // check he is users not admins and add it
+  const invitationLink = generateInvitationLink();
+  const group = await groupRepository.createGroup({ ...data, invitationLink });
+
+  if (group.community.imageURL)
+    group.community.imageURL = convertImageToBase64(group.community.imageURL);
+
   await groupMemberService.addGroupCreator(
     group.id,
     data.creatorId,
@@ -65,6 +132,20 @@ export const createGroup = async (data: {
   return group;
 };
 
+/**
+ * Update a group's details.
+ *
+ * @param {number} groupId - The ID of the group to update.
+ * @param {number} adminId - The ID of the admin performing the update.
+ * @param {Object} data - Update data.
+ * @param {string} [data.name] - Updated group name (optional).
+ * @param {boolean} [data.privacy] - Updated privacy setting (optional).
+ * @param {number} [data.groupSize] - Updated group size (optional).
+ * @param {string} [data.imageURL] - Updated image URL (optional).
+ * @returns {Promise<GroupResponse>}
+ * The updated group object.
+ * @throws {AppError} If the admin lacks permissions or data is invalid.
+ */
 export const updateGroup = async (
   groupId: number,
   adminId: number,
@@ -79,18 +160,72 @@ export const updateGroup = async (
   community: { name: string; privacy: boolean; imageURL: string };
   groupSize: number;
 }> => {
-  await checkPermission(adminId, groupId);
-  return await groupRepository.updateGroup(groupId, data);
+  const group = await findGroupById(groupId);
+
+  await groupMemberService.checkGroupMemberPermission(adminId, groupId);
+
+  if (!data.name && !data.privacy && !data.groupSize && !data.imageURL) {
+    throw new AppError('No data to update', 400);
+  }
+
+  if (data.name || data.privacy || data.imageURL) {
+    if (data.imageURL) {
+      const image = convertBase64ToImage(data.imageURL);
+      data.imageURL = saveImage(image);
+    }
+    await groupRepository.updateCommunity(group.communityId, data);
+  }
+
+  const count = await groupRepository.getGroupSize(groupId);
+  if (data.groupSize && data.groupSize < count) {
+    throw new AppError('Invalid Group Size Limit', 400);
+  }
+  if (data.groupSize < 1) throw new AppError('Invalid Group Size Limit', 400);
+
+  const updatedGroup = await groupRepository.updateGroup(
+    groupId,
+    data.groupSize
+  );
+
+  if (updatedGroup.community.imageURL)
+    updatedGroup.community.imageURL = convertImageToBase64(
+      updatedGroup.community.imageURL
+    );
+
+  return updatedGroup;
 };
 
+/**
+ * Delete a group.
+ *
+ * @param {number} groupId - The ID of the group to delete.
+ * @param {number} adminId - The ID of the admin performing the deletion.
+ * @returns {Promise<null>}
+ * @throws {AppError} If the admin lacks permissions.
+ */
 export const deleteGroup = async (
   groupId: number,
   adminId: number
-): Promise<{ communityId: number }> => {
-  await checkPermission(adminId, groupId);
-  return await groupRepository.deleteGroup(groupId);
+): Promise<null> => {
+  const group = await findGroupById(groupId);
+
+  await groupMemberService.checkGroupMemberPermission(adminId, groupId);
+
+  await groupRepository.updateCommunity(group.communityId, {
+    active: false,
+  });
+  return null;
 };
 
+/**
+ * Apply or remove a group filter for admins.
+ *
+ * @param {number} groupId - The ID of the group.
+ * @param {number} adminId - The ID of the admin applying/removing the filter.
+ * @returns {Promise<{ adminId: number; groupId: number } | null>}
+ * The group filter object if applied, otherwise null.
+ * @throws {AppError} If the admin lacks permissions.
+ */
 export const applyGroupFilter = async (
   groupId: number,
   adminId: number
@@ -98,5 +233,15 @@ export const applyGroupFilter = async (
   adminId: number;
   groupId: number;
 } | null> => {
-  return await groupRepository.applyGroupFilter(groupId, adminId);
+  await checkAdmin(adminId);
+
+  const group = await findGroupById(groupId);
+
+  const groupFilter = await groupRepository.findGroupFilter(groupId, adminId);
+
+  if (groupFilter) {
+    return await groupRepository.deleteGroupFilter(groupId, adminId);
+  }
+
+  return await groupRepository.createGroupFilter(groupId, adminId);
 };

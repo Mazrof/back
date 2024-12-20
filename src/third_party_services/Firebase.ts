@@ -5,20 +5,17 @@ export const uploadFileToFirebase = async (
 ): Promise<string> => {
   try {
     const randomName = `file_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-    console.log('Generated file name:', randomName);
 
     // Convert the string into a Buffer
     const fileBuffer = Buffer.from(messageContent, 'utf-8');
-    console.log('Buffer created successfully.');
 
     const file = bucket.file(`uploads/${randomName}.txt`);
     await file.save(fileBuffer);
-    console.log('Storage reference created:');
+
     const [downloadUrl] = await file.getSignedUrl({
       action: 'read',
       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30), // Expiration date for the URL after 30 days
     });
-    console.log('Download URL obtained:', downloadUrl);
 
     return downloadUrl;
   } catch (error) {
@@ -46,10 +43,8 @@ export async function deleteFileFromFirebase(fileURL: string) {
 
     // Delete the file
     await file.delete();
-    console.log(`File ${path} deleted successfully.`);
   } catch (error) {
-    console.error('Error deleting file:', error);
-    throw error;
+    return null;
   }
 }
 export async function getFileFromFirebase(fileURL: string): Promise<string> {
@@ -73,13 +68,11 @@ export async function getFileFromFirebase(fileURL: string): Promise<string> {
 
     // Download the file content
     const [fileBuffer] = await file.download();
-    console.log(`File ${path} downloaded successfully.`);
 
     // Convert the Buffer to a string (assuming UTF-8 encoding)
     const fileContent = fileBuffer.toString('utf-8');
     return fileContent;
   } catch (error) {
-    console.error('Error getting file from Firebase:', error);
-    throw error;
+    return null;
   }
 }

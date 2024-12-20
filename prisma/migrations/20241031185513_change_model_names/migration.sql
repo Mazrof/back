@@ -1,17 +1,11 @@
 -- CreateEnum
+CREATE TYPE "channel_role" AS ENUM ('admin', 'member');
+
+-- CreateEnum
 CREATE TYPE "privacy" AS ENUM ('everyone', 'contacts', 'nobody');
 
 -- CreateEnum
 CREATE TYPE "social" AS ENUM ('github', 'facebook', 'google');
-
--- CreateEnum
-CREATE TYPE "MessageStatus" AS ENUM ('usual', 'pinned', 'drafted');
-
--- CreateEnum
-CREATE TYPE "ParticipiantTypes" AS ENUM ('personalChat', 'community');
-
--- CreateEnum
-CREATE TYPE "community_role" AS ENUM ('admin', 'member');
 
 -- CreateTable
 CREATE TABLE "admingroupfilters" (
@@ -51,9 +45,8 @@ CREATE TABLE "callreceivers" (
 -- CreateTable
 CREATE TABLE "channels" (
     "id" SERIAL NOT NULL,
-    "community_id" INTEGER NOT NULL,
-    "can_add_comments" BOOLEAN NOT NULL DEFAULT false,
-    "invitationLink" TEXT NOT NULL,
+    "community_id" INTEGER,
+    "can_add_comments" BOOLEAN DEFAULT true,
 
     CONSTRAINT "channels_pkey" PRIMARY KEY ("id")
 );
@@ -62,9 +55,8 @@ CREATE TABLE "channels" (
 CREATE TABLE "channelsubscriptions" (
     "user_id" INTEGER NOT NULL,
     "channel_id" INTEGER NOT NULL,
-    "has_download_permissions" BOOLEAN NOT NULL DEFAULT false,
-    "active" BOOLEAN NOT NULL DEFAULT true,
-    "community_role" "community_role" NOT NULL DEFAULT 'member',
+    "has_download_permissions" BOOLEAN DEFAULT false,
+    "current_role" "channel_role",
 
     CONSTRAINT "channelsubscriptions_pkey" PRIMARY KEY ("user_id","channel_id")
 );
@@ -73,9 +65,8 @@ CREATE TABLE "channelsubscriptions" (
 CREATE TABLE "communities" (
     "id" SERIAL NOT NULL,
     "name" VARCHAR(255) NOT NULL,
-    "privacy" BOOLEAN NOT NULL DEFAULT true,
-    "creator_id" INTEGER NOT NULL,
-    "active" BOOLEAN NOT NULL DEFAULT true,
+    "privacy" BOOLEAN DEFAULT true,
+    "creator_id" INTEGER,
 
     CONSTRAINT "communities_pkey" PRIMARY KEY ("id")
 );
@@ -84,11 +75,10 @@ CREATE TABLE "communities" (
 CREATE TABLE "groupmemberships" (
     "user_id" INTEGER NOT NULL,
     "group_id" INTEGER NOT NULL,
-    "has_download_permissions" BOOLEAN NOT NULL DEFAULT false,
-    "has_message_permissions" BOOLEAN NOT NULL DEFAULT false,
-    "add_to_group_permission" BOOLEAN NOT NULL DEFAULT false,
-    "active" BOOLEAN NOT NULL DEFAULT true,
-    "community_role" "community_role" NOT NULL DEFAULT 'member',
+    "role" VARCHAR(50),
+    "has_download_permissions" BOOLEAN DEFAULT false,
+    "has_message_permissions" BOOLEAN DEFAULT false,
+    "add_to_group_permission" BOOLEAN DEFAULT false,
 
     CONSTRAINT "groupmemberships_pkey" PRIMARY KEY ("user_id","group_id")
 );
@@ -96,11 +86,20 @@ CREATE TABLE "groupmemberships" (
 -- CreateTable
 CREATE TABLE "groups" (
     "id" SERIAL NOT NULL,
-    "community_id" INTEGER NOT NULL,
-    "group_size" INTEGER NOT NULL,
-    "invitationLink" TEXT NOT NULL,
+    "community_id" INTEGER,
+    "group_size" INTEGER,
+    "status" BOOLEAN DEFAULT true,
 
     CONSTRAINT "groups_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "media" (
+    "id" SERIAL NOT NULL,
+    "media_type" VARCHAR(50),
+    "media_url" TEXT,
+
+    CONSTRAINT "media_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -125,17 +124,18 @@ CREATE TABLE "messagereadreceipts" (
 -- CreateTable
 CREATE TABLE "messages" (
     "id" SERIAL NOT NULL,
+    "status" BOOLEAN DEFAULT true,
     "created_at" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
+    "expire_at" TIMESTAMP(6),
     "is_announcement" BOOLEAN DEFAULT false,
     "is_forward" BOOLEAN DEFAULT false,
     "updated_at" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
     "content" TEXT,
     "url" TEXT,
+    "attachment" TEXT,
     "sender_id" INTEGER NOT NULL,
     "reply_to" INTEGER,
     "participant_id" INTEGER NOT NULL,
-    "duration_in_minutes" INTEGER,
-    "status" "MessageStatus" NOT NULL DEFAULT 'usual',
 
     CONSTRAINT "messages_pkey" PRIMARY KEY ("id")
 );
@@ -154,7 +154,6 @@ CREATE TABLE "participants" (
     "id" SERIAL NOT NULL,
     "community_id" INTEGER,
     "personal_chat_id" INTEGER,
-    "type" "ParticipiantTypes" NOT NULL DEFAULT 'personalChat',
 
     CONSTRAINT "participants_pkey" PRIMARY KEY ("id")
 );
@@ -176,7 +175,6 @@ CREATE TABLE "stories" (
     "status" BOOLEAN DEFAULT true,
     "expiry_date" TIMESTAMP(6),
     "created_at" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
-    "mediaUrl" TEXT,
 
     CONSTRAINT "stories_pkey" PRIMARY KEY ("id")
 );
@@ -187,6 +185,14 @@ CREATE TABLE "story_views" (
     "story_id" INTEGER NOT NULL,
 
     CONSTRAINT "story_views_pkey" PRIMARY KEY ("user_id","story_id")
+);
+
+-- CreateTable
+CREATE TABLE "storymedia" (
+    "story_id" INTEGER NOT NULL,
+    "media_id" INTEGER NOT NULL,
+
+    CONSTRAINT "storymedia_pkey" PRIMARY KEY ("story_id","media_id")
 );
 
 -- CreateTable
@@ -212,19 +218,14 @@ CREATE TABLE "users" (
     "last_seen" TIMESTAMP(6),
     "active_now" BOOLEAN DEFAULT false,
     "provider_type" "social",
-    "provider_id" TEXT,
+    "provider_id" INTEGER,
     "auto_download_size_limit" INTEGER,
     "max_limit_file_size" INTEGER,
     "profile_pic_visibility" "privacy" DEFAULT 'everyone',
     "story_visibility" "privacy" DEFAULT 'everyone',
     "read_receipts_enabled" "privacy" DEFAULT 'everyone',
+    "last_seen_visibility" BOOLEAN DEFAULT true,
     "group_add_permission" BOOLEAN DEFAULT true,
-    "is_email_verified" BOOLEAN DEFAULT false,
-    "is_phone_verified" BOOLEAN DEFAULT false,
-    "private_key" TEXT,
-    "public_key" TEXT NOT NULL,
-    "fcmtokens" TEXT[] DEFAULT ARRAY[]::TEXT[],
-    "last_seen_visibility" "privacy" DEFAULT 'everyone',
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
@@ -243,34 +244,7 @@ CREATE TABLE "voice_calls" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "admingroupfilters_group_id_key" ON "admingroupfilters"("group_id");
-
--- CreateIndex
 CREATE UNIQUE INDEX "admins_email_key" ON "admins"("email");
-
--- CreateIndex
-CREATE UNIQUE INDEX "channels_community_id_key" ON "channels"("community_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "channels_invitationLink_key" ON "channels"("invitationLink");
-
--- CreateIndex
-CREATE UNIQUE INDEX "groups_community_id_key" ON "groups"("community_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "groups_invitationLink_key" ON "groups"("invitationLink");
-
--- CreateIndex
-CREATE INDEX "messages_participant_id_idx" ON "messages"("participant_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "participants_community_id_key" ON "participants"("community_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "participants_personal_chat_id_key" ON "participants"("personal_chat_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "personalchat_user1id_user2id_key" ON "personalchat"("user1id", "user2id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
@@ -367,6 +341,12 @@ ALTER TABLE "story_views" ADD CONSTRAINT "story_views_story_id_fkey" FOREIGN KEY
 
 -- AddForeignKey
 ALTER TABLE "story_views" ADD CONSTRAINT "story_views_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE "storymedia" ADD CONSTRAINT "storymedia_media_id_fkey" FOREIGN KEY ("media_id") REFERENCES "media"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE "storymedia" ADD CONSTRAINT "storymedia_story_id_fkey" FOREIGN KEY ("story_id") REFERENCES "stories"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "user_blacklist" ADD CONSTRAINT "user_blacklist_blocked_id_fkey" FOREIGN KEY ("blocked_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION;

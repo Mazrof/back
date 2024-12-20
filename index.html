@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google OAuth Test</title>
+</head>
+<body>
+    <h1>Google OAuth Test</h1>
+    <p>Click the button below to sign in with Google:</p>
+    <a href="http://localhost:3000/api/v1/auth/github">
+        <button>Sign in with Google</button>
+    </a>
+
+    <!-- Button to fetch user info -->
+    <button id="fetch-user-btn">Fetch User Info</button>
+    
+    <!-- Section to display user info -->
+    <div id="user-info">
+        <!-- User information will be displayed here -->
+    </div>
+
+    <script>
+        // Function to fetch user info
+        const fetchUser = async () => {
+            try {
+                // Send a request to the whoami endpoint with credentials included
+                const response = await fetch('http://localhost:3000/api/v1/auth/whoami', {
+                    method: 'GET',
+                    credentials: 'include',
+                });
+
+                // Check if the response is OK
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log(data);
+
+                // Display the user's information or handle missing data
+                const userInfoDiv = document.getElementById('user-info');
+                if (data && data.status === 'success') {
+                    const user = data.data.user;
+                    userInfoDiv.innerHTML = `
+                        <h3>Welcome, ${user.username || 'User'}!</h3>
+                        <p>User ID: ${user.id}</p>
+                        <p>User Type: ${user.userType}</p>
+                    `;
+                } else {
+                    userInfoDiv.innerHTML = '<p>Unable to fetch user information.</p>';
+                }
+            } catch (error) {
+                console.error('Error fetching user info:', error);
+
+                // Display an error message in the user-info section
+                const userInfoDiv = document.getElementById('user-info');
+                userInfoDiv.innerHTML = `<p>Error fetching user info. Please try again later.</p>`;
+            }
+        };
+
+        // Add an event listener to the button
+        document.getElementById('fetch-user-btn').addEventListener('click', fetchUser);
+    </script>
+</body>
+</html>

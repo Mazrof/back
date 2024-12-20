@@ -211,6 +211,8 @@ model Stories {
   expiryDate DateTime?    @map("expiry_date") @db.Timestamp(6)
   createdAt  DateTime?    @default(now()) @map("created_at") @db.Timestamp(6)
   mediaUrl   String?
+  color      String?
+  mediaType  String?
   users      Users?       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   storyViews StoryViews[]
 

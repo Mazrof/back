@@ -1,58 +1,76 @@
 import * as storiesRepository from '../repositories/storiesRepository';
 import {
-  getFileFromFirebase,
-  uploadFileToFirebase,
-} from '../third_party_services';
-import {
   addUserView,
   checkStoryExpiry,
   getViewCount,
 } from '../repositories/storiesRepository';
 
-export const createStory = async (userId, content, storyMedia) => {
+export const createStory = async (
+  userId,
+  content,
+  storyMedia,
+  mediaType,
+  color
+) => {
   const expiryDate = new Date();
   expiryDate.setHours(new Date().getHours() + 24);
-  if (storyMedia) {
-    storyMedia = await uploadFileToFirebase(storyMedia);
-  }
   return await storiesRepository.createStory(
     userId,
     content,
     expiryDate,
-    storyMedia
+    storyMedia,
+    mediaType,
+    color
   );
 };
 
 export const getStoryById = async (id: number, curUserId: number) => {
   const story: any = await storiesRepository.findStoryById(id);
   if (!story) {
-    return;
+    return null;
   }
   if (!(await checkStoryExpiry(story))) {
-    return;
+    return null;
   }
   await addUserView(story.id, curUserId);
   story.viewCount = await getViewCount(story.id);
-  story.StoryMedia = await getFileFromFirebase(story.mediaUrl);
+  story.StoryMedia = story.mediaUrl;
   delete story.mediaUrl;
   return story;
 };
 
-export const getUserStories = async (userId: number, curUserId: number) => {
-  const stories: any[] = await storiesRepository.findStoriesByUserId(userId);
-  for (let i = 0; i < stories.length; i++) {
-    const story = stories[i];
-    if (!(await checkStoryExpiry(story))) {
-      stories.splice(i, 1);
-      i--;
-    } else {
-      await addUserView(story.id, curUserId);
-      story.viewCount = await getViewCount(story.id);
-      story.StoryMedia = await getFileFromFirebase(story.mediaUrl);
-      delete story.mediaUrl;
+export const getUserStories = async (curUserId: number) => {
+  const allUsersStories: any[] = [];
+  const userChats = await storiesRepository.findUserPersonalChats(curUserId);
+  userChats.unshift({ chatId: 0, otherUserId: curUserId });
+  for (const chat of userChats) {
+    const userProfile = await storiesRepository.findProfileByIdMinimal(
+      chat.otherUserId
+    );
+    if (userProfile) {
+      allUsersStories.push(userProfile);
+      if (
+        allUsersStories[allUsersStories.length - 1].storyVisibility != 'nobody'
+      ) {
+        allUsersStories[allUsersStories.length - 1].stories =
+          await storiesRepository.findStoriesByUserId(chat.otherUserId);
+      }
     }
   }
-  return stories;
+  for (const user of allUsersStories)
+    for (let i = 0; i < user.stories.length; i++) {
+      user.photo = user.profilePicVisibility == 'nobody' ? null : user.photo;
+      const story = user.stories[i];
+      if (!(await checkStoryExpiry(story))) {
+        user.stories.splice(i, 1);
+        i--;
+      } else {
+        await addUserView(story.id, curUserId);
+        story.viewCount = await getViewCount(story.id);
+        story.StoryMedia = story.mediaUrl;
+      }
+    }
+  return allUsersStories;
 };
 
 export const deleteStoryById = async (id: number) => {

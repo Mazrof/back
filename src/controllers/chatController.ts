@@ -4,7 +4,6 @@ import {
   getMessagesService,
   getUserParticipants,
 } from '../services';
-import { getFileFromFirebase } from '../third_party_services';
 
 export const getUserChats = catchAsync(async (req, res) => {
   let data = await getUserParticipants(req.session.user.id);

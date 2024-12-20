@@ -71,13 +71,6 @@ export const storeOAuthUser = async (user: OAuthUser): Promise<Users> => {
   });
   return newUser;
 };
-
-export const addFcmToken = async (userId: number, fcmTokens: string) => {
-  return await prisma.users.update({
-    where: { id: userId },
-    data: { fcmtokens: { push: fcmTokens } },
-  });
-}
 export const AddUserToBlocked = async (
   blockerId: number,
   blockedId: number
