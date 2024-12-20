@@ -1,5 +1,4 @@
 import * as searchRepository from '../repositories/searchRepository';
-import { getFileFromFirebase } from '../third_party_services';
 
 type Group = {
   id: string;
@@ -74,7 +73,7 @@ export const getGroupByGroupName = async (groupName: string) => {
       community: {
         name: group.name,
         privacy: group.privacy,
-        imageURL: await getFileFromFirebase(group.imageurl),
+        imageURL: group.imageurl,
       },
     }))
   );
@@ -93,7 +92,7 @@ export const getChannelByChannelName = async (channelName: string) => {
       community: {
         name: channel.name,
         privacy: channel.privacy,
-        imageURL: await getFileFromFirebase(channel.imageurl),
+        imageURL: channel.imageurl,
       },
     }))
   );

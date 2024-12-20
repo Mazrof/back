@@ -1,9 +1,5 @@
 import * as storiesRepository from '../repositories/storiesRepository';
 import {
-  getFileFromFirebase,
-  uploadFileToFirebase,
-} from '../third_party_services';
-import {
   addUserView,
   checkStoryExpiry,
   getViewCount,
@@ -18,9 +14,6 @@ export const createStory = async (
 ) => {
   const expiryDate = new Date();
   expiryDate.setHours(new Date().getHours() + 24);
-  if (storyMedia) {
-    storyMedia = await uploadFileToFirebase(storyMedia);
-  }
   return await storiesRepository.createStory(
     userId,
     content,
@@ -41,7 +34,7 @@ export const getStoryById = async (id: number, curUserId: number) => {
   }
   await addUserView(story.id, curUserId);
   story.viewCount = await getViewCount(story.id);
-  story.StoryMedia = await getFileFromFirebase(story.mediaUrl);
+  story.StoryMedia = story.mediaUrl;
   delete story.mediaUrl;
   return story;
 };
@@ -66,8 +59,7 @@ export const getUserStories = async (curUserId: number) => {
       } else {
         await addUserView(story.id, curUserId);
         story.viewCount = await getViewCount(story.id);
-        story.StoryMedia = await getFileFromFirebase(story.mediaUrl);
-        delete story.mediaUrl;
+        story.StoryMedia = story.mediaUrl;
       }
     }
   return allUsersStories;
