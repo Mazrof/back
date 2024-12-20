@@ -9,9 +9,10 @@ import {
   commonChannelResponse,
 } from '../repositories/repositoriesTypes/channelTypes';
 import {
-  getFileFromFirebase,
-  uploadFileToFirebase,
-} from '../third_party_services';
+  convertBase64ToImage,
+  convertImageToBase64,
+  saveImage,
+} from '../middlewares/imageHandlers';
 
 /**
  * Checks the validity of the input data for creating or updating a channel.
@@ -109,14 +110,9 @@ export const createChannel = async (data: {
 
   const invitationLink: string = generateInvitationLink();
 
-  const tempURL = data.imageURL;
   if (data.imageURL) {
-    try {
-      data.imageURL = await uploadFileToFirebase(data.imageURL);
-    } catch (error) {
-      console.log('Error fetching image from Firebase:');
-      data.imageURL = tempURL; // or keep it unchanged if you prefer
-    }
+    const image = convertBase64ToImage(data.imageURL);
+    data.imageURL = saveImage(image);
   }
 
   const channel: {
@@ -128,16 +124,10 @@ export const createChannel = async (data: {
     invitationLink,
   });
 
-  if (channel.community.imageURL) {
-    try {
-      channel.community.imageURL = await getFileFromFirebase(
-        channel.community.imageURL
-      );
-    } catch (error) {
-      console.log('Error fetching image from Firebase:');
-      channel.community.imageURL = tempURL;
-    }
-  }
+  if (channel.community.imageURL)
+    channel.community.imageURL = convertImageToBase64(
+      channel.community.imageURL
+    );
 
   await channelMemberService.addChannelMember(
     data.creatorId,
@@ -184,15 +174,10 @@ export const updateChannel = async (
     throw new AppError('No data to update', 400);
   }
 
-  const tempURL = data.imageURL;
   if (data.name || data.privacy || data.imageURL) {
     if (data.imageURL) {
-      try {
-        data.imageURL = await uploadFileToFirebase(data.imageURL);
-      } catch (error) {
-        console.log('Error fetching image from Firebase:');
-        data.imageURL = tempURL; // or keep it unchanged if you prefer
-      }
+      const image = convertBase64ToImage(data.imageURL);
+      data.imageURL = saveImage(image);
     }
 
     await communityRepository.updateCommunity(channel.communityId, {
@@ -204,16 +189,11 @@ export const updateChannel = async (
     data.canAddComments
   );
 
-  if (updatedChannel.community.imageURL) {
-    try {
-      updatedChannel.community.imageURL = await getFileFromFirebase(
-        updatedChannel.community.imageURL
-      );
-    } catch (error) {
-      console.log('Error fetching image from Firebase:');
-      updatedChannel.community.imageURL = tempURL;
-    }
-  }
+  if (updatedChannel.community.imageURL)
+    updatedChannel.community.imageURL = convertImageToBase64(
+      updatedChannel.community.imageURL
+    );
+
   return updatedChannel;
 };
 

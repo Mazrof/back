@@ -1,14 +1,14 @@
 import * as groupRepository from '../repositories';
 import * as groupMemberService from '../services/groupMemberService';
 import { CommunityRole } from '@prisma/client';
-import { checkAdmin } from '../services/adminService';
+import { checkAdmin } from './adminService';
 import { AppError } from '../utility';
 import generateInvitationLink from '../utility/invitationLink';
 import {
-  getFileFromFirebase,
-  uploadFileToFirebase,
-} from '../third_party_services';
-
+  convertBase64ToImage,
+  convertImageToBase64,
+  saveImage,
+} from '../middlewares/imageHandlers';
 
 /**
  * Fetch all groups with community details and filter status.
@@ -104,7 +104,6 @@ export const createGroup = async (data: {
   community: { name: string; privacy: boolean; imageURL: string };
   groupSize: number;
 }> => {
-
   let message = '';
   if (!data.name) message = 'Invalid Group name';
   if (!data.creatorId)
@@ -113,30 +112,16 @@ export const createGroup = async (data: {
     message += message ? ', Invalid Group size' : 'Invalid Group size';
   if (message) throw new AppError(message, 400);
 
-  const tempURL = data.imageURL;
   if (data.imageURL) {
-    try {
-      data.imageURL = await uploadFileToFirebase(data.imageURL);
-    } catch (error) {
-      console.log('Error fetching image from Firebase:');
-      data.imageURL = tempURL;
-    }
-    data.imageURL = await uploadFileToFirebase(data.imageURL);
+    const image = convertBase64ToImage(data.imageURL);
+    data.imageURL = saveImage(image);
   }
 
   const invitationLink = generateInvitationLink();
   const group = await groupRepository.createGroup({ ...data, invitationLink });
 
-  if (group.community.imageURL) {
-    try {
-      group.community.imageURL = await getFileFromFirebase(
-        group.community.imageURL
-      );
-    } catch (error) {
-      console.log('Error fetching image from Firebase:');
-      group.community.imageURL = tempURL;
-    }
-  }
+  if (group.community.imageURL)
+    group.community.imageURL = convertImageToBase64(group.community.imageURL);
 
   await groupMemberService.addGroupCreator(
     group.id,
@@ -182,15 +167,11 @@ export const updateGroup = async (
   if (!data.name && !data.privacy && !data.groupSize && !data.imageURL) {
     throw new AppError('No data to update', 400);
   }
-  const tempURL = data.imageURL;
+
   if (data.name || data.privacy || data.imageURL) {
     if (data.imageURL) {
-      try {
-        data.imageURL = await uploadFileToFirebase(data.imageURL);
-      } catch (error) {
-        console.log("Error fetching image from Firebase:", );
-        data.imageURL = tempURL;
-      }
+      const image = convertBase64ToImage(data.imageURL);
+      data.imageURL = saveImage(image);
     }
     await groupRepository.updateCommunity(group.communityId, data);
   }
@@ -206,15 +187,10 @@ export const updateGroup = async (
     data.groupSize
   );
 
-  if (updatedGroup.community.imageURL) {
-    try {
-      updatedGroup.community.imageURL = await getFileFromFirebase(updatedGroup.community.imageURL);
-    } catch (error) {
-      console.error("Error fetching image from Firebase:", error);
-      // Optionally, you can set the imageURL to null or handle the error differently.
-      updatedGroup.community.imageURL = tempURL; // or keep it unchanged if you prefer
-    }
-  }
+  if (updatedGroup.community.imageURL)
+    updatedGroup.community.imageURL = convertImageToBase64(
+      updatedGroup.community.imageURL
+    );
 
   return updatedGroup;
 };
