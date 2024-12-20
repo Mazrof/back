@@ -1,4 +1,4 @@
-import {addFcmTokenService,sendNotificationService,sendNotifications,
+import {addFcmTokenService,sendNotifications,
   addMutedParticipantService,removeMutedParticipantService,updateMutedParticipantService
 } from '../services/notificationsService';
 import { Request, Response } from 'express';
@@ -17,20 +17,12 @@ export const addFcmTokenController = catchAsync(async (req: Request, res: Respon
   });
 });
 
-export const sendNotificationController = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.body.receiverId;
-  const NotificationData = notificationSchema.parse(req.body);
-  const {title,body,image} = NotificationData;
-  const result = await sendNotificationService(userId, {title,body,image});
-  res.status(200).json({
-    status: 'success',
-    data: { result },
-  });
-}
-);
 
 export const sendNotificationsController = catchAsync(async (req: Request, res: Response) => {
   const participantId = req.body.participantId;
+  if (!participantId) {
+    throw new AppError('participantId is required', 400);
+  }
   const senderId = req.session.user.id;
   const NotificationData = notificationSchema.parse(req.body);
   const {title,body,image} = NotificationData;
