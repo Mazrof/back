@@ -49,6 +49,7 @@ export const getStoryById = async (id: number, curUserId: number) => {
 export const getUserStories = async (curUserId: number) => {
   const allUsersStories: any[] = [];
   const userChats = await storiesRepository.findUserPersonalChats(curUserId);
+  userChats.unshift({ chatId: -1, otherUserId: curUserId });
   for (const chat of userChats) {
     allUsersStories.push(
       await storiesRepository.findProfileByIdMinimal(chat.otherUserId)
