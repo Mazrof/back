@@ -51,8 +51,16 @@ export const checkData = (data: {
  * @returns {Promise<commonChannelResponse[]>} A promise that resolves to an array of channel objects.
  */
 export const findAllChannels = async (): Promise<commonChannelResponse[]> => {
-  return channelRepository.findAllChannels();
+  const channels = await channelRepository.findAllChannels();
+
+  return channels.map((channel) => {
+    // Convert imageURL to Base64 before returning the channel object
+    channel.community.imageURL = convertImageToBase64(channel.community.imageURL);
+
+    return channel;
+  });
 };
+
 
 /**
  * Finds a channel by its ID.
@@ -79,6 +87,7 @@ export const findChannelById = async (
   if (!channel || !channel.community.active) {
     throw new AppError('No channel found with that ID', 404);
   }
+  channel.community.imageURL = convertImageToBase64(channel.community.imageURL);
   delete channel.community.active;
   return channel;
 };

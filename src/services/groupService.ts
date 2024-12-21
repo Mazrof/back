@@ -32,12 +32,17 @@ export const findAllGroups = async (): Promise<
   }[]
 > => {
   const groups = await groupRepository.findAllGroups();
-  return groups.map((group) => ({
-    id: group.id,
-    groupSize: group.groupSize,
-    community: group.community,
-    hasFilter: group.adminGroupFilters?.groupId === group.id,
-  }));
+  return groups.map((group) => {
+    // Convert imageURL to Base64 before returning the group object
+    group.community.imageURL = convertImageToBase64(group.community.imageURL);
+
+    return {
+      id: group.id,
+      groupSize: group.groupSize,
+      community: group.community,
+      hasFilter: group.adminGroupFilters?.groupId === group.id,
+    };
+  });
 };
 
 /**
@@ -69,6 +74,7 @@ export const findGroupById = async (
     throw new AppError('No Group found with that ID', 404);
   }
   group.hasFilter = group.adminGroupFilters?.groupId === group.id;
+  group.community.imageURL = convertImageToBase64(group.community.imageURL);
   delete group.community.active;
   delete group.adminGroupFilters;
   return group;
