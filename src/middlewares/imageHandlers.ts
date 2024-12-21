@@ -20,7 +20,7 @@ export const convertBase64ToImage = (base64Data: string): Buffer => {
 };
 
 // 2. Save the image to the assets directory and return the file path
-export const saveImage = (imageBuffer: Buffer): string => {
+export const saveImage = (imageBuffer: Buffer)=> {
   try {
     // Generate a unique file name
     const uniqueFileName = `${crypto.randomUUID()}.png`; // You can change the extension if needed
@@ -36,12 +36,12 @@ export const saveImage = (imageBuffer: Buffer): string => {
       'Error saving image:',
       error instanceof Error ? error.message : error
     );
-    throw error;
+    return null;
   }
 };
 
 // 3. Convert image file to Base64 string
-export const convertImageToBase64 = (filePath: string): string => {
+export const convertImageToBase64 = (filePath: string) => {
   try {
     // Read the image file from disk
 
@@ -59,6 +59,6 @@ export const convertImageToBase64 = (filePath: string): string => {
       'Error reading image:',
       error instanceof Error ? error.message : error
     );
-    throw error;
+    return null;
   }
 };
