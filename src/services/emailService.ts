@@ -87,7 +87,7 @@ export const requestPasswordReset = async (email,deviceType:string) => {
     subject: 'Password Reset Request',
     html: `<p>You requested a password reset. Click the link below to reset your password:</p>
            <a href="${resetUrl}">${resetUrl}</a>
-           <p>If you did not request this, please ignore this email.</p>`,
+           <p>If you did not request this, pleasea ignore this email.</p>`,
   };
 
   await transporter.sendMail(mailOptions);
